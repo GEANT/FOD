@@ -23,7 +23,7 @@ pycrypto==2.6
 pyparsing
 python-dateutil==1.5
 python-memcached==1.48
-PyYAML==3.10
+PyYAML==5.4
 South==0.7.5
 wsgiref==0.1.2
 django-form-utils
