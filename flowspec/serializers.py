@@ -70,8 +70,6 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
         if "applier" not in validated_data:
             u = self.context.get('request').user
             validated_data["applier"] = u
-        if "expires" not in validated_data:
-            validated_data["expires"] = "2999-01-01"
         protocol = validated_data.pop('protocol', set())
         then = validated_data.pop('then')
         fragmenttype = validated_data.pop('fragmenttype', set())
@@ -142,8 +140,6 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
     def update(self, instance, validated_data):
         if 'name' in validated_data:
             del validated_data["name"]	
-        if "expires" not in validated_data:
-            validated_data["expires"] = "2999-01-01"
         protocol = validated_data.pop('protocol', None)
         if protocol:
             instance.protocol.set(protocol)

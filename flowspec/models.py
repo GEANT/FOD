@@ -408,6 +408,10 @@ class Route(models.Model):
             return True
         return False
 
+    def set_no_expire(self):
+        """Used for REST API created routes that should have no expiration date"""
+        self.expires = datetime.date.today() + datetime.timedelta(days=365*100) 
+
     def check_sync(self):
         if not self.is_synced():
             self.status = "OUTOFSYNC"

@@ -307,31 +307,45 @@ $(document).ready( function(){
                      },
                      {"mData":"expires", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	return '<small>'+data+'</small>';
+                     expires = new Date(data);
+                     today = Date.now();
+                     // difference is same or higher than 100 years from now:
+                     if (expires - today >= 3153600000) {
+                             return '<small>No</small>';
+                     } else {
+                             return '<small>'+data+'</small>';
+                     }
                      }},
                      {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
-                     	status = full.status;
-                     	toolt = '<a rel="tooltip" href="#" data-toggle="tooltip" data-placement="top"';
-   	                     	if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
-	                     		if (status == "INACTIVE" ){
-	                     			title = "{% trans 'Deactivated by user' %}";
-	                     		}
-	                     		if (status == "ADMININACTIVE" ){
-	                     			title = "{% trans 'Deactivated by administrator' %}";
-	                     		}
-	                     		if (status == "EXPIRED" ){
-	                     			title = "{% trans 'Deactivated due to expiration' %}";
-	                     		}
-	                     		if (status == "OUTOFSYNC" ){
-	                     			title = "{% trans 'Syncronization error. Configuration in device differs from rule' %}";
-	                     		}
-	                     		return toolt+" title=\""+title+"\">"+"<small>{% trans 'Rule expired' %}</small>"+"</a>";
-	                     	}
-                     		if (status == "PENDING"){
-                     				return '<img src="{% static 'dots.gif' %}">';
-                     			}
-                     		return "<small>"+full.response+"</small>";
+                             status = full.status;
+                             today = Date.now();
+                             expires = new Date(full.expires);
+                             toolt = '<a rel="tooltip" href="#" data-toggle="tooltip" data-placement="top"';
+                             if (status == "EXPIRED" ||status == "ADMININACTIVE" || status == "INACTIVE" || status == "OUTOFSYNC"){
+                                     if (status == "INACTIVE" ){
+                                             title = "{% trans 'Deactivated by user' %}";
+                                     }
+                                     if (status == "ADMININACTIVE" ){
+                                             title = "{% trans 'Deactivated by administrator' %}";
+                                     }
+                                     if (status == "EXPIRED" ){
+                                             title = "{% trans 'Deactivated due to expiration' %}";
+                                     }
+                                     if (status == "OUTOFSYNC" ){
+                                             title = "{% trans 'Syncronization error. Configuration in device differs from rule' %}";
+                                     }
+                                     if (today > expires) {
+                                             response = "{% trans 'Rule expired' %}";
+                                     } else {
+                                             response = "{% trans 'Inactive rule' %}";
+                                     }
+                                     return toolt+" title=\""+title+"\">"+"<small>"+response+"</small>"+"</a>";
+                             }
+                             if (status == "PENDING"){
+                                     return '<img src="{% static 'dots.gif' %}">';
+                             }
+                             return "<small>"+full.response+"</small>";
 
                      }
                      },

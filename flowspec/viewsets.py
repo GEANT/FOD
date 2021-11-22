@@ -98,6 +98,7 @@ class RouteViewSet(viewsets.ModelViewSet):
                     logger.info("RouteViewSet::create(): obj.data.id="+str(obj.data["id"]))
                     route = get_object_or_404(self.get_queryset(), pk=obj.data["id"])
                     route.response = "N/A"
+                    route.set_no_expire() # REST API created routes should have no expiration date
 
                     if requested_status == "ACTIVE":
                         route.status = "PENDING"
