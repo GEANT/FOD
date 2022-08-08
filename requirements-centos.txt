@@ -9,7 +9,7 @@ djangorestframework==3.11.2
 django-tinymce
 django-form-utils
 django-settings-export
-Django==2.1.15
+Django==2.2.28
 gevent
 greenlet
 gunicorn
