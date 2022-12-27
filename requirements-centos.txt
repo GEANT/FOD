@@ -1,4 +1,4 @@
-setuptools<58
+setuptools<66
 argparse
 cl
 celery==4.4.0
