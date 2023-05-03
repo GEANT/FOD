@@ -467,18 +467,27 @@ class Route(models.Model):
           self.save()
 
 
-    def check_sync(self):
-        if not self.is_synced():
+    def check_sync(self, netconf_device_queried=None):
+        if not self.is_synced(netconf_device_queried=netconf_device_queried):
             #self.status = "OUTOFSYNC"
             #self.save()
             self.update_status("OUTOFSYNC")
 
-    def is_synced(self):
+    def is_synced(self, netconf_device_queried=None):
+        logger.info('models::is_synced(): self='+str(self))
         found = False
         try:
-            get_device = PR.Retriever()
-            device = get_device.fetch_device()
-            routes = device.routing_options[0].routes
+            # allows for caching of NETCONF GetConfig query, e.g., during tasks::check_sync
+            if netconf_device_queried==None:
+              logger.info("models::is_synced(): querying routes newly from NETCONF router")
+              get_device = PR.Retriever()
+              parsed_netconf_xml__device_obj = get_device.fetch_device()
+            else:
+              logger.info("models::is_synced(): reusing cached query from NETCONF router")
+              parsed_netconf_xml__device_obj = netconf_device_queried
+
+            parsed_netconf_xml__flows = parsed_netconf_xml__device_obj.routing_options
+            #logger.info('models::is_synced(): parsed_netconf_xml__flows='+str(parsed_netconf_xml__flows))
         except Exception as e:
             #self.status = "EXPIRED"
             #self.save()
@@ -486,7 +495,9 @@ class Route(models.Model):
             logger.error('models::is_synced(): No routing options on device. Exception: %s' % e)
             return True
 
-        for route in routes:
+        for flow in parsed_netconf_xml__flows:
+          for route in flow.routes:
+            #logger.debug('models::is_synced(): loop flow='+str(flow)+' route='+str(route))
             if route.name == self.name:
                 found = True
                 logger.debug('models::is_synced(): Found a matching rule name')

@@ -278,6 +278,15 @@ def check_sync(route_name=None, selected_routes=[]):
         routes = selected_routes
     if route_name:
         routes = routes.filter(name=route_name)
+
+    try:
+      logger.info("tasks::check_sync(): making single query whose result is to be used during loop processing")
+      get_device = PR.Retriever()
+      device = get_device.fetch_device()
+    except Exception as e:
+      logger.info("tasks::check_sync(): exception occured during get active routes on router: "+str(e))
+      return
+
     for route in routes:
         if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE' and route.status != 'INACTIVE_TODELETE' and route.status != 'PENDING_TODELETE'):
             if route.status != 'ERROR':
@@ -286,7 +295,7 @@ def check_sync(route_name=None, selected_routes=[]):
         else:
             if route.status != 'EXPIRED':
                 old_status = route.status
-                route.check_sync()
+                route.check_sync(netconf_device_queried=device)
                 new_status = route.status
                 if old_status != new_status:
                   logger.info('status of rule changed during check_sync %s : %s -> %s' % (route.name, old_status, new_status))
