@@ -18,6 +18,9 @@ import re as re_
 import os
 from lxml import etree as etree_
 
+import flowspec.logging_utils
+logger = flowspec.logging_utils.logger_init_default(__name__, "celery_netconf_xml.log", False)
+
 new_ele = lambda tag, attrs={}, **extra: etree_.Element(tag, attrs, **extra)
 sub_ele = lambda parent, tag, attrs={}, **extra: etree_.SubElement(parent, tag, attrs, **extra)
 
@@ -98,11 +101,25 @@ class Device(object):
         if nodeName_ == 'routing-options':
             for node in child_:
                 childName_ = Tag_pattern_.match(node.tag).groups()[-1]
-                # *************** FLOW ****************
+                logger.info("jncdevice::Device::build(): routing-options childName_="+str(childName_))
+
+                flow_node = None
                 if childName_ == 'flow':
+                   flow_node = node
+                elif childName_ == 'rib': # IPv6 rule support
+                   for node2 in node:
+                     childName_ = Tag_pattern_.match(node2.tag).groups()[-1]
+                     if childName_ == 'flow':
+                       flow_node = node2
+                       break
+
+                # *************** FLOW ****************
+                if flow_node != None:
                     obj_ = Flow()
-                    obj_.build(node)
+                    obj_.build(flow_node)
+                    logger.info("jncdevice::Device::build(): => flow_node="+str(flow_node)+" => obj_="+str(obj_))
                     self.routing_options.append(obj_)
+
         if nodeName_ == 'protocols':
             for node in child_:
                 childName_ = Tag_pattern_.match(node.tag).groups()[-1]
@@ -380,6 +397,7 @@ class Flow(object):
     def __init__(self, is_ipv4 = True):
         self.routes = []      
         self.is_ipv4 = is_ipv4
+        logger.info("jncdevice::Flow::Flow(): is_ipv4="+str(is_ipv4))
         
     def export(self):
         
