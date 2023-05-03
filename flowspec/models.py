@@ -34,6 +34,7 @@ import json
 from peers.models import PeerRange, Peer
 
 from flowspec.junos import create_junos_name
+from utils.flowspec_utils import map__ip_proto__for__ip_version__from_flowspec
 
 #import flowspec.iprange_match
 from flowspec.iprange_match import find_matching_peer_by_ipprefix__simple
@@ -495,6 +496,8 @@ class Route(models.Model):
             logger.error('models::is_synced(): No routing options on device. Exception: %s' % e)
             return True
 
+        my_ip_version = self.ip_version()
+
         for flow in parsed_netconf_xml__flows:
           for route in flow.routes:
             #logger.debug('models::is_synced(): loop flow='+str(flow)+' route='+str(route))
@@ -559,7 +562,10 @@ class Route(models.Model):
                     assert(self.protocol.all())
                     assert(devicematch['protocol'])
                     devitems = devicematch['protocol']
-                    dbitems = ["%s"%i for i in self.protocol.all()]
+                    #dbitems = ["%s"%i for i in self.protocol.all()]
+                    dbitems = [map__ip_proto__for__ip_version__to_flowspec(my_ip_version, "%s"%i) for i in self.protocol.all()]
+                    logger.info("models::is_synced(): dbitems="+str(dbitems))
+
                     intersect = list(set(devitems).intersection(set(dbitems)))
                     if ((len(intersect) == len(dbitems)) and (len(intersect) == len(devitems))):
                         found = found and True

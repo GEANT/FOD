@@ -30,6 +30,7 @@ from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from .portrange import parse_portrange
 import traceback
 from ipaddress import ip_network
+from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
 #import xml.etree.ElementTree as ET
 
 import flowspec.logging_utils
@@ -132,6 +133,7 @@ class Applier(object):
 
             route_obj = self.route_object
 
+            ip_version = self.route_object.ip_version()
             is_ipv4 = self.route_object.is_ipv4()
             logger.info("proxy::to_xml(): is_ipv4="+str(is_ipv4))
 
@@ -153,7 +155,8 @@ class Applier(object):
             try:
                 if route_obj.protocol:
                     for protocol in route_obj.protocol.all():
-                        route.match['protocol'].append(protocol.protocol)
+                        protocol_id = map__ip_proto__for__ip_version__to_flowspec(ip_version, protocol.protocol)
+                        route.match['protocol'].append(protocol_id)
             except:
                 pass
             try:
