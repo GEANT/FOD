@@ -290,15 +290,16 @@ def check_sync(route_name=None, selected_routes=[]):
     for route in routes:
         if route.has_expired() and (route.status != 'EXPIRED' and route.status != 'ADMININACTIVE' and route.status != 'INACTIVE' and route.status != 'INACTIVE_TODELETE' and route.status != 'PENDING_TODELETE'):
             if route.status != 'ERROR':
-                logger.info('Expiring %s route %s' %(route.status, route.name))
+                logger.info('tasks::check_sync(): expiring %s route %s' %(route.status, route.name))
                 subtask(deactivate_route).delay(str(route.id), reason="EXPIRED")
         else:
             if route.status != 'EXPIRED':
                 old_status = route.status
+                logger.debug('tasks::check_sync(): calling route.check_sync for %s : %s' % (route.name, old_status))
                 route.check_sync(netconf_device_queried=device)
                 new_status = route.status
                 if old_status != new_status:
-                  logger.info('status of rule changed during check_sync %s : %s -> %s' % (route.name, old_status, new_status))
+                  logger.info('tasks::check_sync(): status of rule changed during check_sync %s : %s -> %s' % (route.name, old_status, new_status))
                   announce("[%s] Rule status change after sync check: %s - Result: %s" % ("-", route.name_visible, ""), route.applier, route)
 
 

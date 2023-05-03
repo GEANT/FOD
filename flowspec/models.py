@@ -475,7 +475,7 @@ class Route(models.Model):
             self.update_status("OUTOFSYNC")
 
     def is_synced(self, netconf_device_queried=None):
-        logger.info('models::is_synced(): self='+str(self))
+        logger.info('models::is_synced(): self='+str(self)+" status="+str(self.status))
         found = False
         try:
             # allows for caching of NETCONF GetConfig query, e.g., during tasks::check_sync
@@ -640,14 +640,17 @@ class Route(models.Model):
                         logger.info('models::is_synced(): self='+str(self)+': icmp type fields do not match')
                 except:
                     pass
+
                 if found and self.status != "ACTIVE":
                     logger.error('models::is_synced(): rule '+str(self)+' is applied on device but appears in DB as offline')
                     #self.status = "ACTIVE"
                     #self.save()
                     self.update_status("ACTIVE")
                     found = True
-            if self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "INACTIVE_TODELETE" or self.status == "PENDING_TODELETE" or self.status == "EXPIRED":
-                found = True
+
+        logger.info('models::is_synced(): self='+str(self)+ " status="+str(self.status)+" pre found="+str(found))
+        if not found and (self.status == "ADMININACTIVE" or self.status == "INACTIVE" or self.status == "INACTIVE_TODELETE" or self.status == "PENDING_TODELETE" or self.status == "EXPIRED"):
+          found = True
         
         logger.info('models::is_synced(): self='+str(self)+ " => returning found="+str(found))
         return found
