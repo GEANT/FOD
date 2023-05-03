@@ -64,6 +64,7 @@ class Retriever(object):
             xmlconfig = self.xml
         else:
             xmlconfig = self.fetch_xml()
+        #logger.info("Retriever::get_xml(): xmlconfig="+str(xmlconfig))
         return xmlconfig
 
     def proccess_xml(self):
@@ -71,6 +72,9 @@ class Retriever(object):
         parser = np.Parser()
         parser.confile = xmlconfig
         device = parser.export()
+        #logger.info("Retriever::proccess_xml(): => device="+str(device))
+        #logger.info("Retriever::proccess_xml(): device.routing_options="+str(device.routing_options))
+        #logger.info("Retriever::proccess_xml(): device.routing_options->routes="+str([flow.routes for flow in device.routing_options]))
         return device
 
     def proccess_xml_generic(self):
@@ -80,14 +84,14 @@ class Retriever(object):
 
     def fetch_device(self):
         device = cache.get("device")
-        logger.info("[CACHE] hit! got device")
+        logger.info("Retriever::fetch_device(): [CACHE] hit! got cached device")
         if device:
             return device
         else:
             device = self.proccess_xml()
             if device.routing_options:
                 cache.set("device", device, 3600)
-                logger.info("[CACHE] miss, setting device")
+                logger.info("Retriever::fetch_device(): [CACHE] miss, setting device")
                 return device
             else:
                 return False
@@ -121,7 +125,7 @@ class Applier(object):
              route.match['destination-v6'].append(route_obj.destination)
 
     def to_xml(self, operation=None):
-        logger.info("Operation: %s"%operation)
+        logger.info("proxy::Applier::to_xml(): Operation: %s"%operation)
 
         if self.route_object:
 
@@ -129,13 +133,13 @@ class Applier(object):
                 settings.PORTRANGE_LIMIT
             except:
                 settings.PORTRANGE_LIMIT = 100
-            logger.info("Generating XML config")
+            logger.info("proxy::Applier::to_xml:(): Generating XML config")
 
             route_obj = self.route_object
 
             ip_version = self.route_object.ip_version()
             is_ipv4 = self.route_object.is_ipv4()
-            logger.info("proxy::to_xml(): is_ipv4="+str(is_ipv4))
+            logger.info("proxy::Applier::to_xml(): is_ipv4="+str(is_ipv4))
 
             device = np.Device()
             flow = np.Flow(is_ipv4)
@@ -145,7 +149,7 @@ class Applier(object):
             route.name = route_obj.name
 
             if operation == "delete":
-                logger.info("Requesting a delete operation")
+                logger.info("proxy::Applier::to_xml(): Requesting a delete operation")
                 route.operation = operation
                 device = device.export(netconf_config=True)
                 return ET.tostring(device)
@@ -208,7 +212,7 @@ class Applier(object):
                 else:
                     route.then[thenaction.action] = True
             if operation == "replace":
-                logger.info("Requesting a replace operation")
+                logger.info("proxy::Applier::to_xml(): Requesting a replace operation")
                 route.operation = operation
             device = device.export(netconf_config=True)
             result = ET.tostring(device)
