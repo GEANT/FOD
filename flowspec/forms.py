@@ -153,9 +153,12 @@ class RouteForm(forms.ModelForm):
         existing_routes = Route.objects.all()
         existing_routes = existing_routes.filter(applier__userprofile__peers__in=peers)
 
-        name = self.cleaned_data.get('name', None)
+        rule_name_prefix = ''
         if hasattr(settings, "RULE_NAME_PREFIX"):
-          name = "%s%s" % (settings.RULE_NAME_PREFIX, name)
+          rule_name_prefix = settings.RULE_NAME_PREFIX
+
+        name = self.cleaned_data.get('name', None)
+        name = "%s%s" % (rule_name_prefix, name)
 
         protocols = self.cleaned_data.get('protocol', None)
         source = self.cleaned_data.get('source', None)
@@ -213,12 +216,17 @@ class RouteForm(forms.ModelForm):
            raise forms.ValidationError('address family (IP version) of source prefix %s and destination prefix %s do not match' % (str(net_source.version), str(net_destination.version)))
 
         for route in existing_routes:
-            if name != route.name:
+
+            route_name = route.name
+            if route_name[0:len(rule_name_prefix)]!=rule_name_prefix:
+              route_name = "%s%s" % (rule_name_prefix, route_name)
+
+            if name != route_name:
                 existing_url = reverse('edit-route', args=[route.name])
                 net_route_destination = ip_network(route.destination, strict=False) 
                 #if net_destination==net_route_destination or net_destination in net_route_destination or net_route_destination in net_destination:
                 if net_destination==net_route_destination:
-                    raise forms.ValidationError('Found an exactly matching %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+                    raise forms.ValidationError('Found an exactly matching %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a> (current name %s)' % (route.status, route.name, route.destination, existing_url, route.name, name))
                 elif net_destination.overlaps(net_route_destination):
                     raise forms.ValidationError('Found an overlapping %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
 
