@@ -55,6 +55,7 @@ from flowspec.helpers import send_new_mail, get_peer_techc_mails
 import datetime
 
 import flowspec.iprange_match
+from flowspec.init_setup import init_admin_user
 
 from urllib.parse import urlencode
 #############################################################################
@@ -404,6 +405,23 @@ def add_route(request):
             route.response = "Applying"
             net_route_source1 = ip_network(route.source, strict=False)
             net_route_destination1 = ip_network(route.destination, strict=False)
+
+            if net_route_source1.version != net_route_destination1.version:
+              messages.add_message(
+                request,
+                messages.WARNING,
+                 ('address familiy (IP version) of source and destination have to be equal')
+              )
+              return render(
+                request,
+                'apply.html',
+                {
+                    'form': form,
+                   'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                }
+              )
+
             route.source = ip_network('%s/%s' % (net_route_source1.network_address.compressed, net_route_source1.prefixlen)).compressed
             route.destination = ip_network('%s/%s' % (net_route_destination1.network_address.compressed, net_route_destination1.prefixlen)).compressed
             try:
@@ -479,12 +497,55 @@ def edit_route(request, route_slug):
         if form.is_valid():
             changed_data = form.changed_data
             route = form.save(commit=False)
+
             route.name = route_original.name
             route.status = route_original.status
             route.response = route_original.response
 
             net_route_source=ip_network(route.source, strict=False)
             net_route_destination=ip_network(route.destination, strict=False)
+            net_route_source__edit=ip_network(route_original.source, strict=False)
+            net_route_destination__edit=ip_network(route_original.destination, strict=False)
+            logger.info("net_route_source__edit="+str(net_route_source__edit))
+            logger.info("net_route_destination__edit="+str(net_route_destination__edit))
+            logger.info("net_route_source="+str(net_route_source))
+            logger.info("net_route_destination="+str(net_route_destination))
+
+            if net_route_source__edit.version != net_route_source.version:
+              messages.add_message(
+                request,
+                messages.WARNING,
+                ('address family (IP version) of source prefix of an existing rule cannot be changed')
+              )
+              return render(
+                request,
+                'apply.html',
+                {
+                    'form': form,
+                    'edit': True,
+                    'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                }
+              )
+            if net_route_destination__edit.version != net_route_destination.version:
+              messages.add_message(
+                request,
+                messages.WARNING,
+                ('address family (IP version) of destination prefix of an existing rule cannot be changed')
+              )
+              return render(
+                request,
+                'apply.html',
+                {
+                    'form': form,
+                    'edit': True,
+                    'applier': applier,
+                    'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
+                }
+              )
+
+            #
+
             if not request.user.is_superuser:
                 route.applier = request.user
             if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
@@ -521,7 +582,8 @@ def edit_route(request, route_slug):
     else:
         if (not route_original.status == 'ACTIVE'):
             route_edit.expires = datetime.date.today() + datetime.timedelta(days=settings.EXPIRATION_DAYS_OFFSET-1)
-        dictionary = model_to_dict(route_edit, fields=[], exclude=[])
+        #dictionary = model_to_dict(route_edit, fields=[], exclude=[])
+        dictionary = model_to_dict(route_edit, exclude=[])
         dictionary["name"] = route_edit.name_visible
         if request.user.is_superuser:
             dictionary['issuperuser'] = request.user.username
@@ -766,10 +828,8 @@ def user_login(request):
         mail = lookupShibAttr(settings.SHIB_MAIL, request.META)
         entitlement = lookupShibAttr(settings.SHIB_ENTITLEMENT, request.META)
 
-        ##
-
         logger.info("view::user_login(): firstname='"+str(firstname)+"'")
-      
+
         ##
 
         try:
@@ -1121,7 +1181,22 @@ def lookupShibAttr(attrmap, requestMeta):
     for attr in attrmap:
         if (attr in requestMeta.keys()):
             if len(requestMeta[attr]) > 0:
-                return requestMeta[attr]
+                
+                # workaround for wrong encoding of Shibboleth attributes
+                #
+                # compare similar code of dist-packages/requests/sessions.py (requests 2.22.0) : SessionRedirectMixin::get_redirect_target
+                # cite:
+                # "Currently the underlying http module on py3 decode headers
+                # in latin1, but empirical evidence suggests that latin1 is very
+                # rarely used with non-ASCII characters in HTTP headers.
+                # It is more likely to get UTF8 header rather than latin1.
+                # This causes incorrect handling of UTF8 encoded location headers.
+                # To solve this, we re-encode the location in latin1.
+                # "
+                ret = requestMeta[attr]
+                ret = ret.encode('latin-1').decode('utf-8')
+                return ret
+
     return ''
 
 
@@ -1174,24 +1249,27 @@ def routestats(request, route_slug):
         logger.error('routestats failed: %s' % e)
         return HttpResponse(json.dumps({"error": "No data available. %s" % e}), content_type="application/json", status=404)
 
+
 def setup(request):
     if settings.ENABLE_SETUP_VIEW and User.objects.count() == 0:
         if request.method == "POST":
             form = SetupForm(request.POST)
             if form.is_valid():
-                u = User.objects.create_user(username="admin", email="email@example.com", password=form.cleaned_data["password"])
-                u.is_superuser = True
-                u.is_staff = True
-                u.save()
-                pr = PeerRange(network = form.cleaned_data["test_peer_addr"])
-                pr.save()
-                p = Peer(peer_name = "testpeer", peer_tag = "testpeer")
-                p.save()
-                p.networks.add(pr)
-                ua = UserProfile()
-                ua.user = u
-                ua.save()
-                ua.peers.add(p)
+                #u = User.objects.create_user(username="admin", email="email@example.com", password=form.cleaned_data["password"])
+                #u.is_superuser = True
+                #u.is_staff = True
+                #u.save()
+                #pr = PeerRange(network = form.cleaned_data["test_peer_addr"])
+                #pr.save()
+                #p = Peer(peer_name = "testpeer", peer_tag = "testpeer")
+                #p.save()
+                #p.networks.add(pr)
+                #ua = UserProfile()
+                #ua.user = u
+                #ua.save()
+                #ua.peers.add(p)
+                #init_admin_user("admin", form.cleaned_data["password"], "email@example.com", "testpeer", form.cleaned_data["test_peer_addr"])
+                init_setup.init_admin_user("admin", form.cleaned_data["password"], "email@localhost", "admin_test_peer", form.cleaned_data["test_peer_addr"])
 
                 with open("flowspy/settings_local.py", "a") as f:
                     f.write("NETCONF_DEVICE = \"%s\"\n" % form.cleaned_data["netconf_device"])

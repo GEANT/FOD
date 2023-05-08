@@ -108,6 +108,11 @@ class RouteViewSet(viewsets.ModelViewSet):
                     route.response = "N/A"
                     route.set_no_expire() # REST API created routes should have no expiration date
 
+                    net_route_source=ip_network(route.source, strict=False)
+                    net_route_destination=ip_network(route.destination, strict=False)
+                    if net_route_source.version != net_route_destination.version:
+                      return Response({"address family (IP version) of source prefix and destination prefix have to be equal"}, status=400)
+
                     if requested_status == "ACTIVE":
                         route.status = "PENDING"
                         route.save()
@@ -225,6 +230,16 @@ class RouteViewSet(viewsets.ModelViewSet):
                 requested_status = old_status
               else:
                 return Response("no status specified", status=400)
+
+            net_route_source=ip_network(obj.source, strict=False)
+            net_route_destination=ip_network(obj.destination, strict=False)
+            net_route_source__edit=ip_network(request.data["source"], strict=False)
+            net_route_destination__edit=ip_network(request.data["destination"], strict=False)
+            logger.info("RouteViewSet::update(): net_route_source="+str(net_route_source)+" net_route_source__edit="+str(net_route_source__edit))
+            if net_route_source__edit.version != net_route_source.version:
+              return Response({"address family (IP version) of source prefix of an existing rule cannot be changed"}, status=400)
+            if net_route_destination__edit.version != net_route_destination.version:
+              return Response({"address family (IP version) of destination prefix of an existing rule cannot be changed"}, status=400)
 
             #if requested_status == 'INACTIVE':
             new_status = requested_status

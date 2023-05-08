@@ -1,0 +1,82 @@
+#!/bin/bash
+
+docker_label__rtr1="rtr-flowspec1"
+
+#
+
+use_bg=0
+if [ "$1" = "--bg" ]; then
+  shift 1
+  use_bg=1
+fi
+
+#
+
+fod_exabgp_ip_address="$1"
+shift 1
+
+#[ -n "$fod_exabgp_ip_address" ] || fod_exabgp_ip_address="172.17.0.2" # first docker container 
+[ -n "$fod_exabgp_ip_address" ] || fod_exabgp_ip_address="172.17.0.1" # host network stack as seen/reachable from a docker container
+
+echo "$0: using fod_exabgp_ip_address=$fod_exabgp_ip_address" 1>&2
+
+###
+
+set -e
+
+#
+
+cat ./docker1/mycfg1-sw.txt.template | sed -e "s/__EXABGP_PEER_IP_ADDRESS__/$fod_exabgp_ip_address/g" > ./docker1/mycfg1-sw.txt
+
+#
+
+(
+mkdir -p /opt/freertr
+cd /opt/freertr
+
+if ! [ -d /opt/freertr ]; then
+  git clone https://github.com/rare-freertr/freeRtr-containerlab
+fi
+
+#if ! docker images | grep -E -q "freertr-containerlab\\s*latest"; then
+if ! docker inspect "freertr-containerlab" &>/dev/null; then
+  cd freeRtr-containerlab
+  docker build --no-cache -t freertr-containerlab:latest .
+fi
+)
+
+if ! docker inspect "$docker_label__rtr1" &>/dev/null; then
+  # docker1/Dockerfile.freertr-containerlab.overlay1
+  # docker1/mycfg1-sw.txt
+  # docker1/run-freertr.sh
+  docker build -f docker1/Dockerfile.freertr-containerlab.overlay1 -t "$docker_label__rtr1" . 
+fi
+
+#
+
+dockerid_rtr1="$(docker ps | awk '$2==docker_label { print $1; }' docker_label="$docker_label__rtr1")"
+
+if [ -n "$dockerid_rtr1" ]; then
+ echo "docker container $dockerid_rtr1 already running, nothing todo" 1>&2
+
+elif [ "$use_bg" != 1 ]; then
+
+  {
+    sleep 10
+    if ./myethtool_disable_offload__docker_veth_endpoint "$docker_label__rtr1" &>/dev/null; then
+      echo "offload disabled succeeded" 
+    else
+      echo "offload disabled failed" 
+    fi
+  } &
+  
+  exec docker run -ti --privileged "$docker_label__rtr1"
+
+else
+  
+  docker run -d --privileged "$docker_label__rtr1" /root/run-freertr.sh --bg
+    
+  ./myethtool_disable_offload__docker_veth_endpoint "$docker_label__rtr1"
+
+fi
+

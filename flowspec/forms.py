@@ -207,7 +207,11 @@ class RouteForm(forms.ModelForm):
         if not settings.ROUTES_DUPLICATES_CHECKING:
             return self.cleaned_data
             
+        net_source = ip_network(source, strict=False) 
         net_destination = ip_network(destination, strict=False) 
+        if net_source.version != net_destination.version:
+           raise forms.ValidationError('address family (IP version) of source prefix %s and destination prefix %s do not match' % (str(net_source.version), str(net_destination.version)))
+
         for route in existing_routes:
             if name != route.name:
                 existing_url = reverse('edit-route', args=[route.name])

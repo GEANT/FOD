@@ -1,20 +1,12 @@
 
 #############################################################################
 #############################################################################
-
-flowspy/settings.py
-flowspy/settings.py.centos
-
-*.pyc
-celerybeat-schedule
-*.log
-celery_var/
-*~
-celeryd@*
-doc_rst/
-static/rest_framework/
+# general
 
 *.swp
+*~
+
+tags
 
 ##
 
@@ -25,22 +17,22 @@ static/rest_framework/
 *.off
 old/
 
-local/
-.gitmy/
-
 ##
 
-tags
-
-README.local.txt
+*.png
+*.ico
+*.xcf
 
 #############################################################################
 #############################################################################
+# devel
 
 doc.intl
+doc_rst/
+README.local.txt
 
-#############################################################################
-#############################################################################
+local/
+.gitmy/
 
 bin.mg/
 
@@ -56,40 +48,76 @@ mypull*
 
 mydocker_*
 
+test_*
+
 mydiff_*
 diff_skip*.list
 
 fodcli
 
-#############################################################################
-#############################################################################
-
-venv/
-staticfiles/
-
-#############################################################################
-#############################################################################
-
 Dockerfile.blank*
 
-#
+
+#############################################################################
+#############################################################################
+# install / runtime /conf /db ...
 
 runfod-*.sh
 supervisord.conf
+
+runfod.conf
 
 systemd/fod-gunicorn.service
 systemd/fod-celeryd.service
 systemd/fod-status-email-user@.service
 
-#############################################################################
-#############################################################################
+##
 
-*.png
-*.ico
-*.xcf
+flowspy/settings.py
+flowspy/settings.py.centos
+flowspy/settings.py.docker.debian
+flowspy/settings.py.docker.centos
+
+#
+
+example-data*
+snmp_temp_data
+
+##
+
+staticfiles/
+
+/static
+static/rest_framework/
+
+##
+
+log
+logs
+
+*.log
+
+##
+
+*.pyc
+
+pythonenv
+venv
+venv/
+
+##
+
+celerybeat-schedule
+celerybeat-schedule.db
+
+celery_var/
+celeryd@*
+
+dump.rdb*
 
 #############################################################################
 #############################################################################
+## testing
 
 .vs
 Tests/Selenium/.vs
@@ -99,9 +127,11 @@ Tests/SeleniumJava/FodSelenium/logs/log.txt
 Tests/SeleniumJava/FodSelenium/logs/report.txt
 Tests/SeleniumJava/FodSelenium/test-output/*
 
-
 #############################################################################
 #############################################################################
 
-/static
 /.coverage
+
+#############################################################################
+#############################################################################
+

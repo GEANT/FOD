@@ -1,0 +1,31 @@
+#!/bin/bash
+
+docker_id_or_label="$1"
+shift 1
+
+echo "$0: docker_id_or_label='$docker_id_or_label'" 1>&2
+[ -n "$docker_id_or_label" ] || exit 1
+
+##
+
+docker_id="$(docker ps | awk '$2==docker_id_or_label { print $1; found=1; } END { if (!found) { print docker_id_or_label; } }' docker_id_or_label="$docker_id_or_label")"
+echo "$0: => docker_id='$docker_id'" 1>&2
+[ -n "$docker_id" ] || exit 1
+
+##
+
+ifcid__of__docker_veth_endpoint_in_master_netns="$(docker exec "$docker_id" ip link show dev eth0 | awk '{ sub(/^eth0@if/, "", $2); print $2; exit; }')"
+echo "$0: => ifcid__of__docker_veth_endpoint_in_master_netns='$ifcid__of__docker_veth_endpoint_in_master_netns'" 1>&2
+[ -n "$ifcid__of__docker_veth_endpoint_in_master_netns" ] || exit 1
+
+##
+
+ifcname__of__docker_veth_endpoint_in_master_netns="$(ip link show | awk '$1==ifcid { sub(/@if.*$/, "", $2); print $2; }' ifcid="$ifcid__of__docker_veth_endpoint_in_master_netns")"
+echo "$0: => ifcname__of__docker_veth_endpoint_in_master_netns='$ifcname__of__docker_veth_endpoint_in_master_netns'" 1>&2
+[ -n "$ifcname__of__docker_veth_endpoint_in_master_netns" ] || exit 1
+
+##
+
+./myethtool_disable_offload "$ifcname__of__docker_veth_endpoint_in_master_netns"
+
+

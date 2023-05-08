@@ -51,6 +51,9 @@ SITE_ID = 1
 # Place a sequence of random chars here
 SECRET_KEY = '@sa@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_'
 
+#DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 ##############################################################################
 ##############################################################################
 # Set up database
@@ -72,6 +75,12 @@ DATABASES = {
 
 #LOG_FILE_LOCATION = "/var/log/fod"
 LOG_FILE_LOCATION = "/srv/flowspy/log/"
+
+LOGGING_FORMAT_DEFAULT = '%(asctime)s %(name)s %(levelname)s: %(message)s'
+#LOGGING_FORMAT_DEFAULT = '%(processName)s[%(process)d] %(asctime)s %(name)s %(levelname)s: %(message)s'
+
+# "error" | "warn" | "info" | "debug"
+LOG_LEVEL = "info"
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -182,7 +191,11 @@ TEMPLATES = [
             'context_processors': [
                 "django.contrib.auth.context_processors.auth",
                 'django_settings_export.settings_export',
-            ]
+                'django.contrib.messages.context_processors.messages'
+            ],
+            'libraries': { # Adding this section should work around the issue.
+                'staticfiles' : 'django.templatetags.static',
+            }
         },
     },
 ]
@@ -432,6 +445,7 @@ SHIB_ENTITLEMENT_DISPLAY_ADDINFO = "urn:oid:1.3.6.1.4.1.5923.1.1.1.7; the value 
 SHIB_AUTH_ENTITLEMENT = 'urn:mace:example.com:pki:user'
 #SHIB_AUTH_ENTITLEMENT = '' # is also in settings_local.py so override it there
 
+#SHIB_USERNAME__OLD_TO_MIGRATE = ['HTTP_PERSISTENT_ID'] # in settings.py.dist # originally used for SHIB_USERNAME
 SHIB_USERNAME = ['HTTP_EPPN'] # in settings.py.dist # originally used for SHIB_USERNAME
 SHIB_USERNAME_DISPLAY_NAME = "eduPersonPrincipalName"
 SHIB_USERNAME_DISPLAY_ADDINFO = "urn:mace:dir:attribute-def:eduPersonPrincipalName or urn:oid:1.3.6.1.4.1.5923.1.1.1.6"
@@ -631,6 +645,12 @@ ROUTES_DUPLICATES_CHECKING = True
 # special test installation 
 
 ENABLE_SETUP_VIEW = False
+
+##############################################################################
+##############################################################################
+
+#PROXY_CLASS="proxy_netconf_junos"
+PROXY_CLASS="proxy_exabgp"
 
 ##############################################################################
 ##############################################################################

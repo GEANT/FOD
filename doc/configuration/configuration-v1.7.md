@@ -220,11 +220,11 @@ attribute configuration:
 
 
 ### Syncing the database
-To create all the tables needed by FoD we have to run the following commands:
+To create all the tables and fill with basic data needed by FoD we have to run the following commands:
 
 	cd /srv/flowspy
-	./manage.py syncdb --noinput
 	./manage.py migrate
+	./manage.py initial_data
 
 ## Create a superuser
 A superuser can be added by using the following command from `/srv/flowspy/`:

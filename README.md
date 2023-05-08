@@ -65,11 +65,11 @@ keep the peers associated with any user under 5.
 
 ## Contact 
 
-You can contact us directly at dev{at}noc[dot]grnet(.)gr
+You can contact us directly at fod{at}lists[dot]geant(.)org
 
 ## Copyright and license
 
-Copyright © 2017-2022 GÈANT GN4-2/GN4-3 Project
+Copyright © 2017-2023 GÈANT GN4-2/GN4-3/GN5-1 Project
 
 Copyright © 2010-2017 Greek Research and Technology Network (GRNET S.A.)
 

@@ -30,7 +30,7 @@ from celery.exceptions import TimeLimitExceeded, SoftTimeLimitExceeded
 from .portrange import parse_portrange
 import traceback
 from ipaddress import ip_network
-import xml.etree.ElementTree as ET
+#import xml.etree.ElementTree as ET
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_netconf.log", False)

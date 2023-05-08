@@ -9,6 +9,11 @@ from rest_framework.authtoken.models import Token
 import requests
 #import list
 
+#if DEBUG:
+#        warnings.simplefilter('ignore', category=RemovedInDjango40Warning)
+
+#
+
 assert settings.ROUTES_DUPLICATES_CHECKING == False
 
 #dirname1 = os.path.dirname(__file__)

@@ -61,9 +61,9 @@ FROM debian:buster
 
 # 2. install all dependencies in advance (/fod_vnet_router --init.sysstart will check again and might install anything still missing)
 RUN apt-get -qqy update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -qqy install mininet iptables iproute2 tcpdump tshark iputils-ping iputils-tracepath hping3 gawk sshpass lsof strace snmpd snmp vim less
+RUN apt-get -qqy update && DEBIAN_FRONTEND="noninteractive" apt-get -qqy install mininet iptables iproute2 tcpdump tshark iputils-ping iputils-tracepath hping3 gawk sshpass lsof strace snmpd snmp vim less
   
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -qqy install netconfd yangcli socat openssh-server rsyslog
+RUN apt-get -qqy update && DEBIAN_FRONTEND="noninteractive" apt-get -qqy install netconfd yangcli socat openssh-server rsyslog
 
 # 3. copy vnet_router management script + snmp feeder pass_persisttest_bgpflowspec (+ pass_persisttest only for testing/demonstration)
 # 3. copy yang config

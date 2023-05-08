@@ -1,0 +1,36 @@
+
+# either in freertr console (no tab extension working)
+# or 
+# via telnet 127.0.0.1 2323 # on the host / container where freertr is running
+# or
+# via telnet 172.17.0.3 # replace with correct ip address of host / container where free is running (docker inspect ..)
+
+# show current config for hardwired rules:
+show running-config bgp
+show running-config pol
+show running-config access rule1
+
+# show status of connected bgp neighbors
+show ipv4 bgp 1 flowspec summary
+
+# show current contents of flowspec database
+show ipv4 bgp 1 flowspec database 
+
+# show flow spec rules on the actual filter level, including drop counters
+show policy-map flowspec OOB ipv4
+
+##
+
+# multi-step: configure new flowspec peer (e.g., FoD exabgp) 
+conf t
+router bgp4 1 
+show ru this
+neighbor 172.17.0.1 remote-as 1001
+neighbor 172.17.0.1 local-as 2001
+neighbor 172.17.0.1 address-family unicast flowspec
+neighbor 172.17.0.1 distance 300
+neighbor 172.17.0.1 send-community standard extended
+end
+write
+
+

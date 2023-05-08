@@ -1,0 +1,36 @@
+#!/bin/bash
+
+use_bg=0
+if [ "$1" = "--bg" ]; then
+  shift 1
+  use_bg=1
+elif [ "$1" = "--bg_no_enter" ]; then
+  shift 1
+  use_bg=2
+fi
+
+#
+
+set -e
+set -x
+
+cp -a ../fodexabgp-install/ . # make sure fodexabgp-install stuff will be in the docker container
+
+docker build -f Dockerfile.ubuntu0.dockerfile -t ubuntu0 .  
+
+if [ "$use_bg" = 1 ]; then
+
+  dockerid="$(docker run -d --privileged -p=8000:8000 ubuntu0)" # port 8000 needed visible for FoD gunicorn
+
+  docker exec -ti "$dockerid" sh -c "cd /root/fodexabgp-install; exec bash"
+
+elif [ "$use_bg" = 2 ]; then
+  
+  docker run -d --privileged -p=8000:8000 ubuntu0 # port 8000 needed visible for FoD gunicorn
+
+else
+
+  docker run --privileged -p=8000:8000 -ti ubuntu0 # port 8000 needed visible for FoD gunicorn
+
+fi
+

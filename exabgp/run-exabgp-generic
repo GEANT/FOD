@@ -1,0 +1,340 @@
+#!/bin/bash
+
+EXABGP_CONF_FILENAME="/etc/exabgp/exabgp.conf"
+
+#
+
+if [ "$1" = "--conf" ]; then
+  shift 1
+  
+  shift_count=0
+ 
+  if [ "$1" = "--myipv6" ]; then 
+    shift 1
+    myrouter_id__ipv6="$1"
+    shift 1
+    myrouter_ipv6="$1"
+    shift 1
+    myas__ipv6="$1"
+    shift 1
+    shift_count=$(( $shift_count + 4 ))
+    
+  fi
+
+  myrouter_id="$1"
+  shift 1
+  myrouter_ip="$1"
+  shift 1
+  myas="$1"
+  shift 1
+  shift_count=$(( $shift_count + 3 ))
+  
+  ##
+  
+  [ -n "$myrouter_id" ] || myrouter_id="10.0.0.1"
+  [ -n "$myrouter_ip" ] || myrouter_ip="10.0.0.1"
+  [ -n "$myas" ] || myas="9991"
+  
+  ##
+    
+  echo "$0: myrouter_ip=$myrouter_ip myas=$myas myrouter_id=$myrouter_id" 1>&2
+  echo "$0: myrouter_ipv6=$myrouter_ipv6 myas__ipv6=$myas__ipv6 myrouter_id__ipv6=$myrouter_id__ipv6" 1>&2
+  
+  ##
+  
+  #cat > /etc/exabgp/exabgp.conf <<EOF
+  cat <<EOF
+#neighbor 10.0.0.2 {
+#       router-id 10.0.0.1;
+#       local-address 10.0.0.1;
+#       local-as 9991;
+#
+#       peer-as 9992;
+#
+#       family {
+#            ipv4 unicast;
+#            ipv4 multicast;
+#            ipv4 nlri-mpls;
+#            ipv4 mpls-vpn;
+#            ipv4 flow;
+#            ipv4 flow-vpn;
+#            ipv6 unicast;
+#            ipv6 flow;
+#            ipv6 flow-vpn;
+#       }
+#
+#       static {
+#               route 10.4.0.0/32 next-hop self;
+#       }
+#}
+EOF
+
+  [ $# -gt 0 ] || set -- "10.0.0.2" "10.0.0.2" "9992"
+  
+  echo "$0: loop args: $*" 1>&2
+  
+  while [ $# -gt 0 ]; do
+
+    is_ipv6=0
+    if [ "$1" = "--ipv6" ]; then 
+      shift 1
+      shift_count=$(( $shift_count + 1 ))
+      is_ipv6=1
+    fi
+
+    neighbor_id="$1" 
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+    
+    [ "$neighbor_id" != "--" ] || break
+
+    neighbor_ip="$1"
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+  
+    neighborAS="$1"
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+
+    ##
+
+if [ "$is_ipv6" = 0 ]; then
+  #cat >> /etc/exabgp/exabgp.conf <<EOF
+  cat <<EOF
+#neighbor 10.0.0.3 
+neighbor $neighbor_id {
+        #router-id 10.0.0.1;
+        router-id $myrouter_id;
+        #local-address 10.0.0.1;
+        local-address $myrouter_ip;
+        #local-as 9991;
+        local-as $myas;
+
+        #peer-as 9993;
+        peer-as $neighborAS;
+        peer-address $neighbor_ip;
+
+        #family {
+        #    ipv4 unicast;
+        #    #ipv4 multicast;
+        #    #ipv4 nlri-mpls;
+        #    #ipv4 mpls-vpn;
+        #    #ipv4 flow;
+        #    #ipv4 flow-vpn;
+        #    #ipv6 unicast;
+        #    #ipv6 flow;
+        #    #ipv6 flow-vpn;
+        #}
+
+        static {
+                route 10.10.0.0/32 next-hop self;
+                route 10.100.0.0/32 next-hop self;
+        }
+}
+EOF
+
+else
+
+  cat <<EOF
+neighbor $neighbor_id {
+        router-id $myrouter_id__ipv6;
+        local-address $myrouter_ipv6;
+        local-as $myas__ipv6;
+
+        peer-as $neighborAS;
+        peer-address $neighbor_ip;
+
+        #family {
+        #    ipv4 unicast;
+        #    #ipv4 multicast;
+        #    #ipv4 nlri-mpls;
+        #    #ipv4 mpls-vpn;
+        #    #ipv4 flow;
+        #    #ipv4 flow-vpn;
+        #    #ipv6 unicast;
+        #    #ipv6 flow;
+        #    #ipv6 flow-vpn;
+        #}
+
+        #static {
+        #               route 10.10.0.0/32 next-hop self;
+        #       route 10.100.0.0/32 next-hop self;
+        #}
+}
+EOF
+
+fi
+
+  done
+
+##
+
+elif [ "$1" = "--init-conf" ]; then
+  shift 1
+
+  mkdir -p "$(dirname "$EXABGP_CONF_FILENAME")"
+
+  shift_count=0
+  . "$0" --conf "$@" > "$EXABGP_CONF_FILENAME"
+  shift "${shift_count}"
+
+  echo "$0: init-conf: => shift_count=$shift_count" 1>&2
+
+  ##
+
+  mkfifo /run/exabgp.{in,out}
+  chmod 0666 /run/exabgp.{in,out}
+  id exabgp &>/dev/null && chown exabgp: /run/exabgp.{in,out}
+
+  ##
+
+  if [ -z "$FOD_SYSUSER" ]; then
+    if id fod &>/dev/null; then
+      FOD_SYSUSER="fod"
+    fi
+  fi
+
+  if [ "$1" = "--systemd" ]; then 
+   shift 1 
+   shift_count=$(( $shift_count + 1 ))
+
+   enable1=0
+   enable_type=""
+   if [ "$1" != "${1#--enable}" ]; then
+     enable1=1
+     enable_type="${1#--enable}"
+
+     shift 1
+     shift_count=$(( $shift_count + 1 ))
+   fi
+    
+   exabgp_systemd_servicename="exabgpForFod" # statically defined in ./exabgp/run-exabgp-generic
+
+cat > "/etc/systemd/system/$exabgp_systemd_servicename.service" <<EOF
+
+[Unit]
+Description=Firewall-On-Demand (FoD) exabgp (proxy helper)
+
+After=network.target auditd.service
+#Requires=
+
+#OnFailure=fod-status-email-user@%n.service
+
+[Service]
+
+#Type=forking
+Type=simple
+
+# TODO
+User=root 
+WorkingDirectory=$PWD
+#RuntimeDirectory=yourservice
+#RuntimeDirectoryMode=0755
+
+ExecStart=$PWD/exabgp/run-exabgp-generic --run0
+
+#PIDFile=/tmp/yourservice.pid
+
+StandardOutput=append:$PWD/log/exabgp-stdout.log
+StandardError=append:$PWD/log/exabgp-stderr.log
+
+#StandardOutput=syslog
+#StandardError=syslog
+#SyslogIdentifier=test1
+
+Restart=on-failure
+
+EOF
+
+  if [ "$enable1" = 1 ]; then
+
+      if [ "$enable_type" = ".min" || ! grep -q -E '^systemd$' /proc/1/comm; then 
+        #systemctl enable --no-reload "$exabgp_systemd_servicename"
+        #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
+        ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/
+      else
+        systemctl daemon-reload
+        systemctl enable "$exabgp_systemd_servicename"
+        systemctl restart "$exabgp_systemd_servicename"
+
+        sleep 5
+        SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
+        echo
+      fi
+
+   fi
+
+  elif [ "$1" = "--supervisord" ]; then
+    shift 1
+    shift_count=$(( $shift_count + 1 ))
+
+    echo "$0: adding supervisord config for exabgpForFod" 1>&2     
+
+    add_line1=
+    if [ "$1" = "--no-autostart" ]; then
+      shift 1
+      shift_count=$(( $shift_count + 1 ))
+      add_line1="autostart=false"
+    fi
+
+    user_line=
+    if [ -n "$FOD_SYSUSER" ]; then
+      user_line="user=$FOD_SYSUSER"
+    fi
+
+    # ./supervisord.conf
+    cat >>/etc/supervisord.conf <<EOF
+
+[program:exabgp]
+command=./exabgp/run-exabgp-generic --run0
+directory=$PWD
+$user_line
+$add_line1
+stdout_logfile=./log/exabgp-stdout.log        ; stdout log path, NONE for none; default AUTO
+stderr_logfile=./log/exabgp-stderr.log        ; stderr log path, NONE for none; default AUTO
+EOF
+
+  fi
+
+elif [ "$1" = "--run0" ]; then # assumes config already having been initialized
+  shift 1
+
+  if [ -f ./venv/bin/activate ]; then
+    . ./venv/bin/activate
+  fi
+
+  ##
+
+  mkfifo /run/exabgp.{in,out}
+  chmod 0666 /run/exabgp.{in,out}
+  id exabgp &>/dev/null && chown exabgp: /run/exabgp.{in,out}
+
+  ##
+
+  if [ "$1" = "--bg" ]; then
+    shift 1
+    nohup exabgp --debug "$EXABGP_CONF_FILENAME" "$@" > exbgp.log 1>&2 &
+  else
+    #/fod_vnet_router --mnexec h1 exabgp --debug /etc/exabgp/exabgp.conf
+    exec exabgp --debug "$EXABGP_CONF_FILENAME" "$@"
+  fi
+
+elif [ "$1" = "--init-conf-and-run" -o "$1" = "--run" ]; then
+  shift 1
+
+  shift_count=0
+  . "$0" --init-conf "$@"
+  shift "${shift_count}"
+  
+  echo "$0: init-conf-and-run: => shift_count=$shift_count" 1>&2
+
+  #
+
+  exec "$0" --run0 "$@"
+
+else 
+
+  exec "$0" --init-conf-and-run "$@" 
+
+fi
+

@@ -32,9 +32,9 @@ FROM ubuntu:18.04
 
 # 2. install all dependencies in advance 
 RUN apt-get -qqy update
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -qqy install mininet iptables iproute2 tcpdump tshark iputils-ping iputils-tracepath hping3 gawk sshpass lsof strace snmpd snmp
+RUN apt-get -qqy update && DEBIAN_FRONTEND="noninteractive" apt-get -qqy install mininet iptables iproute2 tcpdump tshark iputils-ping iputils-tracepath hping3 gawk sshpass lsof strace snmpd snmp
   
-RUN DEBIAN_FRONTEND="noninteractive" apt-get -qqy install netconfd yangcli socat openssh-server rsyslog
+RUN apt-get -qqy update && DEBIAN_FRONTEND="noninteractive" apt-get -qqy install netconfd yangcli socat openssh-server rsyslog
 
 # 3. copy yang config
 RUN mkdir -p /opt/dev

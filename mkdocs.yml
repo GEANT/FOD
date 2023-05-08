@@ -24,7 +24,11 @@ nav:
     - 'Configuration': 
         - 'v1.3': 'configuration/configuration-v1.3.md'
         - 'v1.7': 'configuration/configuration-v1.7.md'
+    - 'Administration and Usage': 
+        - 'Basic Administration and Usage (v1.7)': 'administration_and_usage/basic_administration_and_usage-v1.7.md'
     - 'API': 
         - 'v1.3': 'api/api-v1.3.md'
         - 'v1.7': 'api/api-v1.7.md'
+    - 'Development':
+        - 'Design Overview': 'development/design-overview.md'
 

@@ -1,0 +1,13 @@
+
+FROM freertr-containerlab
+
+RUN apt-get install -y -y netcat-openbsd less man vim
+
+COPY docker1/mycfg1-sw.txt /rtr/rtr-sw.txt
+
+COPY myethtool_disable_offload /root
+COPY docker1/run-freertr.sh /root/
+
+#CMD bash
+CMD /root/run-freertr.sh
+

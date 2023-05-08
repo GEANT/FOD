@@ -1,0 +1,92 @@
+#!/bin/bash
+
+docker_label__rtr1="rtr-flowspec1"
+
+# helper modes for netcat-based access to rtr cli immediate execution odf commands
+if [ "$1" = "--rcmd.raw" ]; then 
+  shift 1
+  rtr_ip="$1" 
+  shift 1
+  rtr_port="$1"
+  shift 1
+
+  #set -x
+
+  (echo -e "$@"; echo exit) | netcat "$rtr_ip" "$rtr_port" 
+
+elif [ "$1" = "--rcmd.inner" ]; then 
+  shift 1
+
+  "$0" --rcmd.raw "$@" | tr '\r' '\n' | cat -v 
+
+elif [ "$1" = "--rcmd.filtered" ]; then 
+  shift 1
+
+  "$0" --rcmd.inner "$@" | gawk '
+    $0 == "" { next; }
+
+    lr=="" && /^line ready/ { 
+      #print "line ok" > "/dev/stderr"; 
+      lr=1; next; 
+    } 
+    lr==1 { 
+      lr=2; prompt=$1; prompt2=substr(prompt, 1, length(prompt)-1); 
+      #print "prompt2=" prompt2 > "/dev/stderr"; 
+      on=1; next; 
+    } 
+
+    #on && $1==prompt { exit; } 
+    on && substr($1, 1, length(prompt2))==prompt2 { next; } 
+
+    /^see you later/ { next; }
+    #on { print "line: " $0; }
+    on { print $0; }
+  '
+
+#elif [ "$1" = "--conft" ]; then 
+#  shift 1
+#  rtr_ip="$1" 
+#  shift 1
+#  rtr_port="$1"
+#  shift 1
+#
+#  exec "$0" --rcmd.filtered "$rtr_ip" "$rtr_port" "conf t\n$*\nend\nexit"
+
+##
+
+# main run modes
+else 
+
+  dockerid_rtr1="$(docker ps | awk '$2==docker_label { print $1; }' docker_label="$docker_label__rtr1")"
+  #echo "$0: dockerid_rtr1=$dockerid_rtr1" 1>&2
+
+  if [ "$1" = "--rcmd" ]; then # telnet via netcat nicely filtered to freertr to attached inside network (but from outer host network namespace)
+    shift 1
+  
+    ip_address_rtr1="$(docker inspect "$dockerid_rtr1" | grep '"IPAddress":' | tr -d '":,' | awk 'NR==1 { print $2; }')"
+    echo "$0: ip_address_rtr1=$ip_address_rtr1" 1>&2
+ 
+    [ $# != 0 ] || set -- show running
+
+    exec "$0" --rcmd.filtered "$ip_address_rtr1" 23 "$@" 
+
+  elif [ "$1" = "--telnet1" ]; then # telnet to freertr to attached inside network (but from outer host network namespace)
+  
+    ip_address_rtr1="$(docker inspect "$dockerid_rtr1" | grep '"IPAddress":' | tr -d '":,' | awk 'NR==1 { print $2; }')"
+    echo "$0: ip_address_rtr1=$ip_address_rtr1" 1>&2
+  
+    exec telnet "$ip_address_rtr1" 23
+  
+  elif [ "$1" = "--telnet" ]; then # from inside the container run telnet to 2323 (freertr's tcp2vrf 23 -> 127.0.0.1 2323)
+  
+    exec docker exec -ti "$dockerid_rtr1" telnet 127.0.0.1 2323
+  
+  else # default run any cmd in container
+  
+    [ $# != 0 ] || set -- bash
+  
+    exec docker exec -ti "$dockerid_rtr1" "$@" 
+  
+  fi
+
+fi

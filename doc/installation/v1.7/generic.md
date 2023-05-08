@@ -1,6 +1,6 @@
-# Installing Flowspy v1.7 Generic
+# Installing FoD v1.7 Generic
 
-This guide provides general information about the installation of Flowspy. In case you use Debian/UBUNTU, we provide detailed instructions for the installation.
+This guide provides general information about the installation of FoD. In case you use Debian/UBUNTU, we provide detailed instructions for the installation.
 
 Also it assumes that installation is carried out in `/srv/flowspy`
 directory. If other directory is to be used, please change the
@@ -25,7 +25,7 @@ In order to install FoD properly, make sure the following software is installed 
 - pip
 - gcc
 
-### Download Flowspy
+### Download FoD
 You can clone FoD from GEANT github repository. 
 
     mkdir -p /srv/
@@ -39,7 +39,7 @@ You can clone FoD from GEANT github repository.
     . /srv/venv/bin/activate
 
 ### Pip
-In order to install the required python packages for Flowspy you can use pip:
+In order to install the required python packages for FoD you can use pip:
 
     . /srv/venv/bin/activate
     cd /srv/flowspy
@@ -57,7 +57,7 @@ If you are using mysql, you should create a database:
     cp urls.py.dist urls.py
 
 ### Device Configuration
-Flowspy generates and commits flowspec rules to a
+FoD generates and commits flowspec rules to a
 device via netconf. You have to create an account
 with rw access to flowspec and set these credentials
 in settings.py. See Configuration for details.

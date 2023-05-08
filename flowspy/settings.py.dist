@@ -51,6 +51,9 @@ SITE_ID = 1
 # Place a sequence of random chars here
 SECRET_KEY = '@sa@5234#$%345345^@#$%*()123^@12!&!()$JMNDF#$@(@#8FRNJWX_'
 
+#DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 ##############################################################################
 ##############################################################################
 # Set up database
@@ -189,7 +192,10 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 'django_settings_export.settings_export',
                 'django.contrib.messages.context_processors.messages'
-            ]
+            ],
+            'libraries': { # Adding this section should work around the issue.
+                'staticfiles' : 'django.templatetags.static',
+            }
         },
     },
 ]

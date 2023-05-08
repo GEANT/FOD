@@ -65,7 +65,7 @@ stderr_logfile=./log/celeryd-stderr.log        ; stderr log path, NONE for none;
 [program:gunicorn]
 #command=gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 1 -k gevent --limit-request-fields 10000 --timeout 30
 #command=./pythonenv gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 1 -k gevent --limit-request-fields 10000 --timeout 30
-command=./pythonenv gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 10 -k gevent --limit-request-fields 10000 --timeout 30
+command=./pythonenv gunicorn -b 0.0.0.0:8000 flowspy.wsgi -w 10 -k gevent --limit-request-fields 10000 --timeout 30 --graceful-timeout 25
 directory=/srv/flowspy
 user=fod
 stdout_logfile=./log/gunicorn-stdout.log        ; stdout log path, NONE for none; default AUTO

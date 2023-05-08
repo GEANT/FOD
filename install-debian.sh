@@ -7,15 +7,65 @@
 
 SCRIPT_NAME="install-debian.sh"
 
+#############################################################################
+#############################################################################
+
+# allow for easy clean-slate installation
+if [ "$1" = "--git-checkout" ]; then 
+  shift 1
+  gitrepo="$1" 
+  shift 1
+  git_branch="$1"
+  shift 1
+  git_checkout_dir="$1"
+  shift 1
+
+  [ -n "$gitrepo" ] || gitrepo="https://github.com/GEANT/FOD"
+
+  [ -n "$git_branch" ] || git_branch="python3"
+
+  echo "$0: git-checkout: gitrepo=$gitrepo git_branch="$git_branch" git_checkout_dir=$git_checkout_dir" 1>&2
+
+  ##
+
+  set -e
+  set -x
+
+  git_checkout_dir_parentdir="$(dirname "$git_checkout_dir")"
+  mkdir -p "$git_checkout_dir_parentdir"
+
+  git clone "$gitrepo" "$git_checkout_dir"
+
+  cd "$git_checkout_dir"
+
+  git checkout "refs/remotes/origin/$git_branch"
+  git checkout -b "$git_branch"
+
+  exec "./$SCRIPT_NAME" "$@" 
+
+fi
+
+#############################################################################
+#############################################################################
+
 fod_dir="/srv/flowspy"
 venv_dir="/srv/venv"
 
+FOD_SYSUSER="fod"
+
 inside_docker=0
 
-install_basesw=1
-install_fodproper=1
+install_default_used=1
+#install_basesw_os=1
+install_basesw_os=0
+#install_basesw_python=1
+install_basesw_python=0
+#install_basesw_python=1
+install_fodproper=0
 
+install_with_supervisord=0
 install_systemd_services=0
+install_systemd_services__onlyinstall=0
 ensure_installed_pythonenv_wrapper=1
 
 install_mta=""
@@ -31,6 +81,42 @@ conf_db_access=""
 DB__FOD_DBNAME=""
 DB__FOD_USER=""
 DB__FOD_PASSWORD=""
+
+#
+
+setup_adminuser=0
+setup_adminuser__username="admin"
+setup_adminuser__pwd="admin"
+#setup_adminuser__email="admin@localhost"
+setup_adminuser__peer_name="testpeer"
+setup_adminuser__peer_ip_prefix1="0.0.0.0/0"
+
+#
+
+setup_netconf=0
+
+setup_netconf__device=
+setup_netconf__port=830
+setup_netconf__user="netconf"
+setup_netconf__pass="netconf"
+
+#
+
+setup_exabgp=0
+setup_exabgp_full=0
+
+setup_exabgp__nodeid=1.1.1.1
+setup_exabgp__ip_addr=127.0.0.1
+setup_exabgp__asnr=1234
+setup_exabgp__peer_nodeid=2.2.2.2
+setup_exabgp__peer_ip_addr=127.0.0.2
+setup_exabgp__peer_asnr=2345
+
+#
+
+ifc_setup__name=""
+ifc_setup__ip_addr_and_subnetmask=""
+ifc_setup__wait_for_ifc__in_runfod=0
 
 ##############################################################################
 ##############################################################################
@@ -110,6 +196,8 @@ function debug_python_deps()
   echo "# Python version: " 1>&2  
   python --version
 
+  ls -l log/ 1>&2
+
   echo 1>&2
   echo "# Python dependencies: " 1>&2  
   pip list
@@ -130,9 +218,12 @@ fi
 if grep -q -E '^systemd$' /proc/1/comm; then 
   echo "system is running systemd as init process, setting default install_systemd_services=1" 1>&2
   install_systemd_services=1
+  install_systemd_services__onlyinstall=0
 elif [ "$inside_docker" = 1 ]; then 
   echo "inside_docker=$inside_docker, so setting default install_systemd_services=0" 1>&2
   install_systemd_services=0
+  install_systemd_services__onlyinstall=1
+  #install_with_supervisord=1
 fi
 
 ##############################################################################
@@ -160,19 +251,55 @@ while [ $# -gt 0 ]; do
     shift 1
   elif [ $# -ge 1 -a "$1" = "--both" ]; then
     shift 1
-    install_basesw=1
+    install_default_used=0
+
+    install_basesw_os=1
+    install_basesw_python=1
     install_fodproper=1
   elif [ $# -ge 1 -a "$1" = "--basesw" ]; then 
     shift 1
-    install_basesw=1
-    install_fodproper=0
+    install_default_used=0
+
+    install_basesw_os=1
+    install_basesw_python=1
+    #install_fodproper=0
+  elif [ $# -ge 1 -a "$1" = "--basesw_os" ]; then 
+    shift 1
+    install_default_used=0
+
+    install_basesw_os=1
+    #install_basesw_python=0
+    #install_fodproper=0
+  elif [ $# -ge 1 -a "$1" = "--basesw_python" ]; then 
+    shift 1
+    install_default_used=0
+
+    #install_basesw_os=0
+    install_basesw_python=1
+    #install_fodproper=0
   elif [ $# -ge 1 -a "$1" = "--fodproper" ]; then
     shift 1
-    install_basesw=0
+    install_default_used=0
+
+    #install_basesw_os=0
+    install_basesw_python=1
     install_fodproper=1
+  elif [ $# -ge 1 -a \( "$1" = "--supervisor" -o "$1" = "--supervisord" \) ]; then
+    shift 1
+    install_with_supervisord=1
+    install_systemd_services=0
+  elif [ $# -ge 1 -a \( "$1" = "--no_supervisor" -o "$1" = "--no_supervisord" \) ]; then
+    shift 1
+    install_with_supervisord=0
   elif [ $# -ge 1 -a "$1" = "--systemd" ]; then
     shift 1
     install_systemd_services=1
+  elif [ $# -ge 1 -a "$1" = "--systemd_only_install" ]; then
+    shift 1
+    install_systemd_services__onlyinstall=1
+  elif [ $# -ge 1 -a "$1" = "--systemd_check_start" ]; then
+    shift 1
+    install_systemd_services__onlyinstall=0
   elif [ $# -ge 1 -a "$1" = "--no_systemd" ]; then
     shift 1
     install_systemd_services=0
@@ -211,6 +338,66 @@ while [ $# -gt 0 ]; do
     DB__FOD_DBNAME="fod"
     DB__FOD_USER="fod"
     DB__FOD_PASSWORD="$(get_random_password)"
+  elif [ $# -ge 1 -a "$1" = "--setup_admin_user" ]; then
+    shift 1
+     setup_adminuser=1
+  elif [ $# -ge 1 -a "$1" = "--setup_admin_user5" ]; then
+    shift 1
+    setup_adminuser=1
+    setup_adminuser__username="$1"
+    shift 1 
+    setup_adminuser__pwd="$1"
+    shift 1 
+    setup_adminuser__email="$1"
+    shift 1 
+    setup_adminuser__peer_name="$1"
+    shift 1 
+    setup_adminuser__peer_ip_prefix1="$1"
+    shift 1 
+  elif [ $# -ge 1 -a "$1" = "--netconf" ]; then 
+    shift 1
+    setup_netconf=1
+    setup_netconf__device="$1" 
+    shift 1
+    setup_netconf__port="$1"
+    shift 1
+    setup_netconf__user="$1"
+    shift 1
+    setup_netconf__pass="$1"
+    shift 1
+  elif [ $# -ge 1 -a "$1" = "--exabgp0" ]; then 
+    shift 1
+    setup_exabgp=1
+    shift 1
+    setup_exabgp_full=0
+  elif [ $# -ge 1 -a "$1" = "--exabgp" ]; then # currently 6 params follow
+    shift 1
+    setup_exabgp=1
+    setup_exabgp_full=1
+
+    setup_exabgp__nodeid="$1"
+    shift 1
+    setup_exabgp__ip_addr="$1"
+    shift 1
+    setup_exabgp__asnr="$1"
+    shift 1
+    setup_exabgp__peer_nodeid="$1"
+    shift 1
+    setup_exabgp__peer_ip_addr="$1"
+    shift 1
+    setup_exabgp__peer_asnr="$1"
+    shift 1
+  elif [ $# -ge 1 -a "$1" = "--ip-addr-set" ]; then # for easy support for of extra veth-pair end point init in containers for containerlab 
+    shift 1
+    ifc_setup__name="$1"
+    shift 1
+    ifc_setup__ip_addr_and_subnetmask="$1"
+    shift 1
+    ifc_setup__wait_for_ifc__in_runfod="$1"
+    shift 1
+    echo "$0: init of interface $ifc_setup__name with ip_addr_and_subnetmask=$ifc_setup__ip_addr_and_subnetmask" 1>&2
+    ifconfig "$ifc_setup__name" "$ifc_setup__ip_addr_and_subnetmask" 
+    ifconfig "$ifc_setup__name" 1>&2
   else
     break
   fi
@@ -227,7 +414,19 @@ fi
 echo "conf_db_access=$conf_db_access DB_NAME=$DB__FOD_DBNAME DB_USER=$DB__FOD_USER DB_PASSWORD=$DB__FOD_PASSWORD" 1>&2
 
 ##
-  
+
+if [ "$install_default_used" = 1 ]; then
+  install_basesw_os=1
+  install_basesw_python=1
+  install_fodproper=1
+fi
+
+echo "$0: install_default_used=$install_default_used ; install_basesw_os=$install_basesw_os install_basesw_python=$install_basesw_python install_fodproper=$install_fodproper" 1>&2
+
+[ -n "$setup_adminuser__email" ] || setup_adminuser__email="$setup_adminuser__username@localhost"
+
+##
+
 venv_dir_base="$(dirname "$venv_dir")"
 
 static_dir="$fod_dir/static"
@@ -248,7 +447,7 @@ echo "$0: inst_dir=$inst_dir fod_dir=$fod_dir => inst_dir_is_fod_dir=$inst_dir_i
 #############################################################################
 #############################################################################
 
-if [ "$install_basesw" = 1 ]; then
+if [ "$install_basesw_os" = 1 ]; then
 
   echo "$0: step 1: installing base software dependencies (OS packages)" 1>&2
 
@@ -328,6 +527,14 @@ fi
 
 ##
 
+if [ "$install_systemd_services" = 0 -a "$install_with_supervisord" = 1 ]; then
+  echo "trying to install supervisord" 1>&2
+  apt-get -qqy update
+  apt-get -y install supervisor
+fi
+
+##
+
 echo "$0: step 1a: handling sqlite3 too old fixup post actions" 1>&2 # only needed for CENTOS
 
 echo "$0: step 1b: preparing database system" 1>&2
@@ -369,7 +576,7 @@ fi
 #############################################################################
 #############################################################################
 
-if [ "$install_fodproper" = 0 ]; then
+if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
   
   echo "$0: step 2a: installing Python dependencies only" 1>&2
 
@@ -402,7 +609,7 @@ if [ "$install_fodproper" = 0 ]; then
 
   echo "$0: step 2a done" 1>&2
 
-else
+elif [ "$install_fodproper" = 1 ]; then
 
   echo "$0: step 2: installing FoD in installation dir + ensuring Python dependencies are installed + setting-up FoD settings, database preparations, and FoD run-time environment" 1>&2
 
@@ -410,8 +617,7 @@ else
   
   echo "$0: step 2.0" 1>&2
   
-  id fod &>/dev/null || useradd -m fod  
-
+  id "$FOD_SYSUSER" &>/dev/null || useradd -m "$FOD_SYSUSER"
 
   #mkdir -p /var/log/fod /srv
   mkdir -p /var/log/fod "$venv_dir_base"
@@ -465,8 +671,9 @@ else
 
   fi
 
-   #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
-   find "$fod_dir/" -not -user fod -exec chown fod: {} \;
+  echo "$0: step 2.1a: fixing permissions" 1>&2
+  #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
+  find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
 
  ###
 
@@ -510,7 +717,7 @@ else
   
   echo "$0: step 2.3: ensuring Python dependencies are installed" 1>&2
 
-  if [ "$install_basesw" = 1 ]; then #are we running in --both mode, i.e. for the venv init is run for the first time, i.e. the problematic package having issues with to new setuptools is not yet installed?
+  if [ "$install_basesw_python" = 1 ]; then #are we running in --both mode, i.e. for the venv init is run for the first time, i.e. the problematic package having issues with to new setuptools is not yet installed?
     # fix for broken anyjson and cl
     # TODO: fix this more cleanly
     pip install 'setuptools==57.5.0'
@@ -525,7 +732,9 @@ else
 
   mkdir -p "$fod_dir/log" "$fod_dir/logs"
   touch "$fod_dir/debug.log"
-  chown -R fod: "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log"
+  chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log"
+  
+  ##
 
   if [ "$try_install_docu" = 1 ]; then
     echo "$0: step 2.3.2: compiling internal docu" 1>&2
@@ -533,7 +742,8 @@ else
     (
       set -e
       which mkdocs 2>/dev/null >/dev/null || apt-get install -y mkdocs
-      cd "$fod_dir" && mkdocs build
+      cd "$fod_dir" && mkdocs build # ./mkdocs.yml
+      find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
       true # in case of failure override failure status, as the documentation is non-essential
     )
   fi
@@ -548,11 +758,16 @@ else
   mkdir -p "$static_dir"
 
   (
-    [ ! -f "fodenv.sh" ] || source "./fodenv.sh"; 
+    set -e
+
+    [ ! -f "fodenv.sh" ] || source "./fodenv.sh" 
     
     source "$venv_dir/bin/activate"
 
-    ./manage.py collectstatic --noinput || debug_python_deps "$venv_dir/bin/activate" 1
+    cd "$fod_dir"
+
+    ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
+    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
   )
 
   ##
@@ -575,9 +790,13 @@ else
 
   echo "deploying/updating database schema" 1>&2
   (
+    set -e
+
     [ ! -f "fodenv.sh" ] || source "./fodenv.sh"
 
     source "$venv_dir/bin/activate"
+
+    cd "$fod_dir"
 
     #./manage.py syncdb --noinput
 
@@ -588,9 +807,25 @@ else
 
   ##
 
+  if [ "$setup_adminuser" = 1 ]; then
+    echo "$0: step 2.4.2.1: setup admin start user" 1>&2
+
+    # ./inst/helpers/init_setup_params.sh
+   
+    (
+      set +e # for now ignore potential errors, especially in case user already exists
+      source ./venv/bin/activate
+      echo "from flowspec.init_setup import init_admin_user; init_admin_user('$setup_adminuser__username', '$setup_adminuser__pwd', '$setup_adminuser__email', '$setup_adminuser__peer_name', '$setup_adminuser__peer_ip_prefix1')" | DJANGO_SETTINGS_MODULE="flowspy.settings" ./manage.py shell
+      true
+    )
+ 
+  fi
+
+  ##
+
   # ./manage.py above may have created debug.log with root permissions:
-  chown -R fod: "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log" 
-  [ ! -d "/var/log/fod" ] || chown -R fod: "/var/log/fod"
+  chown -R "$FOD_SYSUSER:" "$fod_dir/log" "$fod_dir/logs" "$fod_dir/debug.log" 
+  [ ! -d "/var/log/fod" ] || chown -R "$FOD_SYSUSER:" "/var/log/fod"
 
   #
   echo "$0: step 2.5: preparing FoD run-time environment" 1>&2
@@ -598,7 +833,7 @@ else
   echo "$0: step 2.5.1: preparing necessary dirs" 1>&2
 
   mkdir -p /var/run/fod
-  chown fod: /var/run/fod 
+  chown "$FOD_SYSUSER:" /var/run/fod 
 
   ##
 
@@ -617,8 +852,34 @@ EOF
   fi
 
   ##
+  
+  if [ "$setup_netconf" = 1 ]; then
+    echo "$0: setting up NETCONF fod conf" 1>&2
+    
+    (
+      echo -e '\n#added by install-*.sh:' 
+      echo "PROXY_CLASS=\"proxy_netconf_junos\"" 
+      echo "NETCONF_DEVICE=\"$setup_netconf__device\""
+      echo "NETCONF_PORT=\"$setup_netconf__port\""
+      echo "NETCONF_USER=\"$setup_netconf__user\""
+      echo "NETCONF_PASS=\"$setup_netconf__pass\""
+    ) >> flowspy/settings_local.py
 
-  echo "$0: step 2.5.3: preparing supervisord.conf" 1>&2
+  fi
+
+  ##
+  
+  if [ "$setup_exabgp" = 1 ]; then
+    echo "$0: setting up exabgp fod conf" 1>&2
+
+    echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
+  fi
+
+  ##
+ 
+  echo "$0: step 2.5.5: preparing systemd/supervisord files" 1>&2
+
+  echo "$0: step 2.5.5.1: preparing supervisord.conf templates" 1>&2
 
   cp -f "$fod_dir/supervisord.conf.dist" "$fod_dir/supervisord.conf"
   sed -i "s#/srv/flowspy#$fod_dir#" "$fod_dir/supervisord.conf"
@@ -626,8 +887,7 @@ EOF
 
   ##
 
-  
-  echo "$0: step 2.5.5: preparing systemd files" 1>&2
+  echo "$0: step 2.5.5.2: installing systemd/supervisord files" 1>&2
 
   fod_systemd_dir="$fod_dir/systemd"
   cp -f "$fod_systemd_dir/fod-gunicorn.service.dist" "$fod_systemd_dir/fod-gunicorn.service"
@@ -641,27 +901,141 @@ EOF
 
   if [ "$install_systemd_services" = 1 ]; then
     echo 1>&2
-    echo "Installing systemd services" 1>&2
+    echo "$0: installing systemd services" 1>&2
     echo 1>&2
     #cp -f "$fod_systemd_dir/fod-gunicorn.service" "$fod_systemd_dir/fod-celeryd.service" "/etc/systemd/system/"
     cp -v -f "$fod_systemd_dir/fod-gunicorn.service" "$fod_systemd_dir/fod-celeryd.service" "$fod_systemd_dir/fod-status-email-user@.service" "/etc/systemd/system/" 1>&2
-    systemctl daemon-reload
 
-    systemctl enable fod-gunicorn
-    systemctl enable fod-celeryd
 
-    systemctl restart fod-gunicorn
-    systemctl restart fod-celeryd
+    if [ "$install_systemd_services__onlyinstall" = 1 ]; then
+      #systemctl enable --machine --no-reload fod-gunicorn
+      #systemctl enable --machine --no-reload fod-celeryd
+      ln -s -f -v "/usr/lib/systemd/system/fod-gunicorn.service" /etc/systemd/system/multi-user.target.wants/
+      ln -s -f -v "/usr/lib/systemd/system/fod-celeryd.service" /etc/systemd/system/multi-user.target.wants/
+    else
+      systemctl daemon-reload
 
-    sleep 5
-    SYSTEMD_COLORS=1 systemctl status fod-gunicorn | cat
-    echo
-    SYSTEMD_COLORS=1 systemctl status fod-celeryd | cat
-    echo
+      systemctl enable fod-gunicorn
+      systemctl enable fod-celeryd
+
+      systemctl restart fod-gunicorn
+      systemctl restart fod-celeryd
+
+      sleep 5
+      SYSTEMD_COLORS=1 systemctl status fod-gunicorn | cat
+      echo
+      SYSTEMD_COLORS=1 systemctl status fod-celeryd | cat
+      echo
+    fi
+  
+    FOD_RUNMODE="via_systemd" 
+  
+  elif [ "$install_with_supervisord" = 1 ]; then
+    echo 1>&2
+    echo "$0: installing supervisord conf" 1>&2
+    echo 1>&2
+
+    # supervisord.conf
+    if [ -f supervisord.conf.prep ]; then
+      echo "$0: using supervisord.conf.prep" 1>&2
+      cp -f supervisord.conf.prep /etc/supervisord.conf
+    else
+      echo "$0: using supervisord.conf" 1>&2
+      cp -f supervisord.conf /etc/supervisord.conf
+    fi
+    touch /etc/.supervisord.conf.fodready
+  
+    FOD_RUNMODE="via_supervisord" 
+
+  else
+
+    FOD_RUNMODE="fg" 
 
   fi
 
+  ##
+
+  echo "$0: step 2.5.6: writing ./runfod.conf" 1>&2
+  (
+    echo "FOD_RUNMODE=\"$FOD_RUNMODE\"" 
+    echo "USE_EXABGP=\"$setup_exabgp\""
+    if [ -n "$ifc_setup__name" ]; then
+      echo "ifc_setup__name=\"$ifc_setup__name\""
+      echo "ifc_setup__ip_addr_and_subnetmask=\"$ifc_setup__ip_addr_and_subnetmask\""
+      echo "ifc_setup__wait_for_ifc__in_runfod=\"$ifc_setup__wait_for_ifc__in_runfod\""
+    fi
+  ) > "./runfod.conf"
+
+  ##
+
+  if [ "$setup_exabgp" = 1 ]; then
+    
+    echo "$0: step 2.5.7: preparing systemd/supervisord files" 1>&2
+
+    echo "$0: setting up exabgp" 1>&2
+
+    add1=()
+    if [ "$install_systemd_services" = 1 ]; then
+      if [ "$install_systemd_services__onlyinstall" = 1 -a "$setup_exabgp_full" = 1 ]; then
+        add1=("--systemd" "--enable.min")
+      elif [ "$install_systemd_services__onlyinstall" = 0 -a "$setup_exabgp_full" = 1 ]; then
+        add1=("--systemd" "--enable")
+      else
+        add1=("--systemd")
+      fi
+    elif [ "$install_with_supervisord" = 1 ]; then
+      if [ "$setup_exabgp_full" = 1 ]; then
+        add1=("--supervisord")
+      else
+        add1=("--supervisord" "--no-autostart")
+      fi
+    fi
+
+    exabgp_systemd_servicename="exabgpForFod" # statically defined in ./exabgp/run-exabgp-generic
+
+    # ./exabgp/run-exabgp-generic
+    FOD_SYSUSER="$FOD_SYSUSER" "$fod_dir/exabgp/run-exabgp-generic" --init-conf \
+            "$setup_exabgp__nodeid" "$setup_exabgp__ip_addr" "$setup_exabgp__asnr" \
+            "$setup_exabgp__peer_nodeid" "$setup_exabgp__peer_ip_addr" "$setup_exabgp__peer_asnr" \
+            -- "${add1[@]}"
+    # ./flowspy/settings.py
+    #echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
+
+    if [ "$install_systemd_services" = 1 ]; then # TODO support supervisord as well
+      #echo "$0: installing systemd service file for exabgpForFod" 1>&2     
+
+      #if [ "$setup_exabgp_full" = 0 ]; then
+      #  :
+
+      #elif [ "$install_systemd_services__onlyinstall" = 1 ]; then
+      #  #systemctl enable --no-reload "$exabgp_systemd_servicename"
+      #  #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
+      #  ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/
+      #else
+      #  systemctl daemon-reload
+      #  systemctl enable "$exabgp_systemd_servicename"
+      #  systemctl restart "$exabgp_systemd_servicename"
+
+      #  sleep 5
+      #  SYSTEMD_COLORS=1 systemctl status "$exabgp_systemd_servicename" | cat
+      #  echo
+      #fi
+      :
+
+    elif [ "$install_with_supervisord" = 1 ]; then
+      #echo "$0: adding supervisord config for exabgpForFod" 1>&2          
+      :
+
+    fi
+ 
+  fi
+
   )
+  
+  if [ "$inst_dir_is_fod_dir" = 1 ]; then
+    echo "$0: step 2.9: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
+    find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
+  fi
   
   echo "$0: step 2 done" 1>&2
 

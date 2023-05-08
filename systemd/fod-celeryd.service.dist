@@ -17,9 +17,9 @@ WorkingDirectory=/srv/flowspy
 #RuntimeDirectory=yourservice
 #RuntimeDirectoryMode=0755
 
-ExecStartPre=-/bin/mkdir /var/run/fod/
+ExecStartPre=-/bin/mkdir -p /var/run/fod/
 ExecStartPre=-/bin/chown fod: /var/run/fod/
-ExecStartPre=-/bin/rmdir /var/run/fod/snmppoll.lock
+ExecStartPre=-/bin/rm -f -r /var/run/fod/snmppoll.lock
 ExecStartPre=-/bin/rm -f /srv/flowspy/snmp_temp_data.lock
 #ExecStart=/srv/flowspy/pythonenv celery -A flowspy worker -B --concurrency=2 -l debug -f /srv/flowspy/log/celery.log
 ExecStart=/srv/flowspy/pythonenv celery -A flowspy worker -B --concurrency=2 -l info -f /srv/flowspy/log/celery.log

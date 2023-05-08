@@ -1,0 +1,111 @@
+
+# doc: to build+run: docker build -f Dockerfile.fod.centos -t fod.centos . && docker run -ti fod.centos
+
+#############################################################################
+#############################################################################
+
+FROM centos:7
+
+#############################################################################
+
+ENV LC_ALL en_US.utf8
+
+RUN yum -y install procps # somehow needed for centos repo installation in ./install-centos.sh
+
+#############################################################################
+
+# uncomment, for running under systemd
+#RUN apt-get update -y -y && centos_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd 
+
+#############################################################################
+
+# typically useful tools for investigation
+#RUN apt-get update -y -y && centos_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 
+
+#############################################################################
+#############################################################################
+# fod installation: can be split into 3 parts: os dependencies; virtualenv+pip dependencies; fod proper installation/setup
+# exploiting docker build cache to redo only what is necessary on rebuilding of the container:
+# 1) os dependencies is time and network-bandwidth consuming; normally, not to be redone quite often (os deps for FoD normally do not change, only to be redone for updating to the lates updates); will be auto redone on rebuild only if install*.sh changed
+# 2) pip dependencies is still somewhat time consuming; will be auto redone on rebuild only if either install*.sh or requirements*.txt* changed
+# 3) for proper installation/setup, relatively fast; will be auto redone on rebuild if anything in the FoD dir, e.g. code, changed 
+
+WORKDIR /srv/flowspy
+
+#############################################################################
+#############################################################################
+# fod installation in a single step: (either using systemd or supervisord)
+
+#COPY . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
+#RUN ./install-centos.sh --both --here --systemd --systemd_only_install
+#RUN ./install-centos.sh --both --here --supervisord
+
+#############################################################################
+#############################################################################
+# fod installation in 2 steps: (either using systemd or supervisord)
+
+#COPY install-*.sh requirement*.txt* /srv/flowspy/
+#RUN ./install-centos.sh --basesw --here --systemd --systemd_only_install
+#RUN ./install-centos.sh --basesw --here --supervisord
+
+#COPY . /srv/flowspy
+#RUN rm -rf /srv/flowspy/venv
+#RUN ./install-centos.sh --both --here --systemd --systemd_only_install
+#RUN ./install-centos.sh --both --here --supervisord
+
+#############################################################################
+#############################################################################
+
+###############################
+# fod installation step1
+
+# only install os deps (for quicker rebuilding by exploiting the docker cache for this step1):
+COPY install-*.sh /srv/flowspy/
+#RUN ./install-centos.sh --basesw_os --here --systemd --systemd_only_install
+RUN ./install-centos.sh --basesw_os --here --supervisord 
+
+###############################
+# fod installation step2
+
+# only install virtualenv+pip/python deps (for quicker rebuilding by exploiting the docker cache for this step1):
+COPY requirement*.txt* /srv/flowspy/
+#RUN ./install-centos.sh --basesw_python --here --systemd --systemd_only_install
+RUN ./install-centos.sh --basesw_python --here --supervisord 
+
+###############################
+# fod installation step3
+
+# handle /srv/flowspy/venv, having been already initialized above
+RUN mv /srv/flowspy/venv /srv/flowspy/venv.saved
+COPY . /srv/flowspy
+RUN rm -rf /srv/flowspy/venv
+RUN mv /srv/flowspy/venv.saved /srv/flowspy/venv
+
+# to be sure, try again to install newest deps, i.e., use --both instead of just --fodproper:
+#RUN ./install-centos.sh --fodproper --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.10 2001
+#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+#RUN ./install-centos.sh --both --here --systemd --systemd_only_install --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 # --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+RUN ./install-centos.sh --both --here --supervisord # for later setup of admin user and NETCONF parameters via /setup URL
+#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --netconf 172.17.0.3 830 netconf netconf
+#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --exabgp 172.17.0.2 172.17.0.2 1001 172.17.0.3 172.17.0.3 3001
+
+###############################
+
+# potential standalone re-setup of exabgp later (e.g., to exploit docker build cache for the actual installation step(s) above)
+#RUN cd /opt/FOD/ && ./exabgp/run-exabgp-generic --init-conf 10.3.10.3 10.3.10.3 1001 10.3.10.10 10.3.10.12 3001 -- --systemd
+
+#############################################################################
+#############################################################################
+# running fod
+
+EXPOSE 8000
+
+# if running under systemd
+#CMD [ "/sbin/init" ]
+
+CMD [ "/srv/flowspy/runfod.sh" ]
+
+#############################################################################
+#############################################################################
+
