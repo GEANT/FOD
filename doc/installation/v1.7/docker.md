@@ -10,16 +10,16 @@ Docker must be installed on your target OS; the installation of Docker is outsid
 
 Docker images require disk space on the host OS; approximately 2 GB for Flowspy and approximately 200 MB for CentOS 7 which is the default OS used.
 
-Although the default `Dockerfile` = `Dockerfile.fod.debian` is for Debian, Dockerfile.fod.centos.new for CENTOS 7, and Dockerfile.fod.centos.old left for compatibility,
+Although the default `Dockerfile` = `Dockerfile.fod.debian` is for Debian, `Dockerfile.fod.centos.new` for CENTOS 7, and `Dockerfile.fod.centos.old` left for compatibility,
 several older Dockerfiles for both Debian and CentOS and can be found in the `Dockerfiles.d` directory. These are meant **for testing only** and are _not_ production-ready.
 
 The containers run `gunicorn`, `celeryd` and Redis - and use a SQLite database (`/srv/flowspy/example-data`) to hold resources. They also make a web server available on port 8000.
 
 # Building the Flowspy container
 
-First build your Flowspy container. The default (`Dockerfile` = `Dockerfile.fod.debian`) is a container which uses Debian and `supervisord`, but there are other options; Dockerfile.fod.centos.\* uses CENTOS 7, Dockerfile.fod.centos.new with `supervisord`, Dockerfile.fod.centos.old is left for compatibility without `supervisord`.
-Dockerfile.fod.debian and Dockerfile.fod.centos.new by default will split the installation of FoD during container build into 3 phases (OS dependencies, python/pip dependencies, FoD proper installation) to exploit Docker build cache for faster rebuilding.
-Moreover Dockerfile.fod.debian and Dockerfile.fod.centos.new can be edited for uncommenting/commenting to switch more options: e.g., use 'systemd' instead of 'supervisord' or not splitting the FoD installation into 3 phases 
+First build your Flowspy container. The default (`Dockerfile` = `Dockerfile.fod.debian`) is a container which uses Debian and `supervisord`, but there are other options; `Dockerfile.fod.centos.\*` uses CENTOS 7, `Dockerfile.fod.centos.new` with `supervisord`, `Dockerfile.fod.centos.old` is left for compatibility without `supervisord`.
+`Dockerfile.fod.debian` and `Dockerfile.fod.centos.new` by default will split the installation of FoD during container build into 3 phases (OS dependencies, python/pip dependencies, FoD proper installation) to exploit Docker build cache for faster rebuilding.
+Moreover, `Dockerfile.fod.debian` and `Dockerfile.fod.centos.new` can be edited for uncommenting/commenting to switch more options: e.g., use `systemd` instead of `supervisord` or not splitting the FoD installation into 3 phases 
 (first docker build will be a bit faster and the docker container building is more efficient, as the number of docker image layers is reduced, but subsequent build after some changes in code or settings will require nearly the same amount of time as the first build)
 
 > Although the examples below use CentOS, just replace `Dockerfile.centos.new` with `Dockerfile.debian` if you wish to use Debian instead.
@@ -118,8 +118,11 @@ You can now access the Flowspy web server using your new credentials.
 As a new alternative, admin user name/password and NETCONF parameters can be specified in the Dockerfile.fod.debian or Dockerfile.fod.centos.new:
 
 Comment the line
-\RUN ./install-centos.sh --both --here --supervisord
+
+RUN ./install-centos.sh --both --here --supervisord
+
 and as replacement uncomment the line
+
 \#RUN ./install-centos.sh --both --here --supervisord --setup_admin_user --setup_admin_user5 admin adminpwd admin@localhost.local testpeer 0.0.0.0/0 --netconf 172.17.0.3 830 netconf netconf
 (In case of Dockerfile.fod.debian ./install-centos.sh is replaced by ./install-debian.sh)
 
