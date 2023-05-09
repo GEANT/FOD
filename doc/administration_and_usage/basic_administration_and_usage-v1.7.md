@@ -34,6 +34,10 @@ in FoD installation dir (default: /srv/flowspy): ./pythonenv ./manage.py changep
 
 restart FoD: 'systemctl restart fod-gunicorn; systemctl restart fod-celeryd' (if installed and running with Systemd support)
 
+or alternatively
+
+C) already having been set by install-\*.sh parameters (check [Debian/Ubuntu Installation](../installation/v1.7/debian_ubuntu.md) or [CENTOS 7 Installation](../installation/v1.7/centos.md) )
+
 ### 1 (Docker): Setup NETCONF + FoD admin user (FoD running in a Docker container)
 
 admin user password and NETCONF connection has to be setup, 
