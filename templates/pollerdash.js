@@ -49,7 +49,7 @@ jQuery.fn.enable = function(opt_enable) {
     return this;
 };
 
-
+var poller_dash_use_reload; 
 var dataTableUpdate_lock = false;
 function reloadDataTable(cause) {
 
@@ -59,16 +59,22 @@ function reloadDataTable(cause) {
     dataTableUpdate_lock = true
 
     try {
-      console.log("DataTable reload triggered after new rule update messages");
+      //console.log("DataTable reload triggered after new rule update messages");
+      console.log("DataTable reload triggered after new rule update messages (poller_dash_use_reload="+poller_dash_use_reload+")");
 
-     if ($('#routes_table').DataTable().ajax!=undefined) {
+    if (poller_dash_use_reload!=undefined && poller_dash_use_reload) {
+       window.location.reload(false); 	
+    } else if ($('#routes_table').DataTable().ajax!=undefined) {
+       console.log("DataTable.ajax defined");
        //oTable.fnReloadAjax(refreshUrl);
        //console.log("oTable="+oTable);
        //console.log("ajax2="+$('#routes_table').DataTable().ajax);
        $('#routes_table').DataTable().ajax.reload();
      } else {
        console.log("DataTable.ajax is undefined");
-       //oTable.fnReloadAjax(refreshUrl);
+       if (oTable!=undefined) {
+         oTable.fnReloadAjax(refreshUrl);
+       }
        window.location.reload(false); 	
      }
 

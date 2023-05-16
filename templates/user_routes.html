@@ -91,6 +91,9 @@
 
     {% if user.is_authenticated %}
 
+<script type="text/javascript">
+        $.poller_dash_use_reload = false;
+</script>
 <script type="text/javascript" src="{% url 'load-js' 'pollerdash' %}"></script>
 {% endif %}
 
