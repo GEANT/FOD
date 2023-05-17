@@ -1,0 +1,50 @@
+version: "3"
+services:
+  fod:
+    build:
+        context: .
+        dockerfile: docker-compose/Dockerfile_FOD
+    container_name: fod
+    privileged: true
+    expose:
+        - "8000"
+    ports:
+        - "0.0.0.0:8000:8000"
+    env_file:
+        - ./docker-compose/.env_fod
+    networks:
+      fod:
+        ipv4_address: 10.197.36.2
+    volumes:
+        - ./:/opt/FOD
+
+  freertr:
+    build:
+        context: docker-compose
+        dockerfile: Dockerfile_FREERTR
+    container_name: freertr
+    privileged: true
+    expose:
+        - "23"
+    ports:
+        - "127.0.0.1:2323:2323"
+    env_file:
+        - ./docker-compose/.env_freertr
+    networks:
+      fod:
+        ipv4_address: 10.197.36.3
+    depends_on:
+        - fod
+    volumes:
+        - freertr:/opt
+
+networks:
+  fod:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.197.36.0/28
+
+volumes:
+  freertr:

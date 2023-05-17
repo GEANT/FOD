@@ -1,0 +1,29 @@
+FROM debian:sid
+LABEL maintainer="FOD"
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install -y locales wget netcat-openbsd less man vim
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
+ENV LANG en_US.UTF-8
+
+WORKDIR /opt
+RUN wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/install-deps.sh -O install-deps.sh && \
+    wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/install-rtr.sh -O install-rtr.sh && \
+    wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/install-clean.sh -O install-clean.sh && \
+    chmod +x /opt/*
+
+RUN ./install-deps.sh
+RUN ./install-rtr.sh
+RUN ./install-clean.sh
+
+RUN mkdir -p /rtr && \
+    wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/hwdet-init.sh -O /rtr/hwdet-init.sh && \
+    wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/hwdet-mgmt.sh -O /rtr/hwdet-mgmt.sh && \
+    wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/start-rtr.sh -O /rtr/start-rtr.sh && \
+    chmod +x /rtr/*
+
+COPY freertr.cfg /rtr/rtr-sw.txt
+COPY freertr_setup_environment.sh /usr/local/bin/setup_environment.sh
+
+CMD /usr/local/bin/setup_environment.sh
