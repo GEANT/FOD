@@ -531,6 +531,9 @@ NETCONF_MAX_RETRY_BEFORE_ERROR = 5
 # Actually apply the rules
 COMMIT = True
 
+#
+NETCONF_FLOWSPEC_MAP_ICMP_TO_ICMPV6 = False
+
 ##############################################################################
 ##############################################################################
 # Netconf Device credentials
