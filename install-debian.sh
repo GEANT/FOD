@@ -239,6 +239,10 @@ while [ $# -gt 0 ]; do
     shift 1
     fod_dir="$PWD"
     venv_dir="$PWD/venv"
+  elif [ $# -ge 1 -a "$1" = "--here__with_venv_relative" ]; then
+    shift 1
+    fod_dir="$PWD"
+    venv_dir="$PWD/../venv"
   elif [ $# -ge 1 -a "$1" = "--base_dir" ]; then
     shift 1
     base_dir="$1"
@@ -287,6 +291,13 @@ while [ $# -gt 0 ]; do
 
     #install_basesw_os=0
     install_basesw_python=1
+    install_fodproper=1
+  elif [ $# -ge 1 -a "$1" = "--fodproper1" ]; then
+    shift 1
+    install_default_used=0
+
+    #install_basesw_os=0
+    #install_basesw_python=0
     install_fodproper=1
   elif [ $# -ge 1 -a \( "$1" = "--supervisor" -o "$1" = "--supervisord" \) ]; then
     shift 1
@@ -480,6 +491,13 @@ if [ "$install_basesw_os" = 1 ]; then
 
   set +e
 
+fi
+
+##
+
+if [ "$try_install_docu" = 1 ]; then
+    echo "trying to install mkdocs for documentation" 1>&2
+    apt-get -qqy install mkdocs
 fi
 
 ##
@@ -722,16 +740,18 @@ elif [ "$install_fodproper" = 1 ]; then
     touch flowspy/settings_local.py
   fi
   
-  echo "$0: step 2.3: ensuring Python dependencies are installed" 1>&2
+  if [ "$install_basesw_python" = 1 ]; then
+    echo "$0: step 2.3: ensuring Python dependencies are installed" 1>&2
 
-  if [ "$install_basesw_python" = 1 ]; then #are we running in --both mode, i.e. for the venv init is run for the first time, i.e. the problematic package having issues with to new setuptools is not yet installed?
-    # fix for broken anyjson and cl
-    # TODO: fix this more cleanly
-    pip install 'setuptools==57.5.0'
+    if [ "$install_basesw_python" = 1 ]; then #are we running in --both mode, i.e. for the venv init is run for the first time, i.e. the problematic package having issues with to new setuptools is not yet installed?
+      # fix for broken anyjson and cl
+      # TODO: fix this more cleanly
+      pip install 'setuptools==57.5.0'
+    fi
+
+    # actual proper installation of python requirements
+    pip install -r requirements.txt
   fi
-
-  # actual proper installation of python requirements
-  pip install -r requirements.txt
 
   ##
 
