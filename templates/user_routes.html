@@ -86,8 +86,11 @@
 
 {% block pagejsbottom %}
 <div id="confirmDialog"></div>
-    <script src="{% static 'js/dataTableslatest/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'js/dataTableslatest/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/datatables.net/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js/datatables.net/dataTables.bootstrap.js' %}"></script>
+
+    <script src="{% static 'js/datatables.net-buttons/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'js/datatables.net-buttons/buttons.colVis.min.js' %}"></script>
 
     {% if user.is_authenticated %}
 
@@ -202,8 +205,6 @@ var last_element = false;
 var refreshUrl = "{% url 'group-routes-ajax' %}";
 $(document).ready( function(){
 
-
-
     oTable = $('#routes_table').dataTable( {
         "bPaginate": true,
         "bFilter": true,
@@ -212,11 +213,21 @@ $(document).ready( function(){
             [5, 15, 20, -1],
             [5, 15, 20, "All"]
         ],
-        "sDom": "<'row'<'col-xs-4'l><'col-xs-4'<'#filterplaceholder'>><'col-xs-4'f>><'row'<'col-xs-6'i><'col-xs-6'p>>tr<'row'<'col-xs-6'i><'col-xs-6'p>>",
+        "sDom": "B<'row'<'col-xs-4'l><'col-xs-4'<'#filterplaceholder'>><'col-xs-4'f>><'row'<'col-xs-6'i><'col-xs-6'p>>tr<'row'<'col-xs-6'i><'col-xs-6'p>>",
+        "offdom": 'Bfrtip',
         "iDisplayLength": 20,
         "bProcessing": true,
         "sAjaxSource": refreshUrl,
         "bDeferRender": true,
+
+	 "buttons": [ 
+		 'colvis', 
+		 'copy', 
+		 'excel', 
+		 'pdf',
+		 { extend: 'columnToggle', columns: 1 }
+	 ],
+
          "fnInitComplete": function(oSettings, json) {
          	oTable.fnSetColumnVis( 0,false );
          	update_size();
@@ -476,11 +487,11 @@ var update_size = function() {
     pw=$(oTable).parent().width();
     tw=$(oTable).width();
     if (tw>pw){
-		oTable.fnSetColumnVis( 7,false );
-		oTable.fnSetColumnVis( 5,false );
-    }else{
-    	oTable.fnSetColumnVis( 7,true );
-    	oTable.fnSetColumnVis( 5,true );
+	oTable.fnSetColumnVis( 7, false );
+	oTable.fnSetColumnVis( 5, false );
+    } else{
+    	oTable.fnSetColumnVis( 7, true );
+    	oTable.fnSetColumnVis( 5, true );
     }
     oTable.fnAdjustColumnSizing();
   }
