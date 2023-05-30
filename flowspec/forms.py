@@ -19,6 +19,7 @@
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
 from django.template.defaultfilters import filesizeformat
@@ -217,10 +218,11 @@ class RouteForm(forms.ModelForm):
                 existing_url = reverse('edit-route', args=[route.name])
                 net_route_destination = ip_network(route.destination, strict=False) 
                 #if net_destination==net_route_destination or net_destination in net_route_destination or net_route_destination in net_destination:
+                route_name_fmted=format_html(route.name)
                 if net_destination==net_route_destination:
-                    raise forms.ValidationError('Found an exactly matching %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+                    raise forms.ValidationError(mark_safe('Found an exactly matching %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route_name_fmted, route.destination, existing_url, route_name_fmted)))
                 elif net_destination.overlaps(net_route_destination):
-                    raise forms.ValidationError('Found an overlapping %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+                    raise forms.ValidationError(mark_safe('Found an overlapping %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route_name_fmted, route.destination, existing_url, route_name_fmted)))
 
         return self.cleaned_data
 
