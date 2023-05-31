@@ -494,8 +494,32 @@ def edit_route(request, route_slug):
             instance=route_edit
         )
         critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
-        if form.is_valid():
+
+        form_is_valid = form.is_valid()
+        changed_data = form.changed_data
+        logger.info("view::edit(): => form_is_valid="+str(form_is_valid))
+        logger.info("view::edit(): => changed_data="+str(changed_data))
+        flowspec_attributes_changed = bool(set(changed_data) & set(critical_changed_values)) 
+        logger.info("view::edit(): => flowspec_attributes_changed="+str(flowspec_attributes_changed))
+        if not form_is_valid and not flowspec_attributes_changed:
+          logger.warn("view::edit(): WARNING, NOT form_is_valid, but not flowspec_attributes_changed, so trying with RouteForm_lightweight again")
+          form2 = RouteForm_lightweight(
+              request_data,
+              instance=route_edit
+          )
+          if form2.is_valid():
+            logger.warn("view::edit(): WARNING, NOT form_is_valid, but not flowspec_attributes_changed: trying with RouteForm_lightweight succeeded, using this")
+            form = form2
+            form_is_valid = form.is_valid()
             changed_data = form.changed_data
+          else:
+            logger.warn("view::edit(): WARNING, NOT form_is_valid, but not flowspec_attributes_changed: trying with RouteForm_lightweight failed")
+        elif not form_is_valid:
+            logger.warn("view::edit(): WARNING, NOT form_is_valid + flowspec_attributes_changed")
+        else:
+            logger.warn("view::edit(): => form_is_valid")
+
+        if form_is_valid:
             route = form.save(commit=False)
 
             route.name = route_original.name
@@ -506,10 +530,10 @@ def edit_route(request, route_slug):
             net_route_destination=ip_network(route.destination, strict=False)
             net_route_source__edit=ip_network(route_original.source, strict=False)
             net_route_destination__edit=ip_network(route_original.destination, strict=False)
-            logger.info("net_route_source__edit="+str(net_route_source__edit))
-            logger.info("net_route_destination__edit="+str(net_route_destination__edit))
-            logger.info("net_route_source="+str(net_route_source))
-            logger.info("net_route_destination="+str(net_route_destination))
+            logger.info("view::edit(): net_route_source__edit="+str(net_route_source__edit))
+            logger.info("view::edit(): net_route_destination__edit="+str(net_route_destination__edit))
+            logger.info("view::edit(): net_route_source="+str(net_route_source))
+            logger.info("view::edit(): net_route_destination="+str(net_route_destination))
 
             if net_route_source__edit.version != net_route_source.version:
               messages.add_message(
