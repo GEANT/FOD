@@ -479,6 +479,25 @@ def edit_route(request, route_slug):
         )
         return HttpResponseRedirect(reverse("group-routes"))
     route_original = deepcopy(route_edit)
+
+    critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
+
+    try:
+      setting_dup_routes_chk = settings.ROUTES_DUPLICATES_CHECKING
+    except:
+      setting_dup_routes_chk = False
+    try:  
+      setting_dup_routes_chk__lazy0 = not settings.ROUTES_DUPLICATES_CHECKING__ENFORCED_FOR_ALREADY_EXISTING_RULES
+    except:
+      setting_dup_routes_chk__lazy0 = True
+    setting_dup_routes_chk__lazy = setting_dup_routes_chk and setting_dup_routes_chk__lazy0
+    logger.info("setting_dup_routes_chk="+str(setting_dup_routes_chk))
+    logger.info("setting_dup_routes_chk__lazy0="+str(setting_dup_routes_chk__lazy0))
+    logger.info("setting_dup_routes_chk__lazy="+str(setting_dup_routes_chk__lazy))
+
+    add_error_msg=''
+    add_error_msg__overlapping_rule_already_existing_with_unchanged_flowspec = '(either solve the conflict by ensuring differing FlowSpec parameters for both rules, or as the rule already exists commit without changing any FlowSpec parameters)'
+
     if request.POST:
         request_data = request.POST.copy()
         if request.user.is_superuser:
@@ -493,7 +512,6 @@ def edit_route(request, route_slug):
             request_data,
             instance=route_edit
         )
-        critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
 
         form_is_valid = form.is_valid()
         changed_data = form.changed_data
@@ -501,7 +519,7 @@ def edit_route(request, route_slug):
         logger.info("view::edit(): => changed_data="+str(changed_data))
         flowspec_attributes_changed = bool(set(changed_data) & set(critical_changed_values)) 
         logger.info("view::edit(): => flowspec_attributes_changed="+str(flowspec_attributes_changed))
-        if not form_is_valid and not flowspec_attributes_changed:
+        if setting_dup_routes_chk__lazy and not form_is_valid and not flowspec_attributes_changed:
           logger.warn("view::edit(): WARNING, NOT form_is_valid, but not flowspec_attributes_changed, so trying with RouteForm_lightweight again")
           form2 = RouteForm_lightweight(
               request_data,
@@ -512,6 +530,7 @@ def edit_route(request, route_slug):
             form = form2
             form_is_valid = form.is_valid()
             changed_data = form.changed_data
+            add_error_msg = add_error_msg__overlapping_rule_already_existing_with_unchanged_flowspec
           else:
             logger.warn("view::edit(): WARNING, NOT form_is_valid, but not flowspec_attributes_changed: trying with RouteForm_lightweight failed")
         elif not form_is_valid:
@@ -547,6 +566,7 @@ def edit_route(request, route_slug):
                 {
                     'form': form,
                     'edit': True,
+                    'add_error' : add_error_msg,
                     'applier': applier,
                     'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 }
@@ -563,6 +583,7 @@ def edit_route(request, route_slug):
                 {
                     'form': form,
                     'edit': True,
+                    'add_error' : add_error_msg,
                     'applier': applier,
                     'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 }
@@ -601,6 +622,7 @@ def edit_route(request, route_slug):
                     'form': form,
                     'edit': True,
                     'applier': applier,
+                    'add_error' : add_error_msg,
                     'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
                 })
     else:
@@ -616,7 +638,23 @@ def edit_route(request, route_slug):
                 del dictionary['issuperuser']
             except:
                 pass
+
         form = RouteForm(dictionary)
+        form_is_valid = form.is_valid()
+        logger.info("view::edit(): form_is_valid="+str(form_is_valid))
+        #changed_data = form.changed_data
+        #flowspec_attributes_changed = bool(set(changed_data) & set(critical_changed_values)) 
+        #if not form_is_valid and not flowspec_attributes_changed:
+        if setting_dup_routes_chk__lazy and not form_is_valid:
+          logger.warn("view::edit(): WARNING, NOT form_is_valid, so trying with RouteForm_lightweight again")
+          form2 = RouteForm_lightweight(dictionary)
+          if form2.is_valid():
+            logger.warn("view::edit(): WARNING, NOT form_is_valid, RouteForm_lightweight is_valid")
+            add_error_msg = add_error_msg__overlapping_rule_already_existing_with_unchanged_flowspec
+            #form = form2
+            #form_is_valid = form.is_valid()
+            #changed_data = form.changed_data
+
         if not request.user.is_superuser:
             form.fields['then'] = forms.ModelMultipleChoiceField(queryset=ThenAction.objects.filter(action__in=settings.UI_USER_THEN_ACTIONS).order_by('action'), required=True)
             form.fields['protocol'] = forms.ModelMultipleChoiceField(queryset=MatchProtocol.objects.filter(protocol__in=settings.UI_USER_PROTOCOLS).order_by('protocol'), required=False)
@@ -624,6 +662,7 @@ def edit_route(request, route_slug):
             {
                 'form': form,
                 'edit': True,
+                'add_error' : add_error_msg,
                 'applier': applier,
                 'maxexpires': settings.MAX_RULE_EXPIRE_DAYS
             })
