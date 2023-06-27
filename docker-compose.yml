@@ -43,6 +43,7 @@ services:
         - fod
     volumes:
         - freertr:/opt
+        - ./freertr/run:/rtr/run/
 
   host1:
     build:
