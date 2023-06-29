@@ -2,7 +2,7 @@ site_name: Firewall On Demand
 #repo_url: https://github.com/grnet/flowspy/
 repo_url: https://github.com/GEANT/FOD/
 #site_author: Stavros Kroustouris
-site_author: GÉANT4-3 WP8 T3
+site_author: GÉANT5-1 WP8-T3
 site_dir: static/site
 docs_dir: doc
 #theme: readthedocs
@@ -21,14 +21,23 @@ nav:
           - 'CentOS': 'installation/v1.7/centos.md'
           - 'Docker': 'installation/v1.7/docker.md'
           - 'Docker Extra for Testing': 'installation/v1.7/docker_extra.md'
+        - 'v1.8':
+          - 'Generic': 'installation/v1.8/generic.md'
+          - 'DEBIAN/UBUNTU': 'installation/v1.8/debian_ubuntu.md'
+          - 'CentOS': 'installation/v1.8/centos.md'
+          - 'Docker': 'installation/v1.8/docker.md'
+          - 'Docker Extra for Testing': 'installation/v1.8/docker_extra.md'
     - 'Configuration': 
         - 'v1.3': 'configuration/configuration-v1.3.md'
         - 'v1.7': 'configuration/configuration-v1.7.md'
+        - 'v1.8': 'configuration/configuration-v1.8.md'
     - 'Administration and Usage': 
         - 'Basic Administration and Usage (v1.7)': 'administration_and_usage/basic_administration_and_usage-v1.7.md'
+        - 'Basic Administration and Usage (v1.8)': 'administration_and_usage/basic_administration_and_usage-v1.8.md'
     - 'API': 
         - 'v1.3': 'api/api-v1.3.md'
         - 'v1.7': 'api/api-v1.7.md'
+        - 'v1.8': 'api/api-v1.8.md'
     - 'Development':
         - 'Design Overview': 'development/design-overview.md'
 

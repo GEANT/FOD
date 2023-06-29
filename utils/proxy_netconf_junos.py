@@ -33,10 +33,12 @@ from ipaddress import ip_network
 from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
 #import xml.etree.ElementTree as ET
 
+import sys
+
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_netconf.log", False)
 
-print("loading proxy_netconf_junos")
+print("loading proxy_netconf_junos", file=sys.stderr)
 
 cwd = os.getcwd()
 
@@ -182,7 +184,10 @@ class Applier(object):
             try:
                 if route_obj.protocol:
                     for protocol in route_obj.protocol.all():
-                        protocol_id = map__ip_proto__for__ip_version__to_flowspec(ip_version, protocol.protocol)
+                        try:
+                          protocol_id = map__ip_proto__for__ip_version__to_flowspec(ip_version, protocol.protocol)
+                        except Exception as e:
+                          logger.error("proxy::Applier::to_xml(): got exception in map__ip_proto__for__ip_version__to_flowspec: "+str(e))
                         route.match['protocol'].append(protocol_id)
             except:
                 pass

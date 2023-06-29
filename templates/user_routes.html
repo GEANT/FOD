@@ -86,8 +86,11 @@
 
 {% block pagejsbottom %}
 <div id="confirmDialog"></div>
-    <script src="{% static 'js/dataTableslatest/jquery.dataTables.min.js' %}"></script>
-    <script src="{% static 'js/dataTableslatest/dataTables.bootstrap.js' %}"></script>
+    <script src="{% static 'js/datatables.net/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'js/datatables.net/dataTables.bootstrap.js' %}"></script>
+
+    <script src="{% static 'js/datatables.net-buttons/dataTables.buttons.min.js' %}"></script>
+    <script src="{% static 'js/datatables.net-buttons/buttons.colVis.min.js' %}"></script>
 
     {% if user.is_authenticated %}
 
@@ -203,9 +206,27 @@ var end;
 var oldhtml;
 var last_element = false;
 var refreshUrl = "{% url 'group-routes-ajax' %}";
+
+//$.fn.dataTableExt.oApi.fnStandingRedraw = function(oSettings) {
+//	    //redraw to account for filtering and sorting
+//	    // concept here is that (for client side) there is a row got inserted at the end (for an add)
+//	    // or when a record was modified it could be in the middle of the table
+//	    // that is probably not supposed to be there - due to filtering / sorting
+//	    // so we need to re process filtering and sorting
+//	    // BUT - if it is server side - then this should be handled by the server - so skip this step
+//	    if(true || oSettings.oFeatures.bServerSide === false){
+//		            var before = oSettings._iDisplayStart;
+//		            oSettings.oApi._fnReDraw(oSettings);
+//		            //iDisplayStart has been reset to zero - so lets change it back
+//		            oSettings._iDisplayStart = before;
+//		            oSettings.oApi._fnCalculateEnd(oSettings);
+//		        }
+//	      
+//	    //draw the 'current' page
+//	    oSettings.oApi._fnDraw(oSettings);
+//};
+
 $(document).ready( function(){
-
-
 
     oTable = $('#routes_table').dataTable( {
         "bPaginate": true,
@@ -215,11 +236,25 @@ $(document).ready( function(){
             [5, 15, 20, -1],
             [5, 15, 20, "All"]
         ],
-        "sDom": "<'row'<'col-xs-4'l><'col-xs-4'<'#filterplaceholder'>><'col-xs-4'f>><'row'<'col-xs-6'i><'col-xs-6'p>>tr<'row'<'col-xs-6'i><'col-xs-6'p>>",
+	    "sDom": "<'row' <'col-xs-3'l><'col-xs-5'<'#filterplaceholder'>><'col-xs-4'f>><'row' <'col-xs-2'B><'col-xs-4'i><'col-xs-6'p>>tr<'row'<'col-xs-6'i><'col-xs-6'p>>",
+        "offdom": 'Bfrtip',
         "iDisplayLength": 20,
         "bProcessing": true,
         "sAjaxSource": refreshUrl,
         "bDeferRender": true,
+ 
+	"order" : [ [ 1, 'asc' ] ], // 1 = name
+	//"order" : [ [ 6, 'desc' ] ], // 6 = last_updated
+
+	"buttons": [ 
+		 //{ extend: 'columnToggle', columns: 5 },
+		 //{ extend: 'columnToggle', columns: 7 },
+		 'colvis',
+		 'copy', 
+		 'excel', 
+		 'pdf'
+	 ],
+
          "fnInitComplete": function(oSettings, json) {
          	oTable.fnSetColumnVis( 0,false );
          	update_size();
@@ -246,8 +281,20 @@ $(document).ready( function(){
                                     url: delurl,
                                     cache: false,
                                     success: function(data) {
+
+ 		            var before = oTable.oSettings._iDisplayStart;
+		            oSettings.oApi._fnReDraw(oSettings);
+		            //iDisplayStart has been reset to zero - so lets change it back
+		            oSettings._iDisplayStart = before;
+		            oSettings.oApi._fnCalculateEnd(oSettings);
+	      
+	                    //draw the 'current' page
+	                    oSettings.oApi._fnDraw(oSettings);
+
                                       //oTable.fnReloadAjax(refreshUrl);
-                                      $('#routes_table').DataTable().ajax.reload();
+                                      //$('#routes_table').DataTable().ajax.reload(null, false);
+                                      oTable.ajax.reload(null, false);
+
                                     }
                                 });
                                 $( this ).dialog( "close" );
@@ -275,7 +322,9 @@ $(document).ready( function(){
                                     cache: false,
                                     success: function(data) {
                                       //oTable.fnReloadAjax(refreshUrl);
-                                      $('#routes_table').DataTable().ajax.reload();
+                                      //$('#routes_table').DataTable().ajax.reload(null, false);
+                                      //$('#routes_table').api.ajax.reload(null, false);
+                                      oTable.ajax.reload(null, false);
                                     }
                                 });
                                 $( this ).dialog( "close" );
@@ -468,7 +517,9 @@ setInterval(function() {
   } else {
     lock1=true
     console.log("updating routes tables")
-    $('#routes_table').DataTable().ajax.reload();
+    //$('#routes_table').DataTable().ajax.reload(null, false);
+    //$('#routes_table').api.ajax.reload(null, false);
+    oTable.ajax.reload(null, false);
     console.log("done with updating routes tables")
     lock1=false
   }
@@ -479,11 +530,11 @@ var update_size = function() {
     pw=$(oTable).parent().width();
     tw=$(oTable).width();
     if (tw>pw){
-		oTable.fnSetColumnVis( 7,false );
-		oTable.fnSetColumnVis( 5,false );
-    }else{
-    	oTable.fnSetColumnVis( 7,true );
-    	oTable.fnSetColumnVis( 5,true );
+	oTable.fnSetColumnVis( 7, false );
+	oTable.fnSetColumnVis( 5, false );
+    } else{
+    	oTable.fnSetColumnVis( 7, true );
+    	oTable.fnSetColumnVis( 5, true );
     }
     oTable.fnAdjustColumnSizing();
   }

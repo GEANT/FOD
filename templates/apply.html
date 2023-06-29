@@ -282,11 +282,15 @@
             {% if form.non_field_errors %}
             <div class="form-group {% if form.non_field_errors %} has-error {% endif %}" style="color: #A94442;" id="apply_rule_id">
               {{ form.non_field_errors|unescape}}
-              </div>
+	      {%  if edit %}{% if add_error %}<ul class="errorlist nonfield"><li>{{ add_error | unescape }}</li></ul>{% endif %}{%  endif %}
+
+            </div>
             {% endif %}
             <fieldset {%  if edit %}  style="display:none;" {%  endif %}>
 
                  <div class="form-group {% if form.name.errors %} has-error {% endif %}">
+
+
         <label for="id_name" class="col-md-2 control-label"><b>{% trans "Name" %}</b></label>
         <div class="col-md-8">
             {% render_field form.name class+="form-control" placeholder="Eg. ntpattack. A unique identifier will be added as a suffix" %}
@@ -299,6 +303,7 @@
             <fieldset>
               <hr>
                    <div class="form-group {% if form.applier.errors %} has-error {% endif %}">
+
             <label for="id_name" class="col-md-2 control-label"><b>{% trans "Applier" %}</b></label>
             <div class="col-md-8">
                 {% render_field form.applier class+="form-control" %}

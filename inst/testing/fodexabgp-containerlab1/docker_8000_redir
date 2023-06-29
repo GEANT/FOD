@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -x
+
+dockerlabel="clab-rtr005-rtr1"
+
+ip1="$(docker inspect "$dockerlabel" | awk '/IPAddress.*[0-9]/ { gsub(/[",]/, "", $2); if ($2!="") { print $2; } }')"
+[ -n "$ip1" ] || exit 1
+
+exec socat TCP-LISTEN:8000,fork TCP-CONNECT:"$ip1":8000
+

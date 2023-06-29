@@ -542,6 +542,12 @@ class Route(object):
                 grandChildName_ = Tag_pattern_.match(grandChild_.tag).groups()[-1]
                 grandChildText = grandChild_.text
                 grandChildText = re_.sub(STRING_CLEANUP_PAT, " ", grandChildText).strip()
+                if grandChildText=="" and (grandChildName_=="destination" or grandChildName_=="source"):
+                   for grandgrandChild_ in grandChild_:
+                     grandgrandChildName_ = Tag_pattern_.match(grandgrandChild_.tag).groups()[-1]
+                     if grandgrandChildName_=="prefix":
+                        grandChildText = grandgrandChild_.text
+                        grandChildText = re_.sub(STRING_CLEANUP_PAT, " ", grandChildText).strip()
                 self.match[grandChildName_].append(grandChildText)
         elif nodeName_ == 'then':
             for grandChild_ in child_:

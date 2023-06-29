@@ -19,6 +19,7 @@
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 from django.utils.translation import ugettext as _
 from django.utils.translation import ugettext_lazy
 from django.template.defaultfilters import filesizeformat
@@ -90,7 +91,7 @@ class UserProfileForm(forms.ModelForm):
         fields = "__all__"
 
 
-class RouteForm(forms.ModelForm):
+class RouteForm_lightweight(forms.ModelForm):
     sourceport = PortRangeForm(required=False)
     destinationport = PortRangeForm(required=False)
     port = PortRangeForm(required=False)
@@ -136,7 +137,19 @@ class RouteForm(forms.ModelForm):
         return res
 
     def clean(self):
-        logger.debug("forms::clean(): (1) called self=%s", str(self))
+        logger.debug("RouteForm_lightweight():forms::clean(): (1) called self=%s", str(self))
+        if self.errors:
+            raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
+        error = clean_route_form(self.cleaned_data)
+        if error:
+            raise forms.ValidationError(error)
+
+        return self.cleaned_data
+
+class RouteForm(RouteForm_lightweight):
+
+    def clean(self):
+        logger.debug("RouteForm():forms::clean(): (1) called self=%s", str(self))
 
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
@@ -225,10 +238,11 @@ class RouteForm(forms.ModelForm):
                 existing_url = reverse('edit-route', args=[route.name])
                 net_route_destination = ip_network(route.destination, strict=False) 
                 #if net_destination==net_route_destination or net_destination in net_route_destination or net_route_destination in net_destination:
+                route_name_fmted=format_html(route.name)
                 if net_destination==net_route_destination:
-                    raise forms.ValidationError('Found an exactly matching %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a> (current name %s)' % (route.status, route.name, route.destination, existing_url, route.name, name))
+                    raise forms.ValidationError(mark_safe('Found an exactly matching %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route_name_fmted, route.destination, existing_url, route_name_fmted)))
                 elif net_destination.overlaps(net_route_destination):
-                    raise forms.ValidationError('Found an overlapping %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route.name, route.destination, existing_url, route.name))
+                    raise forms.ValidationError(mark_safe('Found an overlapping %s rule, %s with destination prefix %s<br>To avoid overlapping try editing rule <a href=\'%s\'>%s</a>' % (route.status, route_name_fmted, route.destination, existing_url, route_name_fmted)))
 
         return self.cleaned_data
 

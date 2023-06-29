@@ -69,7 +69,8 @@ function reloadDataTable(cause) {
        //oTable.fnReloadAjax(refreshUrl);
        //console.log("oTable="+oTable);
        //console.log("ajax2="+$('#routes_table').DataTable().ajax);
-       $('#routes_table').DataTable().ajax.reload();
+       //$('#routes_table').DataTable().ajax.reload();
+       $('#routes_table').DataTable().ajax.reload(null, false);
      } else {
        console.log("DataTable.ajax is undefined");
        if (oTable!=undefined) {

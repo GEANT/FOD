@@ -1,3 +1,29 @@
+=======
+1.8.0 RELEASE (2023/05)
+Improvements and enhancements
+        - Upgraded to newer Django
+          requires adaption of flowspy/settings.py regarding staticfiles handling
+          (check 'git log -p flowspy/settings.py.dist')
+
+        - Fixed unwanted possibility to mix IPv4 and IPv6 address prefixes in rules
+        - Fixed broken check_sync for IPv6 rules
+        - Support for implicit icmp6 in IPv6 rules 
+        - Fixed improper UTF-8 encoding of Shibboleth attribute values
+        - Rule id shown on rule detail pages
+
+        - Installation support for DEBIAN/UBUNTU, including Systemd support
+        - Cleanup of log file handling
+        - Update of documentation
+        - Enhancement of the Dockerfiles for testing and reference-installation
+          - DEBIAN as base Docker image is now default: ./Dockerfile 
+            (being linked to ./Dockerfile.fod.debian)
+          - CENTOS7 keeps to be supported: ./Dockerfile.fod.centos.new
+
+        - New experimental setting variable RULE_NAME_PREFIX:
+          possibility to prefix every FlowSpec rule 
+          injected via JUNOS_specific NETCONF on the router with a given String, 
+          to distinguish such FlowSpec rules from 
+          FlowSpec rules injected via NETCONF by other tools or means
 
 =======
 2022/08
@@ -35,42 +61,42 @@ Updates and Enhancements
 =======
 1.2 RELEASE
 Updates and enhancements. Check documentation for updating from previous versions
-	- Code Cleanup
-	- Branding
-	- Rest Api
-	- Easier Configuration
+        - Code Cleanup
+        - Branding
+        - Rest Api
+        - Easier Configuration
 
 =======
 1.1.1 RELEASE
 Minor changes release
 
-	- Change license to GPLv3
+        - Change license to GPLv3
 
-	- Minor documentation updates
+        - Minor documentation updates
 
 ===========
 1.1.0 RELEASE
 Updates and enhancements. Check documentation for updating from previous versions
 
-	- Minor UI enhancements
-	- Patch user model to include user peer in __unicode__
-	- Include celery task exceptions in proxy
-	- Cleanup js files
-	- Resolve a major issue where the platform would start on 2nd refresh
-	- Cleanup poller urls
-	- Enhancements to json routes export
-	- Include timeout handling in tasks
-	- Fix issue with ports not updating
-	- Add longerusername plugin to replace user monkey patching
-	- Handle a bug in South that causes the Peer table to become unusable after adding autoincrement
+        - Minor UI enhancements
+        - Patch user model to include user peer in __unicode__
+        - Include celery task exceptions in proxy
+        - Cleanup js files
+        - Resolve a major issue where the platform would start on 2nd refresh
+        - Cleanup poller urls
+        - Enhancements to json routes export
+        - Include timeout handling in tasks
+        - Fix issue with ports not updating
+        - Add longerusername plugin to replace user monkey patching
+        - Handle a bug in South that causes the Peer table to become unusable after adding autoincrement
 
 ===========
 1.0.3 RELEASE
 Minor fixes. Check documentation for peers table handling
 
-	- Fix issue with altlogin redirection
-	- Switch peers primary key to AutoField
-	- Make peers tables management configurable
+        - Fix issue with altlogin redirection
+        - Switch peers primary key to AutoField
+        - Make peers tables management configurable
 
 ===========
 1.0.2 RELEASE
@@ -81,214 +107,214 @@ Documentation enhancements
 Minor fixes
 
 Fixes:
-	-Overview login theme
-	-Add missing urls
+        -Overview login theme
+        -Add missing urls
 
 ===========
 1.0.0 RELEASE
 Major UI redesign, Debian Wheezy version, Django 1.4
 
 Improvements:
-	-New UI based on Bootstrap3 theme
-	-Minor fixes in long polling init
-	-Debian Wheezy - Django 1.4 ready
+        -New UI based on Bootstrap3 theme
+        -Minor fixes in long polling init
+        -Debian Wheezy - Django 1.4 ready
 
 ===========
 0.9.9 RELEASE
 Major documentation improvements. Minor app enhancements. Minor bug fixes
 
 Improvements:
-	-Wrote documentation in rst format (http://flowspy.readthedocs.org/)
-	-Update initial data with fragment types
-	-Add current version in footer via context
-	-Add beanstalk client, as installation from package is fuzzy
-	-Comment the helptext line in patched user model (django 1.3 issues)
+        -Wrote documentation in rst format (http://flowspy.readthedocs.org/)
+        -Update initial data with fragment types
+        -Add current version in footer via context
+        -Add beanstalk client, as installation from package is fuzzy
+        -Comment the helptext line in patched user model (django 1.3 issues)
 
 ===========
 0.9.8 RELEASE
 Minor functionality improvements (check Requirements)
 
 Requirements:
-	-south migration to include database changes if you are at
-	<=0.9.5
+        -south migration to include database changes if you are at
+        <=0.9.5
 
 Improvements:
-	-Added more port validation checks
-	-Added more IP address validation checks
+        -Added more port validation checks
+        -Added more IP address validation checks
 
 ===========
 0.9.7 RELEASE
 Minor UI improvements (check Requirements)
 
 Requirements:
-	-south migration to include database changes if you are at
-	<=0.9.5
+        -south migration to include database changes if you are at
+        <=0.9.5
 
 UI Improvements:
-	-Added badges in rule status
+        -Added badges in rule status
 
 ===========
 0.9.6 RELEASE
 New Feature and minor UI improvements (check Requirements)
 
 Requirements:
-	-south migration to include database changes
+        -south migration to include database changes
 
 Features:
-	-Added fragment type as an option in rule match statements
+        -Added fragment type as an option in rule match statements
 
 UI Improvements:
-	-Changed wording;from 'Suspend' to 'Deactivate'
-	-Increased the size of Console and Add Rule buttons. Made Add Rule button
-	stand out with different color.
+        -Changed wording;from 'Suspend' to 'Deactivate'
+        -Increased the size of Console and Add Rule buttons. Made Add Rule button
+        stand out with different color.
 
 ===========
 0.9.5 RELEASE
 Fixes
 
 Fixes:
-	-Fixed issue with page logo
-	-Changed Shibboleth attributes from HTML to Shibboleth naming in error.html
-	-Minor change in the user activation procedure. Activation mail goes only to admins not TechCs
+        -Fixed issue with page logo
+        -Changed Shibboleth attributes from HTML to Shibboleth naming in error.html
+        -Minor change in the user activation procedure. Activation mail goes only to admins not TechCs
 
 ===========
 0.9.4 RELEASE
 Minor fixes
 
 Fixes:
-	-Change the name of the released file (Makefile)
-	-Added copyright info plus updated the README file
-	-Added missing files in images
+        -Change the name of the released file (Makefile)
+        -Added copyright info plus updated the README file
+        -Added missing files in images
 
 ===========
 0.9.3 RELEASE
 Minor fix
 
 Fixes:
-	-Fixed the population of "Any" in source field
+        -Fixed the population of "Any" in source field
 
 ===========
 0.9.2 RELEASE
 Major enhancement and a minor fixes
 
 Enhancements:
-	-Added alternative view for helpdesk
+        -Added alternative view for helpdesk
 
 Fixes:
-	-Fixed the static url for tinymce in settings
-	-Fixed an issue caused by multiple Shibboleth attributes
+        -Fixed the static url for tinymce in settings
+        -Fixed an issue caused by multiple Shibboleth attributes
 
 ===========
 0.9.1 RELEASE
 Major UI enhancements
 
 Enhancements:
-	-Added bootstrap UI framework
-	-Added TinyMCE in flatpages
-	-Brought back flatpages with JS magic for translation switching
-	-HomeOrganization is no longer required-user selects from dropdown
-	-Added Shibboleth mapping in settings
-	-Added an Any button in source address
+        -Added bootstrap UI framework
+        -Added TinyMCE in flatpages
+        -Brought back flatpages with JS magic for translation switching
+        -HomeOrganization is no longer required-user selects from dropdown
+        -Added Shibboleth mapping in settings
+        -Added an Any button in source address
 
 ===========
 0.9 RELEASE
 Major enhancements
 
 Enhancements:
-	-Added internationalization support
-	-Added Greek translation
+        -Added internationalization support
+        -Added Greek translation
 
 ===========
 0.8.7 RELEASE
 Minor enhancements
 
 Enhancements:
-	- Merged all mail txt files into one
-	- Added all routes in form cleaning (initially, EXPIRED, ADMININACTIVE and ERROR were excluded)
+        - Merged all mail txt files into one
+        - Added all routes in form cleaning (initially, EXPIRED, ADMININACTIVE and ERROR were excluded)
 
 ===========
 0.8.6 RELEASE
 Minor UI enhancements/Bug fix
 Fixes:
-	- Fixed issue where rules in ERROR state would cause check_sync to check them
+        - Fixed issue where rules in ERROR state would cause check_sync to check them
 Enhancements:
-	- Added small dots to ongoing response field to indicate activity
+        - Added small dots to ongoing response field to indicate activity
 
 ===========
 0.8.5 RELEASE
 Feature enhancement release/Minor UI fixes/Cleanup
 Fixes:
-	- Changed javascript order to prevent unformated content in datatables
-	- Un-needed files cleanup
-	- Error template is now based on base.html template
+        - Changed javascript order to prevent unformated content in datatables
+        - Un-needed files cleanup
+        - Error template is now based on base.html template
 Enhancements:
-	- Administrator privileges apply on UI as well
-	- Enhanced application security
+        - Administrator privileges apply on UI as well
+        - Enhanced application security
 
 ===========
 0.8.4 RELEASE
 Vulnerability prevention/bug fixes release
 Fixes:
-	- Fixed a bug where the shib auth backend erased non-shibboleth users info
-	- Added an authsource variable to prevent authentication backend overlapping
-	- Added exception handling for non-Shibboleth users that do not belong to a peer
+        - Fixed a bug where the shib auth backend erased non-shibboleth users info
+        - Added an authsource variable to prevent authentication backend overlapping
+        - Added exception handling for non-Shibboleth users that do not belong to a peer
 
 ===========
 0.8.3 RELEASE
 Feature enhancement release
 Fixes:
-	- User/username length monkey patching now works with admin forms as well
+        - User/username length monkey patching now works with admin forms as well
 
 ===========
 0.8.2 RELEASE
 Bug Fix release
 Fixes:
-	- Fixed bug with csrf cookie not being set while logged in for the first time
+        - Fixed bug with csrf cookie not being set while logged in for the first time
 
 ===========
 0.8.1 RELEASE
 This is the latest alpha release operating on production network
 Changes:
-	- Fixed bug with protected networks form cleaning
+        - Fixed bug with protected networks form cleaning
 
 ===========
 v0.8.0 RELEASE
 New features
 Changes:
-	- DB migration to protocol addition
-	- Added protocol to match conditions plus check mechanism to form cleaning
+        - DB migration to protocol addition
+        - Added protocol to match conditions plus check mechanism to form cleaning
 
 ===========
 0.7.11 RELEASE
 Bux fixes
 Changes:
-	- Prevented a bug that would cause the rule application to throw exception
+        - Prevented a bug that would cause the rule application to throw exception
 
 ===========
 0.7.10 RELEASE
 Got rid of another cronjob
 Changes:
-	- Turned expiration notification cron job into celery job
-	- Added a preliminary draft for a Makefile facilitating various jobs
+        - Turned expiration notification cron job into celery job
+        - Added a preliminary draft for a Makefile facilitating various jobs
 
 ===========
 0.7.9.7 RELEASE
 Some minor changes mainly to reinforce security
 Changes:
-	- Added FQDN resolving in mail notification templates to denote the host that an action originated
+        - Added FQDN resolving in mail notification templates to denote the host that an action originated
 
 ===========
 0.7.9.5 RELEASE
 Oops! Something was missing from form validation
 Changes:
-	- Added source address to required fields
+        - Added source address to required fields
 
 ===========
 0.7.9.2 RELEASE
 Major changes (maybe version tag does not indicate that)
 Changes:
-	- Added a custom command to fetch networks for each peer. Got rid of cronjob
-	- Major change with db engine. Altered database storage engine to MYISAM to allow for software relations between tables and views
+        - Added a custom command to fetch networks for each peer. Got rid of cronjob
+        - Major change with db engine. Altered database storage engine to MYISAM to allow for software relations between tables and views
 
 ===========
 0.7.9.1 RELEASE
@@ -300,33 +326,33 @@ Changes:
 0.7.9 RELEASE
 Bug fixes
 Changes:
-	- Added a custom uknown_host_cb function to overcome ssh key errors
+        - Added a custom uknown_host_cb function to overcome ssh key errors
 
 ===========
 0.7.7 RELEASE
 Modules cleanup
 Changes:
-	- Removed utils/beanstalkc as it is now a deb package
+        - Removed utils/beanstalkc as it is now a deb package
 
 ===========
 0.7.1 RELEASE
 Code improvements
 Changes:
-	- Modified peer network range update mechanism
+        - Modified peer network range update mechanism
 
 ===========
 0.7 RELEASE
 Major release/changes
 Features:
-	- Added registration to installed apps
-	- Removed user activation from shibboleth backend. Moved it to login view
+        - Added registration to installed apps
+        - Removed user activation from shibboleth backend. Moved it to login view
 
 ===========
 Application features up to now:
-	- Rule creation and application to device via netconf, nxpy
-	- Match statements include source, destination addrs, src, dst ports
-	- Then statements include discard and rate limit for plain users
-	- User authentication via Shibboleth
-	- Whois client determines user peer networks and user authority
+        - Rule creation and application to device via netconf, nxpy
+        - Match statements include source, destination addrs, src, dst ports
+        - Then statements include discard and rate limit for plain users
+        - User authentication via Shibboleth
+        - Whois client determines user peer networks and user authority
 
 

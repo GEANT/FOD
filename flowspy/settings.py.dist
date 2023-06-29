@@ -531,6 +531,9 @@ NETCONF_MAX_RETRY_BEFORE_ERROR = 5
 # Actually apply the rules
 COMMIT = True
 
+#
+NETCONF_FLOWSPEC_MAP_ICMP_TO_ICMPV6 = True
+
 ##############################################################################
 ##############################################################################
 # Netconf Device credentials
@@ -639,6 +642,7 @@ ALLOW_DELETE_FULL_FOR_USER_LIST = [
 # with the same addresses). By default it is enabled (True).
 #DISABLE_RULE_OVERLAP_CHECK = False
 ROUTES_DUPLICATES_CHECKING = True
+ROUTES_DUPLICATES_CHECKING__ENFORCED_FOR_ALREADY_EXISTING_RULES = False
 
 ##############################################################################
 ##############################################################################

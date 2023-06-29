@@ -4,6 +4,8 @@ EXABGP_CONF_FILENAME="/etc/exabgp/exabgp.conf"
 
 #
 
+#set -x
+
 if [ "$1" = "--conf" ]; then
   shift 1
   
@@ -248,7 +250,7 @@ EOF
 
   if [ "$enable1" = 1 ]; then
 
-      if [ "$enable_type" = ".min" || ! grep -q -E '^systemd$' /proc/1/comm; then 
+      if [ "$enable_type" = ".min" ] || ! grep -q -E '^systemd$' /proc/1/comm; then 
         #systemctl enable --no-reload "$exabgp_systemd_servicename"
         #systemctl --machine enable --no-reload "$exabgp_systemd_servicename"
         ln -s -f -v "/usr/lib/systemd/system/$exabgp_systemd_servicename.service" /etc/systemd/system/multi-user.target.wants/

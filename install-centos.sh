@@ -573,7 +573,8 @@ elif [ "$install_fodproper" = 1 ]; then
 
   echo "$0: step 2.1a: fixing permissions" 1>&2
   #find "$fod_dir/" -not -user fod -exec chown -v fod: {} \;
-  find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
+  #find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \;
+  find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
 
  ###
 
@@ -652,7 +653,8 @@ elif [ "$install_fodproper" = 1 ]; then
   #    set -e
   #    which mkdocs 2>/dev/null >/dev/null || yum install -y mkdocs
   #    cd "$fod_dir" && mkdocs build # ./mkdocs.yml
-  #    find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
+  #    #find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
+  #    find "$fod_dir/static/site" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" {} \; # is depending on ./mkdocs.yml var site_dir
   #    true # in case of failure override failure status, as the documentation is non-essential
   #  )
   #fi
@@ -674,7 +676,8 @@ elif [ "$install_fodproper" = 1 ]; then
     cd "$fod_dir"
 
     ./manage.py collectstatic -c --noinput || debug_python_deps "$venv_dir/bin/activate" 1
-    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
+    #find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -exec chown "$FOD_SYSUSER:" {} \; || true # TODO is depending on flowspy/settings*.py var STATIC_ROOT 
+    find "$fod_dir/staticfiles" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" # is depending on ./mkdocs.yml var site_dir
   )
 
   ##
@@ -952,7 +955,8 @@ EOF
   
   if [ "$inst_dir_is_fod_dir" = 1 ]; then
     echo "$0: step 2.9: finally fixing permissions as inst_dir_is_fod_dir=$inst_dir_is_fod_dir" 1>&2
-    find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
+    #find "$fod_dir/" -not -user "$FOD_SYSUSER" -exec chown -v "$FOD_SYSUSER:" {} \;
+    find "$fod_dir/" -not -user "$FOD_SYSUSER" -print0 | xargs -0 chown -v "$FOD_SYSUSER:" || true
   fi
   
   echo "$0: step 2 done" 1>&2

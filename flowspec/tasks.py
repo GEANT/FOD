@@ -130,7 +130,7 @@ def deactivate_route(routepk, **kwargs):
     route = Route.objects.get(pk=routepk)
     initial_status = route.status
     if initial_status not in ("ACTIVE", "PENDING", "ERROR"):
-        logger.error("tasks::deactivate(): Cannot deactivate route that is not in ACTIVE or potential ACTIVE status.")
+        logger.error("tasks::deactivate(): Cannot deactivate route that is not in ACTIVE or potential ACTIVE status. (initial_status="+str(initial_status)+" route="+str(route)+")")
         return
     logger.info("tasks::deactivate_route(): initial_status="+str(initial_status))
         

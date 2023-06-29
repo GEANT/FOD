@@ -1,0 +1,139 @@
+#!/bin/bash
+
+use_netconf_settings=0
+old_version=0
+parsed=0
+
+while [ $# -gt 0 ]; do
+
+  if [ "$1" = "--raw" ]; then 
+    shift 1
+    parsed=0
+  elif [ "$1" = "--parsed" ]; then 
+    shift 1
+    parsed=1
+  elif [ "$1" = "--parsed_json" -o "$1" = "--json" ]; then 
+    shift 1
+    parsed=2
+  elif [ "$1" = "--old_version" ]; then 
+    shift 1
+    old_version=1
+  elif [ "$1" = "--use_netconf_settings" ]; then 
+    shift 1
+    use_netconf_settings=1
+  else
+    break
+  fi
+
+done 
+
+#
+
+NETCONF_DEVICE="$1" 
+shift 1
+NETCONF_PORT="$1"
+shift 1
+NETCONF_USER="$1" 
+shift 1
+NETCONF_PASS="$1"
+shift 1
+
+##
+
+[ -n "$NETCONF_DEVICE" ] || NETCONF_DEVICE="127.0.0.1"
+[ -n "$NETCONF_PORT" ] || NETCONF_PORT="830"
+[ -n "$NETCONF_USER" ] || NETCONF_USER="netconf"
+[ -n "$NETCONF_PASS" ] || NETCONF_PASS="netconf"
+
+echo "$0: using parsed=$parsed : NETCONF_DEVICE='$NETCONF_DEVICE' NETCONF_PORT='$NETCONF_PORT' NETCONF_USER='$NETCONF_USER' NETCONF_PASS='$NETCONF_PASS'" 1>&2
+
+##
+
+unset SSH_AUTH_SOCK
+
+##
+
+#. ./venv/bin/activate
+mydir="$(dirname "$0")"
+echo "$0: mydir=$mydir/../" 1>&2
+
+cd -P "$mydir/../"
+
+. "./venv/bin/activate"
+
+##
+
+#exec env DJANGO_SETTINGS_MODULE="flowspy.settings" python -c $'\nfrom utils.proxy import *; \nproxy = Applier(); import logging; logger = logging.getLogger("ncclient.transport.ssh").setLevel(logging.DEBUG); logger = logging.getLogger("ncclient.operations.rpc").setLevel(logging.DEBUG); \nxml = proxy.get_existing_config_xml();\nprint(xml);\n'
+
+##
+
+export DJANGO_SETTINGS_MODULE="flowspy.settings" 
+
+exec python <<EOF
+
+# enable debugging in ncclient library
+import logging; 
+logger = logging.getLogger("ncclient.transport.ssh").setLevel(logging.DEBUG); 
+logger = logging.getLogger("ncclient.operations.rpc").setLevel(logging.DEBUG); 
+
+###
+
+from django.conf import settings; 
+
+# override flowspy settings to enable debugging 
+settings.LEVEL = logging.DEBUG; # override flowspy/settings.py
+settings.LOG_FILE_LOCATION = "." #
+
+# override flowspy NETCONF parameters with local values
+# check further NETCONF_* variables in flowspec/settings.py, if needed
+
+if not $use_netconf_settings:
+  settings.NETCONF_DEVICE = '$NETCONF_DEVICE'; # override flowspy/settings.py
+  settings.NETCONF_PORT = '$NETCONF_PORT';     # override flowspy/settings.py
+  settings.NETCONF_USER = '$NETCONF_USER';     # override flowspy/settings.py
+  settings.NETCONF_PASS = '$NETCONF_PASS';     # override flowspy/settings.py
+
+# for testing with freertr for now
+settings.NETCONF__TESTWISE_TRY_TO_FETCH_WITHOUT_FILTER = 1; # override flowspy/settings.py
+
+###
+
+# actually perform NETCONF get-config query and print result
+from utils.proxy import *;
+
+if $old_version:
+  if $parsed==1:
+    retriever = Retriever();
+    device = retriever.fetch_device();
+    result = [route.__dict__ for r in device.routing_options for route in r.routes];
+    from pprint import pprint
+    pprint(result);
+  elif $parsed==2:
+    retriever = Retriever();
+    device = retriever.fetch_device();
+    result = [route.__dict__ for r in device.routing_options for route in r.routes];
+    import json
+    print(json.dumps(result, indent=4));
+  else:
+    applier = Applier();
+    result = applier.get_existing_config_xml();
+    print(result);
+else:
+  retriever = PR0.Retriever(); 
+  if $parsed==1:
+    result = retriever.retrieve_current_routes();
+    from pprint import pprint
+    #pprint(result);
+    #result = [route.__dict__ for route in result];
+    pprint(result);
+  elif $parsed==2:
+    result = retriever.retrieve_current_routes();
+    #result = [route.__dict__ for route in result];
+    import json
+    print(json.dumps(result, indent=4));
+  else:
+    result = retriever.fetch_raw();
+    print(result);
+
+EOF
+

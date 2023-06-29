@@ -26,11 +26,12 @@ from ipaddress import ip_network
 from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
 #import xml.etree.ElementTree as ET
 import re
+import sys
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_exabpg.log", False)
 
-#print("loading proxy_exabgp")
+#print("loading proxy_exabgp", file=sys.stderr)
 
 cwd = os.getcwd()
 
@@ -48,19 +49,25 @@ def do_exabgp_interaction(command_list):
     lock.acquire()
     logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): lock acquired")
     ret=""
+    msg=""
     try:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): before exabgp_interaction")
       ret, msg = exabgp_interaction(command_list)
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): done with exabgp_interaction")
     except Exception as e:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): got exception "+str(e), exc_info=True)
+      ret=1
     except Error as e:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): got error "+str(e), exc_info=True)
+      ret=1
     except:
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): got unknown error ", exc_info=True)
+      ret=1
     finally:
       lock.release() #release lock
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): lock released")
+
+    logger.info("proxy_exabgp::do_exabgp_interaction(): ret="+str(ret)+" msg="+str(msg))
     return ret, msg
 
 class Retriever(object):
@@ -83,7 +90,8 @@ class Retriever(object):
     # generic method for returning raw data string (here NETCONF XML)
     def fetch_raw(self):
       logger.info("proxy_exabgp::Retriever::fetch_raw(): called")
-      ret, msg = do_exabgp_interaction(["show adj-rib out"])
+      #ret, msg = do_exabgp_interaction(["show adj-rib out"])
+      ret, msg = do_exabgp_interaction(["show adj-rib out extensive"])
       logger.info("proxy_exabgp::Retriever::fetch_raw(): ret="+str(ret))
       #logger.info("proxy_exabgp::Retriever::fetch_raw(): msg="+str(msg))
       return msg
@@ -93,16 +101,22 @@ class Retriever(object):
     # generic method for parsing the raw data (here NETCONF XML) to routes
     # e.g., neighbor 127.0.0.3 ipv6 flow flow source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp__routes_output(self, msg):
+       logger.info("parse_exabgp__routes_output(): called")
        lines = msg.split("\n")
        #logger.info("proxy_exabgp::Retriever::parse_exabgp__routes_output(): => lines="+str(lines))
-       re1 = re.compile('^neighbor +\S+ +ipv([46]) +flow +flow +(.*)$')
+       #re1 = re.compile('^neighbor +\S+ +ipv([46]) +flow +flow +(.*)$')
+       re1 = re.compile('^neighbor +.* +ipv([46]) +flow +flow +(.*)$')
+       #logger.info("re="+str(re))
        route_exabgp__str__list = [re1.match(line).group(1)+" "+re1.match(line).group(2) for line in lines if re1.match(line)]
+       #logger.info("route_exabgp__str__list="+str(route_exabgp__str__list))
        routes = [self.parse_exabgp_route__str(route_exabgp__str) for route_exabgp__str in route_exabgp__str__list]
+       logger.info("=> routes="+str(routes))
        return routes
 
     # e.g., 4 source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp_route__str(self, route_exabgp__str):
-      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
+      #re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
+      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?(extended-community +)?(rate-limit:+(?P<ratelimit>(\[[^\[\]]+\])|\S+) +)?')
       key_is_singlevalued = {
         'version': 1,
         #'source': 1,
@@ -113,11 +127,19 @@ class Retriever(object):
           route = {}
           for groupname in re1.groupindex:
             val = m.group(groupname)
+            logger.info("groupname="+str(groupname)+" => val="+str(val))
 
             # special case
             if groupname=='source' or groupname=='destination' and route['version']=='6':
               if val!=None:
                 val = re.sub('(/[0-9]+)/0$', '\\1', val)
+            elif groupname=='ratelimit':
+                if val!="0":
+                    groupname="then"
+                    val="rate-limit:"+str(int(int(val)/1000))+"k"
+                else:
+                    groupname="then"
+                    val="discard"
 
             groupname2 = groupname.translate({ '_' : '-' })
             if groupname in key_is_singlevalued or val==None:
@@ -217,6 +239,7 @@ class Applier(object):
         destinationport = route['destinationport']
         protocols = route['protocol']
         fragtypes = route['fragmenttype']
+        thens = route['then']
     else:
         source = route.source
         destination = route.destination
@@ -224,6 +247,7 @@ class Applier(object):
         destinationport = route.destinationport
         protocols = route.protocol.all()
         fragtypes = route.fragmenttype.all()
+        thens = route.then.all()
 
     ret = ret + " source-ipv4 " + str(source) + " "
     ret = ret + " destination-ipv4 " + str(destination) + " "
@@ -255,6 +279,37 @@ class Applier(object):
       ret1 = ret1 + str(fragtype) + " "
     if ret1!="":
       ret = ret + " fragment [ " + ret1 + "]"
+
+    ret1 = ""
+    for then in thens:
+      then_str = str(then)
+      logger.info("then='"+then_str+"'")
+      #action = then.action
+      #action_value = then.action_value
+      ret2 = ""
+      #re1 = re.compile('^rate-limit:(?P<value>.*)(k?)$'
+      re1 = re.compile('^rate-limit:(?P<value>[0-9]+)(k?)$')
+      re_match1 = re1.match(then_str)
+      if re_match1:
+        val_part = str(re_match1.group(1))
+        k_part = str(re_match1.group(2))
+        if k_part=="k":
+          val_part = str(int(val_part)*1000)
+        ret2 = "rate-limit "+val_part
+      elif str(then)=="discard":
+        ret2 = "rate-limit 0"
+      else:
+        logger.error("currently only rate-limit and discard supported as then action")
+
+      ret1 = ret1 + ret2 + " "
+      logger.info("then => ret1="+str(ret1))
+
+    if ret1!="":
+      logger.info("then final => ret1="+str(ret1))
+      #ret = ret + " fragment [ " + ret1 + "]"
+      ret = ret + ret1
+
+    logger.info("helper_get_exabgp__route_parameter_string(): ret="+str(ret))
 
     return ret
 
@@ -297,7 +352,7 @@ class Applier(object):
       if operation == "delete":
         logger.info("proxy_exabgp::apply(): requesting a delete operation")
         if route_with_same_params__exists:
-          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo; list2="+str(list2))
+          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo")
           status =True
           msg = "route_with_same_params__exists, nothing todo"
         elif route_original__status!="INACTIVE" and route_original__status!="PENDING":
@@ -392,7 +447,7 @@ class Applier(object):
           status = True
           msg = "status!=ACTIVE/PENDING, ignoring request"
         elif route_with_same_params__exists:
-          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo; list2="+str(list2))
+          logger.info("proxy_exabgp::apply(): route_with_same_params__exists, nothing todo")
           status = True
           msg = "route_with_same_params__exists, nothing todo"
         else:
