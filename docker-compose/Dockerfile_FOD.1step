@@ -1,0 +1,16 @@
+FROM ubuntu:latest
+LABEL maintainer="FOD"
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install -y locales
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
+ENV LANG en_US.UTF-8
+COPY docker-compose/fod_setup_environment-1step.sh /opt/setup_environment.sh
+RUN mkdir -p /var/run/supervisor
+RUN apt-get update -y && apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' --assume-yes -fuy dist-upgrade
+RUN apt-get install -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 supervisor pkg-config
+RUN useradd exabgp
+WORKDIR /opt/FOD
+EXPOSE 8000
+CMD /opt/setup_environment.sh && supervisord -c docker-compose/fod_supervisord.conf
