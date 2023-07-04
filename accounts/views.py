@@ -130,6 +130,7 @@ def activate(request, activation_key):
                 }
             )
 
+        error = None
         if account:
             # A user has been activated
             email = render_to_string(
@@ -139,7 +140,6 @@ def activate(request, activation_key):
                     'user': account
                 }
             )
-            error = None
             try:
                 send_mail(
                     _("%sUser account activated") % settings.EMAIL_SUBJECT_PREFIX,
@@ -149,7 +149,8 @@ def activate(request, activation_key):
                 )
             except SMTPRecipientsRefused as e:
                 logger.error("Failed to send a notification e-mail to the user: %s" % e)
-                error = e
+                #error = e
+                error = "Failed to send a notification e-mail to the user"
                 
         logger.info('Activated account %s' % account)
         return render(
@@ -158,6 +159,6 @@ def activate(request, activation_key):
             {
                 'account': account,
                 'expiration_days': settings.ACCOUNT_ACTIVATION_DAYS,
-                'error': "Failed to send a notification e-mail to the user"
+                'error': error
             },
         )
