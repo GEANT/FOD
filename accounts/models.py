@@ -21,7 +21,16 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, User, BaseUserManager
 from peers.models import Peer
+from flowspec.models import Route
 
+# TODO: dependency issue: move logging_utils to general package
+import flowspec.logging_utils
+logger = flowspec.logging_utils.logger_init_default(__name__, "accounts_model.log", False)
+
+#
+
+
+#
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -46,8 +55,54 @@ class UserProfile(models.Model):
             return False
         return networks
 
+    # deleting of rules by this account is allowed
     def is_delete_allowed(self):
         user_is_admin = self.user.is_superuser
         username = self.username
         return (user_is_admin and settings.ALLOW_DELETE_FULL_FOR_ADMIN) or settings.ALLOW_DELETE_FULL_FOR_USER_ALL or (username in settings.ALLOW_DELETE_FULL_FOR_USER_LIST)
+
+#
+
+from django.dispatch import receiver
+from django.db.models.signals import pre_delete
+
+#@receiver(pre_delete, sender=UserProfile)
+@receiver(pre_delete, sender=User)
+def user_pre_delete_handler(sender, instance, **kwargs):
+    logger.info("user_pre_delete_handler(): pre_delete instance="+str(instance))
+    user_owned_rules_adopt_to_related_user(instance)
+
+def user_owned_rules_adopt_to_related_user(user):
+    routes_owned = Route.objects.filter(applier=user)   
+    logger.info("user_owned_rules_adopt_to_related_user(): => routes_owned="+str(routes_owned))
+
+    users_peers = user.userprofile.peers.all()
+    users_peers1 = None
+    logger.info("user_owned_rules_adopt_to_related_user(): => users_peers="+str(users_peers))
+    if len(users_peers)==1:
+      users_peers1 = users_peers[0]
+      logger.info("user_owned_rules_adopt_to_related_user(): => users_peers[0]="+str(users_peers1))
+      #peers1_userprofiles = users_peers[0].user_profile
+      #logger.info("user_owned_rules_adopt_to_related_user(): => peers1_userprofiles="+str(peers1_userprofiles))
+
+      users_related = User.objects.filter(userprofile__peers__in=users_peers)
+      logger.info("user_owned_rules_adopt_to_related_user(): => users_related="+str(users_related))
+      user_related1 = None
+      for user2 in users_related:
+          if user2 != user:
+              user_related1=user2
+              break
+
+      logger.info("user_owned_rules_adopt_to_related_user(): => user_related1="+str(user_related1))
+
+    if user_related1!=None:
+      if len(routes_owned)>0:
+        logger.info("user_owned_rules_adopt_to_related_user(): len="+str(len(routes_owned)))
+        for route in routes_owned:
+          logger.info("user_owned_rules_adopt_to_related_user(): owned route="+str(route))
+          route.applier = user_related1
+          logger.info("user_owned_rules_adopt_to_related_user(): reassigning owned route="+str(route)+" by user to be deleted ("+str(user)+") to new owner "+str(user_related1))
+          route.save()
+
+    return (routes_owned, user_related1, users_peers1)
 

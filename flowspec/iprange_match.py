@@ -45,8 +45,13 @@ def get_matching_related_peer_for_rule_destination(ivaltrees_per_version, route)
    peer_name_tmp = None
    peer_name_tmp_not_applier_related = None
    try:
-     if route.applier!=None:    
-       route_applier__peers_related = set(route.applier.userprofile.peers.select_related())
+      applier = route.applier
+   except:
+      applier = None
+
+   try:
+     if applier!=None:    
+       route_applier__peers_related = set(applier.userprofile.peers.select_related())
      else:
        route_applier__peers_related = None
 

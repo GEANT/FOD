@@ -157,7 +157,8 @@ class ThenAction(models.Model):
 
 class Route(models.Model):
     name = models.SlugField(max_length=128, verbose_name=_("Name"))
-    applier = models.ForeignKey(User, blank=True, null=True, on_delete=models.CASCADE)
+    #applier = models.ForeignKey(User, blank=True, null=True, on_delete=models.CASCADE)
+    applier = models.ForeignKey(User, blank=True, null=True, on_delete=models.DO_NOTHING)
     source = models.CharField(max_length=45+4, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Source Address"))
     sourceport = models.TextField(blank=True, null=True, verbose_name=_("Source Port"))
     destination = models.CharField(max_length=45+4, help_text=_("Network address. Use address/CIDR notation"), verbose_name=_("Destination Address"))
