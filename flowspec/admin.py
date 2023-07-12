@@ -27,6 +27,14 @@ from django.contrib.auth.admin import UserAdmin
 from peers.models import *
 from longerusername.forms import UserCreationForm, UserChangeForm
 
+from django.contrib import messages
+from accounts.models import user_owned_rules_adopt_to_related_user
+
+# TODO: dependency issue: move logging_utils to general package
+import flowspec.logging_utils
+logger = flowspec.logging_utils.logger_init_default(__name__, "flowspec_admin.log", False)
+
+#
 
 class RouteAdmin(admin.ModelAdmin):
     form = RouteForm
@@ -82,6 +90,21 @@ class UserProfileAdmin(UserAdmin):
     def activate(self, request, queryset):
         queryset = queryset.update(is_active=True)
     activate.short_description = "Activate Selected Users"
+
+    def delete_model(self, request, client):
+      if False:
+        messages.set_level(request, messages.ERROR)
+        messages.error(request, 'Blocking deletion')
+      else:
+        (adopted_rules, adoting_user, users_peer1) = user_owned_rules_adopt_to_related_user(client) # before actually calling the super.delete_model clean-up owned rules in order to get info about the cleanup which can be used for extra message to the admin UI
+        logger.info("delete_model() => adoting_user="+str(adoting_user))
+        logger.info("delete_model() => adopted_rules="+str(adopted_rules))
+
+        if len(adopted_rules)>0:
+          messages.set_level(request, messages.INFO)
+          messages.error(request, 'additional info: the rules '+str(adopted_rules)+' were re-assigned to remaining user '+str(adoting_user)+' of peer '+str(users_peer1))
+
+        super().delete_model(request, client)
 
     def get_userprofile_peers(self, instance):
         # instance is User instance
