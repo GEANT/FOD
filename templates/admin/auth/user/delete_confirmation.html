@@ -11,6 +11,11 @@
 	    <li> route {{ route }} </li>
 	  {% endfor %}
 	  </ul>
+
+	  <br>
+          User available who will be used for adopting/reassigning these rules:
+	  {{ object.userprofile.get_related_user__for_adopting_on_user_deletion }}
+
 	{% endif %}
 
     </p>

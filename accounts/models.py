@@ -61,6 +61,27 @@ class UserProfile(models.Model):
       #logger.info("get_owned_rules(): self="+str(self)+" => routes_owned="+str(routes_owned))
       return routes_owned
 
+    @property
+    def get_related_user__for_adopting_on_user_deletion(self):
+      user = self.user
+      users_peers = self.peers.all()
+      users_peers1 = None
+      logger.info("get_related_user__for_adopting_on_user_deletion(): => users_peers="+str(users_peers))
+      user_related1 = None
+      if len(users_peers)==1:
+        users_peers1 = users_peers[0]
+        logger.info("get_related_user__for_adopting_on_user_deletion(): => users_peers[0]="+str(users_peers1))
+
+        users_related = User.objects.filter(userprofile__peers__in=users_peers)
+        logger.info("get_related_user__for_adopting_on_user_deletion(): => users_related="+str(users_related))
+        user_related1 = None
+        for user2 in users_related:
+          if user2 != user:
+              user_related1=user2
+              break
+
+      return user_related1
+
     # deleting of rules by this account is allowed
     def is_delete_allowed(self):
         user_is_admin = self.user.is_superuser
@@ -82,24 +103,25 @@ def user_owned_rules_adopt_to_related_user(user):
     routes_owned = Route.objects.filter(applier=user)   
     logger.info("user_owned_rules_adopt_to_related_user(): => routes_owned="+str(routes_owned))
 
-    users_peers = user.userprofile.peers.all()
-    users_peers1 = None
-    logger.info("user_owned_rules_adopt_to_related_user(): => users_peers="+str(users_peers))
-    if len(users_peers)==1:
-      users_peers1 = users_peers[0]
-      logger.info("user_owned_rules_adopt_to_related_user(): => users_peers[0]="+str(users_peers1))
-      #peers1_userprofiles = users_peers[0].user_profile
-      #logger.info("user_owned_rules_adopt_to_related_user(): => peers1_userprofiles="+str(peers1_userprofiles))
+    #users_peers = user.userprofile.peers.all()
+    #users_peers1 = None
+    #logger.info("user_owned_rules_adopt_to_related_user(): => users_peers="+str(users_peers))
+    #if len(users_peers)==1:
+    #  users_peers1 = users_peers[0]
+    #  logger.info("user_owned_rules_adopt_to_related_user(): => users_peers[0]="+str(users_peers1))
+    #  #peers1_userprofiles = users_peers[0].user_profile
+    #  #logger.info("user_owned_rules_adopt_to_related_user(): => peers1_userprofiles="+str(peers1_userprofiles))
 
-      users_related = User.objects.filter(userprofile__peers__in=users_peers)
-      logger.info("user_owned_rules_adopt_to_related_user(): => users_related="+str(users_related))
-      user_related1 = None
-      for user2 in users_related:
-          if user2 != user:
-              user_related1=user2
-              break
+    #  users_related = User.objects.filter(userprofile__peers__in=users_peers)
+    #  logger.info("user_owned_rules_adopt_to_related_user(): => users_related="+str(users_related))
+    #  user_related1 = None
+    #  for user2 in users_related:
+    #      if user2 != user:
+    #          user_related1=user2
+    #          break
 
-      logger.info("user_owned_rules_adopt_to_related_user(): => user_related1="+str(user_related1))
+    #  logger.info("user_owned_rules_adopt_to_related_user(): => user_related1="+str(user_related1))
+    user_related1 = user.userprofile.get_related_user__for_adopting_on_user_deletion()
 
     if user_related1!=None:
       if len(routes_owned)>0:
