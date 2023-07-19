@@ -1,0 +1,20 @@
+
+{% extends "admin/delete_confirmation.html" %}
+
+{% block content %}
+    <p>
+
+	{% if object.userprofile.get_owned_rules %}
+	Rules currently associated to the user to be deleted:<br>
+	  <ul>
+	  {% for route in object.userprofile.get_owned_rules %}
+	    <li> route {{ route }} </li>
+	  {% endfor %}
+	  </ul>
+	{% endif %}
+
+    </p>
+
+    {{ block.super }}
+{% endblock %}
+
