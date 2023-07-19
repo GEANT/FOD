@@ -55,6 +55,12 @@ class UserProfile(models.Model):
             return False
         return networks
 
+    @property
+    def get_owned_rules(self):
+      routes_owned = Route.objects.filter(applier=self.user)   
+      #logger.info("get_owned_rules(): self="+str(self)+" => routes_owned="+str(routes_owned))
+      return routes_owned
+
     # deleting of rules by this account is allowed
     def is_delete_allowed(self):
         user_is_admin = self.user.is_superuser
