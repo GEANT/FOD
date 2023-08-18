@@ -345,7 +345,8 @@ import os
 import signal
 
 def handleSIGCHLD(signal, frame):
-  logger.info("handleSIGCHLD(): reaping childs")
+  pid = os.getpid()
+  logger.info("handleSIGCHLD(): pid="+str(pid)+" reaping childs")
   os.waitpid(-1, os.WNOHANG)
 
 def snmp_lock_create(wait=0):
@@ -376,15 +377,18 @@ def snmp_lock_remove():
       logger.error("snmp_lock_remove(): failed "+str(e))
 
 def exit_process():
-    import sys
+    #import sys
     pid = os.getpid()
-    logger.info("exit_process(): before exit in child process (pid="+str(pid)+")")
-    exit()
-    logger.info("exit_process(): before exit in child process (pid="+str(pid)+"), after exit")
-    sys.exit()
-    logger.info("exit_process(): before exit in child process (pid="+str(pid)+"), after sys.exit")
+
+    #logger.info("exit_process(): before exit() in child process (pid="+str(pid)+")")
+    #exit()
+
+    #logger.info("exit_process(): before sys.exit() in child process (pid="+str(pid)+")")
+    #sys.exit()
+
+    logger.info("exit_process(): before os._exit() in child process (pid="+str(pid)+")")
     os._exit()
-    logger.info("exit_process(): before exit in child process (pid="+str(pid)+"), after os._exit")
+    logger.info("exit_process(): before os._exit() in child process (pid="+str(pid)+")")
 
 #@shared_task(ignore_result=True, time_limit=580, soft_time_limit=550)
 @shared_task(ignore_result=True, max_retries=0)
@@ -404,21 +408,28 @@ def poll_snmp_statistics():
     elif npid > 0:
       logger.info("poll_snmp_statistics(): returning in parent process (pid="+str(pid)+", npid="+str(npid)+")")
     else:
-      logger.info("poll_snmp_statistics(): in child process (pid="+str(pid)+", npid="+str(npid)+")")
+      ppid = pid
+      pid = os.getpid()
+      logger.info("poll_snmp_statistics(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
       try:
         snmpstats.poll_snmp_statistics()        
       except Exception as e:
-        logger.error("poll_snmp_statistics(): exception occured in snmp poll (pid="+str(pid)+", npid="+str(npid)+"): "+str(e))
+        logger.error("poll_snmp_statistics(): exception occured in snmp poll (pid="+str(pid)+", ppid="+str(ppid)+"): "+str(e))
       snmp_lock_remove()
       #exit_process()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
-      exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after exit")
-      import sys
-      sys.exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after sys.exit")
-      os._exit()
-      logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit")
+
+      # not used anymore: will lead to exit of parent process
+      #logger.info("poll_snmp_statistics(): before exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
+      #exit()
+
+      # not used anymore: will lead to exit of parent process
+      #logger.info("poll_snmp_statistics(): before sys.exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
+      #import sys
+      #sys.exit()
+
+      logger.info("poll_snmp_statistics(): before os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
+      os._exit(0)
+      logger.info("poll_snmp_statistics(): after os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
 @shared_task(ignore_result=True, max_retries=0)
 def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
@@ -439,7 +450,9 @@ def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
       elif npid > 0:
         logger.info("snmp_add_initial_zero_value(): returning in parent process (pid="+str(pid)+", npid="+str(npid)+")")
       else:
-        logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", npid="+str(npid)+")")
+        ppid = pid
+        pid = os.getpid()
+        logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
         try:
           snmpstats.add_initial_zero_value(rule_id, zero_or_null)
@@ -448,14 +461,18 @@ def snmp_add_initial_zero_value(rule_id, zero_or_null=True):
           logger.error("snmp_add_initial_zero_value(): rule_id="+str(rule_id)+","+str(zero_or_null)+" failed: "+str(e))
 
         #exit_process()
-        logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+")")
-        exit()
-        logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after exit")
-        sys.exit()
-        logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after sys.exit")
-        os._exit()
-        logger.info("exit_process(): before exit in child process (pid="+str(pid)+", npid="+str(npid)+"), after os._exit")
 
+        # not used anymore: will lead to exit of parent process
+        #logger.info("snmp_add_initial_zero_value(): before exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
+        #exit()
+
+        # not used anymore: will lead to exit of parent process
+        #logger.info("snmp_add_initial_zero_value(): before sys.exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
+        #sys.exit()
+
+        logger.info("snmp_add_initial_zero_value(): before os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
+        os._exit(0)
+        logger.info("snmp_add_initial_zero_value(): after os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
 @pytest.mark.skip
 @shared_task(ignore_result=True,default_retry_delay=5,max_retries=2,autoretry_for=(TimeoutError,))

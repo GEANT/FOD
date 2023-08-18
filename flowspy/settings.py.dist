@@ -79,6 +79,9 @@ LOG_FILE_LOCATION = "/srv/flowspy/log/"
 LOGGING_FORMAT_DEFAULT = '%(asctime)s %(name)s %(levelname)s: %(message)s'
 #LOGGING_FORMAT_DEFAULT = '%(processName)s[%(process)d] %(asctime)s %(name)s %(levelname)s: %(message)s'
 
+#CELERYD_LOG_FORMAT = LOGGING_FORMAT_DEFAULT
+#CELERYD_TASK_LOG_FORMAT = CELERYD_LOG_FORMAT
+
 # "error" | "warn" | "info" | "debug"
 LOG_LEVEL = "info"
 
@@ -645,12 +648,19 @@ ALLOW_DELETE_FULL_FOR_USER_LIST = [
 # with the same addresses). By default it is enabled (True).
 #DISABLE_RULE_OVERLAP_CHECK = False
 ROUTES_DUPLICATES_CHECKING = True
+ROUTES_DUPLICATES_CHECKING__ENFORCED_FOR_ALREADY_EXISTING_RULES = False
 
 ##############################################################################
 ##############################################################################
 # special test installation 
 
 ENABLE_SETUP_VIEW = False
+
+##############################################################################
+##############################################################################
+
+#PROXY_CLASS="proxy_netconf_junos"
+PROXY_CLASS="proxy_exabgp"
 
 ##############################################################################
 ##############################################################################
