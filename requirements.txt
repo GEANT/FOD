@@ -40,3 +40,5 @@ pytest-django==4.4.0
 psutil
 longerusername
 intervaltree
+mkdocs
+mkdocs-macros-plugin

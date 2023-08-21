@@ -10,7 +10,7 @@ will perform every action.
 ## Requirements
 
 ### System Requirements
-In order to install FoD properly, make sure the following software is installed on your computer.
+In order to install {{ product_name_short }} properly, make sure the following software is installed on your computer.
 
 - apache 2
 - memcached
@@ -112,7 +112,7 @@ Here is an example configuration.
 
 
 ### Gunicorn
-FoD is served via gunicorn and is then proxied by Apache. If the above
+{{ product_name_short }} is served via gunicorn and is then proxied by Apache. If the above
 directory conventions have been followed so far, then your configuration
 should be:
 

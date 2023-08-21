@@ -4,7 +4,7 @@
 
 # Description
 
-Current version of FoD officially has a REST API.
+Current version of {{ product_name_short }} officially has a REST API.
 The API needs authentication. Out of the box the supported authentication
 type is Token Authentication.
 
@@ -12,7 +12,7 @@ TO UPDATE
 
 ## Generating Tokens
 
-A user can generate an API token using the FoD UI. Select "My Profile" from the
+A user can generate an API token using the {{ product_name_short }} UI. Select "My Profile" from the
 top right menu and on the "Api Token" section click "Generate One".
 
 ## Accessing the API
@@ -57,7 +57,7 @@ URL: `/api/thenactions/`
 Example:
 ```
 curl -X GET https://fod.example.com/api/thenactions/ -H "Authorization: Token <your-token>"
-# or on the FoD host locally:
+# or on the {{ product_name_short }} host locally:
 curl -X GET http://localhost:8000/api/thenactions/ -H "Authorization: Token <your-token>"
 
 RESPONSE:
@@ -158,8 +158,8 @@ RESPONSE:
 
 ### POST
 
-Starting from FoD v1.7 the REST API accepts parameters for POST, PUT and PATCH only via JSON documents,
-old method used in REST API of FoD v1.3 to specify parameters as single form values is not supported any more.
+Starting from {{ product_name_short }} v1.7 the REST API accepts parameters for POST, PUT and PATCH only via JSON documents,
+old method used in REST API of {{ product_name_short }} v1.3 to specify parameters as single form values is not supported any more.
 
 Required fields (to be specified via JSON document):
 
@@ -244,8 +244,8 @@ the API returned.
 
 ### PUT, PATCH
 
-Starting from FoD v1.7 the REST API accepts parameters for POST, PUT and PATCH only via JSON documents,
-old method used in REST API of FoD v1.3 to specify parameters as single form values is not supported any more.
+Starting from {{ product_name_short }} v1.7 the REST API accepts parameters for POST, PUT and PATCH only via JSON documents,
+old method used in REST API of {{ product_name_short }} v1.3 to specify parameters as single form values is not supported any more.
 
 `Route` objects can be modified using the `PUT` / `PATCH` HTTP methods.
 
@@ -279,8 +279,8 @@ In contrast, a PUT of an active rule will always trigger a recommiting of that r
 on the configured NETCONF-linked router, independent of the attribute values changed.
 So, this is useful
 for ensuring that a rule is really still actively installed on the configured NETCONF-linked router
-with all match and action parameters as is was last deployed by FoD,
-and not changed by some other means without FoD's notice, e.g., other tools or directly by the CLI of the router.
+with all match and action parameters as is was last deployed by {{ product_name_short }},
+and not changed by some other means without {{ product_name_short }}'s notice, e.g., other tools or directly by the CLI of the router.
 
 ### DELETE
 
@@ -299,20 +299,20 @@ set of normal users is allowed to use DELETE method.
 The default values of the settings (flowspy/settings.py.dist) by this means 
 allow DELETE only for admins, only for a specificly defined set of normal users.
 
-### General notes on `Route` models (differences to REST API of FoD v1.7):
+### General notes on `Route` models (differences to REST API of {{ product_name_short }} v1.7):
 
-* Starting from FoD v1.7 the REST API accepts parameters for POST, PUT and PATCH only via JSON documents,
-old method used in REST API of FoD v1.3 to specify parameters as single form values is not supported any more.
+* Starting from {{ product_name_short }} v1.7 the REST API accepts parameters for POST, PUT and PATCH only via JSON documents,
+old method used in REST API of {{ product_name_short }} v1.3 to specify parameters as single form values is not supported any more.
 
-* In contrast to REST API of FoD v1.3, REST API of current version v1.7 will honor the status
+* In contrast to REST API of {{ product_name_short }} v1.3, REST API of current version v1.7 will honor the status
 value set in POST method calls.
 So, it is possible to create a Flowspec rule with status INACTIVE, 
 i.e., a rule which will not be automatically commited via NETCONF as result of the POST method call.
 
-* In contrast to REST API of FoD v1.3, REST API of current version v1.7,
+* In contrast to REST API of {{ product_name_short }} v1.3, REST API of current version v1.7,
 the reuslt of PUT and PATCH method differs in some occasions (see above).
 
-* In contrast to REST API of FoD v1.3, REST API of current version v1.7
+* In contrast to REST API of {{ product_name_short }} v1.3, REST API of current version v1.7
 will behave differently regarding the DELETE method (see above).
 
 

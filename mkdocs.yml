@@ -7,6 +7,14 @@ site_dir: static/site
 docs_dir: doc
 #theme: readthedocs
 #pages:
+plugins:
+        - macros:
+extra:
+        test1: test1 value
+        product_name1: 'Firewall On Demand'
+        product_name_short1: 'FoD'
+        product_name: 'Gatekeeper'
+        product_name_short: 'Gkr'
 nav:
     - 'Introduction': 'index.md'
     - 'Prerequisites': 'prerequisites/generic.md'

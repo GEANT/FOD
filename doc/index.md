@@ -1,15 +1,15 @@
 # Description
 
-Firewall on Demand applies, via Netconf, flow rules to a network device.
+{{ product_name }} applies, via Netconf, flow rules to a network device.
 These rules are then propagated via e-bgp to peering routers. Each user
 is authenticated against shibboleth. Authorization is performed via a
 combination of a Shibboleth attribute and the peer network address range
-that the user originates from. FoD is meant to operate over this
+that the user originates from. {{ product_name_short }} is meant to operate over this
 architecture:
 
 ```
     +-----------+          +------------+        +------------+  
-    |   FoD     | NETCONF  | flowspec   | ebgp   |   router   |  
+    |   {{ product_name_short }}     | NETCONF  | flowspec   | ebgp   |   router   |  
     | web app   +----------> device     +-------->            |  
     +-----------+          +------+-----+        +------------+  
                                   | ebgp  
@@ -22,13 +22,13 @@ architecture:
 
 NETCONF is chosen as the mgmt protocol to apply rules to a single
 flowspec capable device. Rules are then propagated via igbp to all
-flowspec capable routers. Of course FoD could apply rules directly (via
+flowspec capable routers. Of course {{ product_name_short }} could apply rules directly (via
 NETCONF always) to a router and then ibgp would do the rest. In GRNET’s
 case the flowspec capable device is an EX4200.
 
 > ** Attention **
 >
-> Make sure your FoD server has SSH access to your flowspec device.
+> Make sure your {{ product_name_short }} server has SSH access to your flowspec device.
 
 # Index
 
@@ -38,7 +38,7 @@ case the flowspec capable device is an EX4200.
 * [Installation/v1.7/DebianAndUbuntu](./installation/v1.7/debian_ubuntu.md)
 * [Installation/v1.7/CentOS](./installation/v1.7/centos.md)
 * [Installation/v1.7/Docker](./installation/v1.7/docker.md)
-* [Installation/v1.7/Extra Docker Container for Testing FoD without Router Hardware](./installation/v1.7/docker_extra.md)
+* [Installation/v1.7/Extra Docker Container for Testing {{ product_name_short }} without Router Hardware](./installation/v1.7/docker_extra.md)
 
 * [Configuration/v1.7](./configuration/configuration-v1.7.md)
 
@@ -50,14 +50,14 @@ case the flowspec capable device is an EX4200.
 
 # Contact 
 
-You can find more about FoD or raise your issues at [Github FoD
+You can find more about {{ product_name_short }} or raise your issues at [Github FoD
 repository].
 
 You can contact us directly at fod{at}lists[dot]geant(.)org
 
 # GRNET Contact 
 
-You can find more about FoD or raise your issues at [Github FoD
+You can find more about {{ product_name_short }} or raise your issues at [Github FoD
 repository].
 
 You can contact GRNET at dev{at}noc[dot]grnet(.)gr

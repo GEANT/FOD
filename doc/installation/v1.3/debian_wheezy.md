@@ -1,6 +1,6 @@
 # Installing Flowspy v1.3 on Debian Wheezy (x64) - Django 1.4.x
 
-The following document describes the installation process of Firewall On Demand
+The following document describes the installation process of {{ product_name }}
 on a Debian Wheezy machine with Django 1.4
 
 ## Upgrading
@@ -54,7 +54,7 @@ not available, but one can install it via pip.
 > **note**
 >
 > If you wish to deploy an outgoing mail server, now it is time to do
-> it. Otherwise you could set FoD to send out mails via a third party
+> it. Otherwise you could set {{ product_name_short }} to send out mails via a third party
 > account
 
 ### Create a database
@@ -130,7 +130,7 @@ Create and edit /etc/gunicorn.d/fod:
 
     vim /etc/gunicorn.d/fod
 
-FoD is served via gunicorn and is then proxied by Apache. If the above
+{{ product_name_short }} is served via gunicorn and is then proxied by Apache. If the above
 directory conventions have been followed so far, then your configuration
 should be:
 
@@ -455,7 +455,7 @@ is the only site you host on your server:
     a2dissite default
     a2ensite fod
 
-You are not far away from deploying FoD. When asked for a super user,
+You are not far away from deploying {{ product_name_short }}. When asked for a super user,
 create one:
 
     cd /srv/flowspy

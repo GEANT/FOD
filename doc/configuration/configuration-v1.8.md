@@ -16,7 +16,7 @@ Its time to configure `settings.py` in order to connect flowspy with a database,
 So lets edit settings.py file.
 
 It is strongly advised that you do not change the following to False
-values unless, you want to integrate FoD with you CRM or members
+values unless, you want to integrate {{ product_name_short }} with you CRM or members
 database. This implies that you are able/have the rights to create
 database views between the two databases:
 
@@ -140,8 +140,8 @@ Outgoing mail address and prefix.
 
 	DISABLE_EMAIL_NOTIFICATION = False # only disable for testing
 
-	SERVER_EMAIL = "Example FoD Service <noreply@example.com>"
-	EMAIL_SUBJECT_PREFIX = "[FoD] "
+	SERVER_EMAIL = "Example {{ product_name_short }} Service <noreply@example.com>"
+	EMAIL_SUBJECT_PREFIX = "[{{ product_name_short }}] "
 	NOTIFY_ADMIN_MAILS = ["admin@example.com"]
 
 
@@ -220,7 +220,7 @@ attribute configuration:
 
 
 ### Syncing the database
-To create all the tables and fill with basic data needed by FoD we have to run the following commands:
+To create all the tables and fill with basic data needed by {{ product_name_short }} we have to run the following commands:
 
 	cd /srv/flowspy
 	./manage.py migrate
@@ -241,7 +241,7 @@ folder:
     python manage.py loaddata initial_data/fixtures_manual.xml
 
 ### Celery
-Celery is a distributed task queue, which helps FoD run some async tasks, like applying a flowspec rule to a router.
+Celery is a distributed task queue, which helps {{ product_name_short }} run some async tasks, like applying a flowspec rule to a router.
 
 `Note` In order to check if celery runs or even debug it, you can run:
 
@@ -289,13 +289,13 @@ welcome.html with your own images, carousel, videos, etc.
 ## Usage
 
 ### Web interface
-FoD comes with a web interface, in which one can edit and apply new routes.
+{{ product_name_short }} comes with a web interface, in which one can edit and apply new routes.
 
 ### Rest Api
-FoD provides a rest api. It uses token as authentication method.
+{{ product_name_short }} provides a rest api. It uses token as authentication method.
 
 ### Generating Tokens
-A user can generate a token for his account on "my profile" page from FoD's
+A user can generate a token for his account on "my profile" page from {{ product_name_short }}'s
 UI. Then by using this token in the header of the request he can list, retrieve,
 modify and create rules.
 

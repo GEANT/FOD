@@ -1,6 +1,6 @@
-# Installing FoD v1.7 Generic
+# Installing {{ product_name_short }} v1.7 Generic
 
-This guide provides general information about the installation of FoD. In case you use Debian/UBUNTU, we provide detailed instructions for the installation.
+This guide provides general information about the installation of {{ product_name_short }}. In case you use Debian/UBUNTU, we provide detailed instructions for the installation.
 
 Also it assumes that installation is carried out in `/srv/flowspy`
 directory. If other directory is to be used, please change the
@@ -12,7 +12,7 @@ TO UPDATE
 ## Requirements
 
 ### System Requirements
-In order to install FoD properly, make sure the following software is installed on your computer.
+In order to install {{ product_name_short }} properly, make sure the following software is installed on your computer.
 
 - apache 2
 - libapache2-mod-proxy-html
@@ -25,12 +25,12 @@ In order to install FoD properly, make sure the following software is installed 
 - pip
 - gcc
 
-### Download FoD
-You can clone FoD from GEANT github repository. 
+### Download {{ product_name_short }}
+You can clone {{ product_name_short }} from GEANT github repository. 
 
     mkdir -p /srv/
     cd /srv/
-    git clone https://github.com/GEANT/FoD flowspy
+    git clone https://github.com/GEANT/{{ product_name_short }} flowspy
 
 ### Python-virtualenv
 
@@ -39,7 +39,7 @@ You can clone FoD from GEANT github repository.
     . /srv/venv/bin/activate
 
 ### Pip
-In order to install the required python packages for FoD you can use pip:
+In order to install the required python packages for {{ product_name_short }} you can use pip:
 
     . /srv/venv/bin/activate
     cd /srv/flowspy
@@ -57,7 +57,7 @@ If you are using mysql, you should create a database:
     cp urls.py.dist urls.py
 
 ### Device Configuration
-FoD generates and commits flowspec rules to a
+{{ product_name_short }} generates and commits flowspec rules to a
 device via netconf. You have to create an account
 with rw access to flowspec and set these credentials
 in settings.py. See Configuration for details.
@@ -80,7 +80,7 @@ Just make sure redis is installed and started
 
 ### mkdocs-based internal documentation
 Just make sure mkdocs is installed and prepare documentation with it
-(the documentation is optional and non-essential for the operation of FoD)
+(the documentation is optional and non-essential for the operation of {{ product_name_short }})
 
      # on DEBIAN/UBUNTU (>= DEBIAN 10/UBUNTU 18)
      apt-get install mkdocs
@@ -131,7 +131,7 @@ Here is an example configuration.
 
 
 ### Gunicorn
-FoD is served via gunicorn and is then proxied by Apache. If the above
+{{ product_name_short }} is served via gunicorn and is then proxied by Apache. If the above
 directory conventions have been followed so far, then your configuration
 should be:
 

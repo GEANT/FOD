@@ -1,15 +1,15 @@
 # Basic Administration and Usage
 
-Early steps for administration and usage that can be done after FoD has been installed.
+Early steps for administration and usage that can be done after {{ product_name_short }} has been installed.
 
-## 1: Setup NETCONF + FoD admin user 
+## 1: Setup NETCONF + {{ product_name_short }} admin user 
 
-### 1 (local): Setup NETCONF + FoD admin user (FoD running locally)
+### 1 (local): Setup NETCONF + {{ product_name_short }} admin user ({{ product_name_short }} running locally)
 
 admin user password and NETCONF connection has to be setup, 
 either by
 
-A) via the setup page of FoD in container
+A) via the setup page of {{ product_name_short }} in container
 (needs ENABLE_SETUP_VIEW=True in ./flowspy/settings.py; 
 only applicable once, i.e., as long as no admin user has been setup, for security reasons):
 
@@ -29,21 +29,21 @@ edit /srv/flowspy/flowspy/settings.py : settings NETCONF_DEVICE, NETCONF_PORT, N
 
 make sure IP connectivity to NETCONF_DEVICE is available
 
-in FoD installation dir (default: /srv/flowspy): ./pythonenv ./manage.py createsuperuser ...
-in FoD installation dir (default: /srv/flowspy): ./pythonenv ./manage.py changepassword ...
+in {{ product_name_short }} installation dir (default: /srv/flowspy): ./pythonenv ./manage.py createsuperuser ...
+in {{ product_name_short }} installation dir (default: /srv/flowspy): ./pythonenv ./manage.py changepassword ...
 
-restart FoD: 'systemctl restart fod-gunicorn; systemctl restart fod-celeryd' (if installed and running with Systemd support)
+restart {{ product_name_short }}: 'systemctl restart fod-gunicorn; systemctl restart fod-celeryd' (if installed and running with Systemd support)
 
 or alternatively
 
 C) already having been set by install-\*.sh parameters (check [Debian/Ubuntu Installation](../installation/v1.7/debian_ubuntu.md) or [CENTOS 7 Installation](../installation/v1.7/centos.md) )
 
-### 1 (Docker): Setup NETCONF + FoD admin user (FoD running in a Docker container)
+### 1 (Docker): Setup NETCONF + {{ product_name_short }} admin user ({{ product_name_short }} running in a Docker container)
 
 admin user password and NETCONF connection has to be setup, 
 either by
 
-A) via the setup page of FoD in container
+A) via the setup page of {{ product_name_short }} in container
 (only applicable once, i.e., as long as no admin user has been setup, for security reasons):
 
 http://127.0.0.1:8001/setup/
@@ -69,7 +69,7 @@ in docker: cd /srv/flowspy; ./pythonenv ./manage.py createsuperuser ...
 
 in docker: cd /srv/flowspy; ./pythonenv ./manage.py changepassword ...
 
-## 2: Accessing the FoD UI running in container after setup of admin user and password
+## 2: Accessing the {{ product_name_short }} UI running in container after setup of admin user and password
 
 http(s)://SERVERNAME:SERVERPORT/altlogin
 (for use with Docker: http(s)://SERVERNAME:8000/altlogin)
@@ -85,22 +85,22 @@ via http(s)://SERVERNAME:SERVERPORT/admin (only accessible by admin users, e.g.,
 Peer ranges and Peers:
 (http(s)://SERVERNAME:SERVERPORT/admin/peers/peerrange/ and http(s)://SERVERNAME:SERVERPORT/admin/peers/peer/)
 
-The 'peer' is a concept in FoD to support multi-tenancy.
+The 'peer' is a concept in {{ product_name_short }} to support multi-tenancy.
 Each peer has assigned a set of allowed destination IP address prefixes ('peer ranges')
 for which the peer is allowed to deploy BGP FlowSpec rules.
-It typically corresponds to a customer organization of the network operator organization running FoD
+It typically corresponds to a customer organization of the network operator organization running {{ product_name_short }}
 to provided to users of the different customer organizations.
 
 For managing users (beyond the initial setup of the first admin user, under 1.) the /admin web UI interface can be used
 as well, specifically http(s)://SERVERNAME:SERVERPORT/admin/auth/user/.
 E.g., it allows adding/removing users, changing first/last name of a user, define whether it is an admin or not.
 
-A 'user' in FoD (including every admin user) has assigned a set of peers (typically, often only 1).
+A 'user' in {{ product_name_short }} (including every admin user) has assigned a set of peers (typically, often only 1).
 Only for destination IP address prefixes of assigned peers the user has the right to
 deploy or change BGP FlowSpec rules.
 
 This restriction also applies for the initial admin user created initially (see 1.).
-So before that admin user can deploy FlowSpec rules via FoD, a peer has to be created (maybe by this admin user).
+So before that admin user can deploy FlowSpec rules via {{ product_name_short }}, a peer has to be created (maybe by this admin user).
 and appropriate peer ranges have to assigned to the peer
 and this peer has to assigned to the user.
 
@@ -125,17 +125,17 @@ TODO: auto update of enrolled users on login
 
 #### 2.2.1 usage via web UI
 
-When logged into FoD UI via
+When logged into {{ product_name_short }} UI via
 http(s)://SERVERNAME:SERVERPORT/altlogin
 (or via https://SERVERNAME:SERVERPORT/login for use with Shibboleth enrolled/registered users, see 2.1.2)
-with a FoD user account which has assigned 1 or more peers with appropriate peer ranges (see 2.1.1)
+with a {{ product_name_short }} user account which has assigned 1 or more peers with appropriate peer ranges (see 2.1.1)
 the normal usage can start.
 
 ##### Rules list/table page
 
 Provides a list/table of of all rule for all peers of the user.
-BGP FlowSpec rule can have either status inactive (stored only in FoD database),
-or active (stored in FoD database + installed on the router via NETCONF)
+BGP FlowSpec rule can have either status inactive (stored only in {{ product_name_short }} database),
+or active (stored in {{ product_name_short }} database + installed on the router via NETCONF)
 
 ##### Rules dashboard
 
@@ -143,14 +143,14 @@ Provides a history of rule changes for all peers of the user.
 
 ##### Add New Rule
 
-Allows to add a new rule, i.e., one not yet stored in the FoD database,
-to FoD database and transfer it via NETCONF to the router(s).
+Allows to add a new rule, i.e., one not yet stored in the {{ product_name_short }} database,
+to {{ product_name_short }} database and transfer it via NETCONF to the router(s).
 
 ##### Edit Existing Rule
 
 Reachable from rules list page or dashboard page for all existing (active or inactive) displayed rules
 for all peers of the user.
-An edited route is changed in the FoD data base as well as updated on the router,
+An edited route is changed in the {{ product_name_short }} data base as well as updated on the router,
 i.e., will be in active status after the edit operation.
 
 ##### Overview (for admin users)
@@ -173,8 +173,8 @@ see [API v1.7](../api/api-v1.7.md)
 
 #### 3. Further/Regular Administration
 
-### FoD run-time status 
+### {{ product_name_short }} run-time status 
 
-There is ./systemd/fod-status.sh, a generic script (not limited to Systemd) for determining the process status of FoD along with some further aspects, e.g., Database connection, NETCONF configuration and reachability
+There is ./systemd/fod-status.sh, a generic script (not limited to Systemd) for determining the process status of {{ product_name_short }} along with some further aspects, e.g., Database connection, NETCONF configuration and reachability
 
 

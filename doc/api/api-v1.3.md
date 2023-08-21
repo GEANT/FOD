@@ -2,13 +2,13 @@
 
 # Description
 
-Current version of FoD officially has a REST API.
+Current version of {{ product_name_short }} officially has a REST API.
 The API needs authentication. Out of the box the supported authentication
 type is Token Authentication.
 
 ## Generating Tokens
 
-A user can generate an API token using the FoD UI. Select "My Profile" from the
+A user can generate an API token using the {{ product_name_short }} UI. Select "My Profile" from the
 top right menu and on the "Api Token" section click "Generate One".
 
 ## Accessing the API
@@ -332,12 +332,12 @@ See `ThenAction`s.
 
 ### General notes on `Route` models:
 
-* When `POST`ing a new `Route`, FoD will automatically commit it to the flowspec
+* When `POST`ing a new `Route`, {{ product_name_short }} will automatically commit it to the flowspec
 device. Thus, `POST`ing a new `Route` with a status of `INACTIVE` has no effect,
 since the `Route` will be activated and the status will be restored to `ACTIVE`.
-* When `DELETE`ing a `Route`, the actual `Route` object will remain. FoD will
+* When `DELETE`ing a `Route`, the actual `Route` object will remain. {{ product_name_short }} will
 only delete the rule from the flowspec device and change the `Route`'s status to
 'INACTIVE'
-* When changing (`PUT`/`PATCH`) a `Route`, FoD will sync the changes to the
+* When changing (`PUT`/`PATCH`) a `Route`, {{ product_name_short }} will sync the changes to the
 flowspec device. Changing the status of the `Route` will activate / delete the
 rule respectively.

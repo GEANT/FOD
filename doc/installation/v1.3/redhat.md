@@ -1,6 +1,6 @@
 # Installing Flowspy v1.3 on Redhat
 
-The following document describes the installation process of Firewall On Demand
+The following document describes the installation process of {{ product_name }}
 on a redhat 6.5 machine with linux 2.6.32-431.17.1.el6.x86_64.
 
 ## Step 1: Installing Requirements
@@ -22,7 +22,7 @@ One can install nxpy from the official GRNETs code repository with the following
 	pip install git+https://code.grnet.gr/git/nxpy
 
 ## Step2: Configuring Requirements
-FoD Requires the following components to be set up and configured before the installation of FoD:
+{{ product_name_short }} Requires the following components to be set up and configured before the installation of {{ product_name_short }}:
 
 - Mysql
 - A router with flowspec enabled and a user with rw permissions to flowspec and netconf access (port 830) to the device.
@@ -42,7 +42,7 @@ After this action the database will accept connections to database `fod` from th
 ### Router
 Configuring the router in order to accept connections via netconf for a specific user is mentioned just for the sake of completeness.
 
-## Step3: Actuall Installation of FoD
+## Step3: Actuall Installation of {{ product_name_short }}
 
 ### Downloading and installing
 You can download Fod v1.1.1 from GRNETs github repository. Then you have to unzip the file and place it under /srv.
@@ -60,7 +60,7 @@ We have to create manually the root directory for the logs:
 
 
 ## Step4: Patching files for RedHat
-We have noticed that some changes must be made for FoD to work under RedHat.
+We have noticed that some changes must be made for {{ product_name_short }} to work under RedHat.
 
 ### Patch the `manage.py` file
 We have to change `/srv/flowspy/manage.py` file, and make it look like this:
@@ -82,7 +82,7 @@ Actually we have just added three new lines of code, but make sure the `manage.p
 
 
 ### Patch python-tinymce:
-We now have to fix a bug from a python package in order to get FoD up and running.
+We now have to fix a bug from a python package in order to get {{ product_name_short }} up and running.
 Open
 
 	/usr/lib/python2.6/site-packages/tinymce/widgets.py
@@ -95,7 +95,7 @@ to
 	from django.utils.encoding import smart_unicode
 
 ### Syncing the database
-To create all the tables needed by FoD we have to run the following commands:
+To create all the tables needed by {{ product_name_short }} we have to run the following commands:
 
 	cd /srv/flowspy
 	./manage.py syncdb --noinput
@@ -140,7 +140,7 @@ Just start beanstalk already!
 
 
 ### Celery
-Celery is a distributed task queue, which helps FoD run some async tasks, like applying a flowspec rule to a router.
+Celery is a distributed task queue, which helps {{ product_name_short }} run some async tasks, like applying a flowspec rule to a router.
 
 `Note` In order to check if celery runs or even debug it, you can run:
 

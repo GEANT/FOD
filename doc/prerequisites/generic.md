@@ -1,6 +1,6 @@
 # Prerequistes
 
-Operation of FoD requires a router which is 
+Operation of {{ product_name_short }} requires a router which is 
 
 * BGP FlowSpec-capable and 
 
@@ -23,7 +23,7 @@ example result of a NETCONF ``get_config`` query on a router with one IPv4-based
 
         <flow>
           <route>
-            <name>FoD_testrule1_529HMW</name>
+            <name>{{ product_name_short }}_testrule1_529HMW</name>
             <then>
               <rate-limit>10000k</rate-limit>
             </then>
@@ -43,7 +43,7 @@ example result of a NETCONF ``get_config`` query on a router with one IPv4-based
           <name>inet6.0</name>
           <flow>
             <route>
-              <name>FoD_testipv6_MPSKD8</name>
+              <name>{{ product_name_short }}_testipv6_MPSKD8</name>
               <then>
                 <discard/>
               </then>

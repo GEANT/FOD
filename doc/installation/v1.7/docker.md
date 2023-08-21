@@ -18,8 +18,8 @@ The containers run `gunicorn`, `celeryd` and Redis - and use a SQLite database (
 # Building the Flowspy container
 
 First build your Flowspy container. The default (`Dockerfile` = `Dockerfile.fod.debian`) is a container which uses Debian and `supervisord`, but there are other options; `Dockerfile.fod.centos.\*` uses CENTOS 7, `Dockerfile.fod.centos.new` with `supervisord`, `Dockerfile.fod.centos.old` is left for compatibility without `supervisord`.
-`Dockerfile.fod.debian` and `Dockerfile.fod.centos.new` by default will split the installation of FoD during container build into 3 phases (OS dependencies, python/pip dependencies, FoD proper installation) to exploit Docker build cache for faster rebuilding.
-Moreover, `Dockerfile.fod.debian` and `Dockerfile.fod.centos.new` can be edited for uncommenting/commenting to switch more options: e.g., use `systemd` instead of `supervisord` or not splitting the FoD installation into 3 phases 
+`Dockerfile.fod.debian` and `Dockerfile.fod.centos.new` by default will split the installation of {{ product_name_short }} during container build into 3 phases (OS dependencies, python/pip dependencies, {{ product_name_short }} proper installation) to exploit Docker build cache for faster rebuilding.
+Moreover, `Dockerfile.fod.debian` and `Dockerfile.fod.centos.new` can be edited for uncommenting/commenting to switch more options: e.g., use `systemd` instead of `supervisord` or not splitting the {{ product_name_short }} installation into 3 phases 
 (first docker build will be a bit faster and the docker container building is more efficient, as the number of docker image layers is reduced, but subsequent build after some changes in code or settings will require nearly the same amount of time as the first build)
 
 > Although the examples below use CentOS, just replace `Dockerfile.centos.new` with `Dockerfile.debian` if you wish to use Debian instead.
