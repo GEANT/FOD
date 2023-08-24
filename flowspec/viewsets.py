@@ -25,6 +25,8 @@ from flowspec.renderers import PlainTextRenderer
 
 from flowspec.tasks import *
 
+import utils.route_spec_utils as route_spec_utils
+
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "flowspec_viewsets.log", False)
 
@@ -508,15 +510,72 @@ class ExaBGPConfViewSet(viewsets.ViewSet):
         exaparams = next((item for item in settings.REMOTE_EXABGP if item['local_id'] == pk), False)
 
         if exaparams:
-          queryset = Route.objects.all()
-          context = {
-            'exaparams': exaparams,
-            'pk': pk,
-            'routes': list(queryset),
-          }
-          return Response( render_to_string(f'conf/exabgp.txt', context) )
+            queryset = Route.objects.all()
+
+            routelist = []
+
+            for route in queryset:
+                if isinstance(route, dict):
+                    source = route['source']
+                    destination = route['destination']
+                    sourceport = route['sourceport']
+                    destinationport = route['destinationport']
+                    protocols = route['protocol']
+                    fragtypes = route['fragmenttype']
+                    thens = route['then']
+                else:
+                    source = route.source
+                    destination = route.destination
+                    sourceport = route.sourceport
+                    destinationport = route.destinationport
+                    protocols = route.protocol.all()
+                    fragtypes = route.fragmenttype.all()
+                    thens = route.then.all()
+              
+                ip_version = 4
+                ip_version1 = ip_network(source).version 
+                ip_version2 = ip_network(destination).version 
+                if ip_version1==4 or ip_version2==4:
+                    ip_version = 4
+                elif ip_version1==6 or ip_version2==6:
+                   ip_version = 6
+
+                thenstr = ""
+                for then in thens:
+                    then_str = str(then)
+                    logger.info("then='"+then_str+"'")
+                    re1 = re.compile('^rate-limit:(?P<value>[0-9]+)(k?)$')
+                    re_match1 = re1.match(then_str)
+                    if re_match1:
+                        val_part = str(re_match1.group(1))
+                        k_part = str(re_match1.group(2))
+                        if k_part=="k":
+                          val_part = str(int(val_part)*1000)
+                        themstr = "rate-limit "+val_part
+                    elif str(then)=="discard":
+                        thenstr = "discard"
+                    else:
+                      logger.error("currently only rate-limit and discard supported as then action")
+
+                routelist.append( {
+                    'ipv': ip_version,
+                    'source': source,
+                    'destination': destination,
+                    'sourceport': route_spec_utils.translate_ports(sourceport, output_separator=" "),
+                    'destinationport': route_spec_utils.translate_ports(destinationport, output_separator=" "),
+                    'protocols': route_spec_utils.get_protocols_numbers(protocols, ip_version, output_separator=" ", output_prefix=""),
+                    'fragtypes': " ".join(map(str, fragtypes)),
+                    'thens': thenstr
+                })
+
+            context = {
+              'exaparams': exaparams,
+              'pk': pk,
+              'routes': routelist,
+            }
+            return Response( render_to_string(f'conf/exabgp.txt', context) )
         else:
-          raise Http404(f"ExaBGP {pk} peer not defined")
+            raise Http404(f"ExaBGP {pk} peer not defined")
 
 #############################################################################
 #############################################################################
