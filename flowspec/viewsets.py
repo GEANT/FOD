@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.http import Http404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
@@ -19,6 +20,8 @@ from flowspec.serializers import (
 
 from flowspec.validators import check_if_rule_exists
 from rest_framework.response import Response
+
+from flowspec.renderers import PlainTextRenderer
 
 from flowspec.tasks import *
 
@@ -490,6 +493,30 @@ class StatsRoutesViewSet(viewsets.ViewSet):
         route = get_object_or_404(queryset, id=pk)
         logger.info("StatsRoutesViewSet:::retrieve(): route.name="+str(route.name))
         return routestats(request, route.name)
+
+class ExaBGPConfViewSet(viewsets.ViewSet):
+    """
+    A simple Viewset for retrieving exabgp configs.
+    """
+    renderer_classes = [PlainTextRenderer]
+    serializer_class = RouteSerializer
+    permission_classes = (IsAuthenticated,)
+    lookup_value_regex = '[0-9.]+'  # We use IP addrs as primary key, so allow dots in url
+    def retrieve(self, request, pk=None):
+        logger.info("ExaBGPConfViewSet:::retrieve(): pk="+str(pk))
+
+        exaparams = next((item for item in settings.REMOTE_EXABGP if item['local_id'] == pk), False)
+
+        if exaparams:
+          queryset = Route.objects.all()
+          context = {
+            'exaparams': exaparams,
+            'pk': pk,
+            'routes': list(queryset),
+          }
+          return Response( render_to_string(f'conf/exabgp.txt', context) )
+        else:
+          raise Http404(f"ExaBGP {pk} peer not defined")
 
 #############################################################################
 #############################################################################

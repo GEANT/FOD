@@ -1,0 +1,41 @@
+neighbor $neighbor {
+	router-id $router_id;
+	local-address $router_id;
+	local-as $myas;
+
+	peer-as $neighborAS;
+
+	#family {
+	#    ipv4 unicast;
+        #    #ipv4 multicast;
+        #    #ipv4 nlri-mpls;
+        #    #ipv4 mpls-vpn;
+        #    #ipv4 flow;
+        #    #ipv4 flow-vpn;
+        #    #ipv6 unicast;
+        #    #ipv6 flow;
+        #    #ipv6 flow-vpn;
+	#}
+
+	static {
+		route 10.10.0.0/32 next-hop self;
+		route 10.100.0.0/32 next-hop self;
+	}
+
+    flow {
+
+{% for route in routes %}
+        match {
+            {% if route.source %}source {{ route.source }};{% endif %}
+            {% if route.destination %}destination {{ route.destination }};{% endif %}
+            {% if route.protocol.count > 0 %}protocol {{ route.protocol.all | first }};{% endif %}
+            {% if route.dscp.count > 0 %}thing {{ route.dscp.all | first }};{% endif %}
+        }
+        then {
+            {{ route.then }}
+        }
+
+{% endfor %}
+    }
+}
+

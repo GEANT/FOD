@@ -676,3 +676,10 @@ PROXY_CLASS="proxy_exabgp"
 ##############################################################################
 
 from flowspy.settings_local import *
+
+# If we have a remote exabgp config, import it, otherwise never mind
+
+try:
+    from flowspy.settings_remote_exabgp import *
+except ImportError:
+    pass
