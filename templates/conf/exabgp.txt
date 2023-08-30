@@ -1,43 +1,22 @@
-neighbor $neighbor {
-	router-id $router_id;
-	local-address $router_id;
-	local-as $myas;
-
-	peer-as $neighborAS;
-
-	#family {
-	#    ipv4 unicast;
-        #    #ipv4 multicast;
-        #    #ipv4 nlri-mpls;
-        #    #ipv4 mpls-vpn;
-        #    #ipv4 flow;
-        #    #ipv4 flow-vpn;
-        #    #ipv6 unicast;
-        #    #ipv6 flow;
-        #    #ipv6 flow-vpn;
-	#}
-
-	static {
-		route 10.10.0.0/32 next-hop self;
-		route 10.100.0.0/32 next-hop self;
-	}
-
+{% load router_config %}
     flow {
-
 {% for route in routes %}
+    {% if route.status == "ACTIVE" %}
         match {
             {% if route.source %}source {{ route.source }};{% endif %}
             {% if route.destination %}destination {{ route.destination }};{% endif %}
-            {% if route.sourceport %}source-port {{ route.sourceport }};{% endif %}
-            {% if route.destinationport %}destination-port {{ route.destinationport }};{% endif %}
-            {% if route.protocols %}protocol {{ route.protocols }};{% endif %}
-            {% if route.fragtypes %}fragment {{ route.fragtypes | first }};{% endif %}
+            {% if route.sourceport %}source-port {{ route.sourceport | exabound }};{% endif %}
+            {% if route.destinationport %}destination-port {{ route.destinationport | exabound }};{% endif %}
+            {% if route.protocol.count > 0 %}protocol {{ route.protocol | exawrap:'protocol' }};{% endif %}
+            {% if route.fragmenttype.count > 0 %}fragment {{ route.fragmenttype | exawrap:'fragmenttype' }}{% endif %}
         }
         then {
-            {{ route.thens }}
-        }
 
+            {% for then in route.then.all %}{{ then }};
+            {% endfor %}
+        }
+    {% else %}
+        ===INACTIVE ROUTE===
+    {% endif %}
 {% endfor %}
     }
-}
-
