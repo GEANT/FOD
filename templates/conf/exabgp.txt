@@ -15,8 +15,6 @@
             {% for then in route.then.all %}{{ then }};
             {% endfor %}
         }
-    {% else %}
-        ===INACTIVE ROUTE===
     {% endif %}
 {% endfor %}
     }
