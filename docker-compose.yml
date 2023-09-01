@@ -47,6 +47,28 @@ services:
       retries: 3
       #start_period: 30s
 
+  exabgp1:
+    build:
+      context: ./exabgp-remote
+    image: fodexabgp
+    container_name: fodexabgp
+    networks:
+      mgmt:
+      xfod:
+        ipv4_address: 10.197.36.8
+    environment:
+      FOD_API_URL:    "http://fod:8000/api"
+      FOD_API_TOKEN:  "deb3252a1435302dd579448b792ee7fae57641b6"
+      LOCAL_NODEID:   "10.197.36.8"
+      LOCAL_IP:       "10.197.36.8"
+      LOCAL_ASN:      "1001"
+      REMOTE_NODEID:  "10.197.36.3"
+      REMOTE_IP:      "10.197.36.3"
+      REMOTE_ASN:     "2001"
+    volumes:
+      - ./exabgp-remote:/opt/exabgp
+    command: sh -c "pwd; ls; supervisord -c ./fod_exabgp_supervisord.conf"
+
   redis:
     image: redis:latest
     networks:
