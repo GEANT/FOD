@@ -7,7 +7,7 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     update-locale LANG=en_US.UTF-8
 ENV LANG en_US.UTF-8
 RUN apt-get update -y && apt-get -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' --assume-yes -fuy dist-upgrade
-RUN apt-get install -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 supervisor
+RUN apt-get install -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 supervisor pkg-config
 RUN useradd exabgp
 RUN mkdir -p /var/run/supervisor /opt/FOD
 WORKDIR /opt/FOD
