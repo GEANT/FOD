@@ -26,5 +26,8 @@ def trigger_config_update():
                              remote_nodeid=os.getenv('REMOTE_NODEID'),
                              )
 
+    with open('/opt/exabgp/live/exabgp.conf', 'w') as file:
+        file.write(output)
+
     return output
 

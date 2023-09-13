@@ -1,4 +1,4 @@
-neighbor $neighbor_id {
+neighbor {{ remote_nodeid }} {
     router-id {{ local_nodeid }};
     local-address {{ local_ip }};
     local-as {{ local_asn }};
