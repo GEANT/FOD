@@ -15,6 +15,7 @@ def trigger_config_update():
     headers = {'Authorization': f'Token {FOD_API_TOKEN}'}
 
     r = requests.get(url, headers=headers)
+    r.raise_for_status
 
     output = render_template('exabgp_conf.j2',
                              flow_conf=r.text,
@@ -29,5 +30,10 @@ def trigger_config_update():
     with open('/opt/exabgp/live/exabgp.conf', 'w') as file:
         file.write(output)
 
-    return output
+    # Kill the exabgp process, let supervisord restart it
+    # I'd like to use SIGUSR1 to reload the config
+    # but it doesn't seem to reliably withdraw removed announcements
+    
+    os.system("pkill -f '/usr/local/bin/exabgp /opt/exabgp/live/exabgp.conf'")
 
+    return output
