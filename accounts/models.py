@@ -61,7 +61,6 @@ class UserProfile(models.Model):
       #logger.info("get_owned_rules(): self="+str(self)+" => routes_owned="+str(routes_owned))
       return routes_owned
 
-    @property
     def get_related_user__for_adopting_on_user_deletion(self):
       user = self.user
       users_peers = self.peers.all()
@@ -80,7 +79,8 @@ class UserProfile(models.Model):
               user_related1=user2
               break
 
-      return user_related1
+      logger.info("get_related_user__for_adopting_on_user_deletion(): => return="+str(user_related1)+", "+str(users_peers1))
+      return (user_related1, users_peers1)
 
     # deleting of rules by this account is allowed
     def is_delete_allowed(self):
@@ -121,7 +121,7 @@ def user_owned_rules_adopt_to_related_user(user):
     #          break
 
     #  logger.info("user_owned_rules_adopt_to_related_user(): => user_related1="+str(user_related1))
-    user_related1 = user.userprofile.get_related_user__for_adopting_on_user_deletion()
+    (user_related1, users_peers1) = user.userprofile.get_related_user__for_adopting_on_user_deletion()
 
     if user_related1!=None:
       if len(routes_owned)>0:
