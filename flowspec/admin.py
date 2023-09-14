@@ -102,7 +102,7 @@ class UserProfileAdmin(UserAdmin):
 
         if len(adopted_rules)>0:
           messages.set_level(request, messages.INFO)
-          messages.error(request, 'additional info: the rules '+str(adopted_rules)+' were re-assigned to remaining user '+str(adoting_user)+' of peer '+str(users_peer1))
+          messages.info(request, 'additional info: the rules '+str(adopted_rules)+' were re-assigned to remaining user '+str(adoting_user)+' of peer '+str(users_peer1))
 
         super().delete_model(request, client)
 
