@@ -11,8 +11,10 @@ if [ "$use_novol" = 1 ]; then
   docker_compose_spec__file="./docker-compose-singlefodctr-novol.yml"
   fod_container_name="fodnovol"
 else
-  docker_compose_spec__file="./docker-compose.yml"
-  fod_container_name="fod"
+  #docker_compose_spec__file="./docker-compose.yml"
+  #fod_container_name="fod"
+  docker_compose_spec__file="./docker-compose-singlefodctr-vol.yml"
+  fod_container_name="fodvol"
 fi
 
 ##

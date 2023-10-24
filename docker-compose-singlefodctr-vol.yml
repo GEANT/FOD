@@ -1,0 +1,114 @@
+version: "3"
+services:
+  fod:
+    build:
+        context: .
+        dockerfile: docker-compose/Dockerfile_FOD
+    container_name: fodvol
+    privileged: true
+    expose:
+        - "8000"
+    ports:
+        - "0.0.0.0:8000:8000"
+    env_file:
+        - ./docker-compose/.env_fod_singlectr
+    #environment:
+    #- fod_volume_use=0
+    networks:
+      mgmt:
+      xfod:
+        ipv4_address: 10.197.36.2
+    volumes:
+    - ./:/opt/FOD
+
+  freertr:
+    build:
+        context: docker-compose
+        dockerfile: Dockerfile_FREERTR
+    container_name: freertr
+    privileged: true
+    expose:
+        - "23"
+    ports:
+        - "127.0.0.1:2323:2323"
+    env_file:
+        - ./docker-compose/.env_freertr
+    networks:
+      mgmt:
+      nhost1:
+              ipv4_address: 10.1.10.3
+      nhost2:
+              ipv4_address: 10.2.10.3
+      xfod:
+              ipv4_address: 10.197.36.3
+    depends_on:
+        - fod
+    volumes:
+        - freertr:/opt
+        - ./freertr/run:/rtr/run/
+
+  host1:
+    build:
+        context: docker-compose
+        dockerfile: Dockerfile_HOST1
+    container_name: host1
+    privileged: true
+    env_file:
+        - ./docker-compose/.env_host1
+    networks:
+      mgmt:
+      nhost1:
+             ipv4_address: 10.1.10.11
+    depends_on:
+        - fod
+    #volumes:
+    #    - freertr:/opt
+
+  host2:
+    build:
+        context: docker-compose
+        dockerfile: Dockerfile_HOST2
+    container_name: host2
+    privileged: true
+    env_file:
+        - ./docker-compose/.env_host2
+    networks:
+      mgmt:
+      nhost2:
+             ipv4_address: 10.2.10.12
+    depends_on:
+        - fod
+    #volumes:
+    #    - freertr:/opt
+
+networks:
+  mgmt:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 11.11.11.0/24
+
+  xfod:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.197.36.0/28
+
+  nhost1:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+              - subnet: 10.1.10.0/24
+
+  nhost2:
+    driver: bridge
+    ipam:
+       driver: default
+       config:
+               - subnet: 10.2.10.0/24
+
+volumes:
+  freertr:
