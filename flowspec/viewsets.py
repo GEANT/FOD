@@ -98,15 +98,20 @@ class RouteViewSet(viewsets.ModelViewSet):
                     obj = super(RouteViewSet, self).create(request)
                     requested_status = request.data.get("status", "INACTIVE")
                     logger.debug("RouteViewSet::create(): requested_status="+str(requested_status))
-                    logger.info("RouteViewSet::create(): obj.type="+str(type(obj)))
-                    logger.info("RouteViewSet::create(): obj="+str(obj))
-                    logger.info("RouteViewSet::create(): obj.dir="+str(dir(obj)))
-                    logger.info("RouteViewSet::create(): obj.items="+str(obj.items))
+                    #logger.info("RouteViewSet::create(): obj.type="+str(type(obj)))
+                    #logger.info("RouteViewSet::create(): obj="+str(obj))
+                    #logger.info("RouteViewSet::create(): obj.dir="+str(dir(obj)))
+                    #logger.info("RouteViewSet::create(): obj.items="+str(obj.items))
                     logger.info("RouteViewSet::create(): obj.data="+str(obj.data))
-                    logger.info("RouteViewSet::create(): obj.data.id="+str(obj.data["id"]))
+                    #logger.info("RouteViewSet::create(): obj.data.id="+str(obj.data["id"]))
                     route = get_object_or_404(self.get_queryset(), pk=obj.data["id"])
                     route.response = "N/A"
-                    route.set_no_expire() # REST API created routes should have no expiration date
+
+                    #logger.info("RouteViewSet::create(): obj.data="+str(obj.data))
+                    #logger.info("RouteViewSet::create(): route.expires="+str(route.expires))
+                    if (not ('expires' in obj.data)) or obj.data['expires']=='':
+                      route.set_no_expire() # REST API created routes without expires value should have no expiration date by default
+                    obj.data['expires'] = route.expires
 
                     net_route_source=ip_network(route.source, strict=False)
                     net_route_destination=ip_network(route.destination, strict=False)
