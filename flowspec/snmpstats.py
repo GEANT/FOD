@@ -20,6 +20,7 @@
 from pysnmp.hlapi.asyncore import *
 from django.conf import settings
 from datetime import datetime, timedelta
+from flowspec.helpers import handle_admin_error_mail
 import json
 import os
 import time
@@ -34,8 +35,7 @@ identoffset = len(settings.SNMP_CNTPACKETS) + 1
 
 # Wait for responses or errors, submit GETNEXT requests for further OIDs
 # noinspection PyUnusedLocal,PyUnusedLocal
-def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
-          errorStatus, errorIndex, varBindTable, cbCtx):
+def snmpCallback(snmpEngine, sendRequestHandle, errorIndication, errorStatus, errorIndex, varBindTable, cbCtx):
     (authData, transportTarget, results) = cbCtx
 
     # debug - which router replies:
@@ -43,11 +43,14 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
 
     # CNTPACKETS and CNTBYTES are of the same length
     if errorIndication:
-        logger.error('Bad errorIndication.')
+        logger.error('Bad: errorIndication.')
+        handle_admin_error_mail("SNMP Error: snmpCallback errorIndication", "errorIndication="+str(errorIndication)+"\ntransportTarget="+str(transportTarget))
         return 0
     elif errorStatus:
-        logger.error('Bad errorStatus.')
+        logger.error('Bad: errorStatus.')
+        handle_admin_error_mail("SNMP Error: snmpCallback errorStatus", "errorStatus="+str(errorStatus)+"\ntransportTarget="+str(transportTarget))
         return 0
+
     for varBindRow in varBindTable:
         for name, val in varBindRow:
             name = str(name)
