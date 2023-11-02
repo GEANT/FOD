@@ -15,6 +15,7 @@ from flowspec.viewsets import (
     MatchProtocolViewSet,
     MatchDscpViewSet,
     StatsRoutesViewSet,
+    StatsAllRoutesViewSet
 )
 from django_registration import views as registration_views
 
@@ -68,6 +69,7 @@ urlpatterns = [
     path('tinymce/', include('tinymce.urls')),
     url(r'^overview/?$', flowspec_views.overview, name="overview"),
     url(r'^api/', include(router.urls)),
+    url(r'^api/stats/all/routes', StatsAllRoutesViewSet.as_view({'get': 'retrieve'}), name='statsroutesall'),
     url(r'^details/(?P<route_slug>[\w\-]+)/$', flowspec_views.routedetails, name="route-details"),
     url(r'^routestats/(?P<route_slug>[\w\-]+)/$', flowspec_views.routestats, name="routestats"),
     url(r'^setup/', flowspec_views.setup, name='setup'),

@@ -1,8 +1,11 @@
+import json
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework import status
+from rest_framework.response import Response
 
 from rest_framework import viewsets
 from flowspec.models import Route, ThenAction, FragmentType, MatchProtocol, MatchDscp
@@ -490,6 +493,26 @@ class StatsRoutesViewSet(viewsets.ViewSet):
         route = get_object_or_404(queryset, id=pk)
         logger.info("StatsRoutesViewSet:::retrieve(): route.name="+str(route.name))
         return routestats(request, route.name)
+
+    
+class StatsAllRoutesViewSet(viewsets.ViewSet):
+    """
+    A simple Vieset for retrieving statistics of the route by
+    an authenticated user.
+    """
+    permission_classes = (IsAuthenticated,)
+    def retrieve(self, request):
+        logger.info("StatsRoutesViewSet:::retrieve(): ")
+        queryset = Route.objects.all()
+        from flowspec.views import routestats
+        route_stats = []
+        for r in queryset:
+          route = get_object_or_404(queryset, id=r.id)
+          logger.info("StatsRoutesViewSet:::retrieve(): route.name="+str(route.name))
+          route_stat = routestats(request, route.name)
+          route_stats.append(json.loads(route_stat.content.decode('utf-8')))
+            
+        return Response(route_stats, status=status.HTTP_200_OK)
 
 #############################################################################
 #############################################################################
