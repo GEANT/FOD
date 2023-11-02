@@ -33,6 +33,7 @@ from sys import exit
 import time
 import redis
 from django.forms.models import model_to_dict
+from flowspec.helpers import send_cached_admin_error_entry_summary_ll
 
 from peers.models import *
 
@@ -341,6 +342,12 @@ def notify_expired():
                     logger.error("Exception: %s"%e)
                     pass
     logger.info('Expiration notification process finished')
+
+@shared_task(ignore_result=True)
+def send_cached_admin_error_entry_summary():
+    logger.info('send_cached_admin_error_entry_summary(): called')
+    send_cached_admin_error_entry_summary_ll()
+    logger.info('send_cached_admin_error_entry_summary(): done')
 
 ##############################################################################
 ##############################################################################
