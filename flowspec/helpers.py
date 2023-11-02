@@ -54,18 +54,18 @@ def handle_admin_error_mail(subject, message):
       admin_mail_addres_list = settings.NOTIFY_ADMIN_MAILS        
    
     src_addr = settings.SERVER_EMAIL
-    logger.info("helpers::handle_admin_error_mail(): src_addr="+str(src_addr))
-    logger.info("helpers::handle_admin_error_mail(): admin_mail_addres_list="+str(admin_mail_addres_list))
+    #logger.info("helpers::handle_admin_error_mail(): src_addr="+str(src_addr))
+    #logger.info("helpers::handle_admin_error_mail(): admin_mail_addres_list="+str(admin_mail_addres_list))
 
     if admin_mail_addres_list:
       EmailMessage(subject, message, src_addr, admin_mail_addres_list, "").send()
     logger.info("helpers::handle_admin_error_mail(): after mail sending")
 
     nowtime = datetime.datetime.now()
-    logger.info("helpers::handle_admin_error_mail(): nowtime="+str(nowtime))
+    #logger.info("helpers::handle_admin_error_mail(): nowtime="+str(nowtime))
 
     admin_error_mail_entry__cache_list.append({ 'time': nowtime, 'subject': subject, 'message': message })
-    logger.info("helpers::handle_admin_error_mail(): after list append")
+    #logger.info("helpers::handle_admin_error_mail(): after list append")
 
     return True
 
