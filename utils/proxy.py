@@ -31,6 +31,7 @@ from .portrange import parse_portrange
 import traceback
 from ipaddress import ip_network
 from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
+from flowspec.helpers import handle_admin_error_mail
 #import xml.etree.ElementTree as ET
 
 import flowspec.logging_utils
@@ -327,15 +328,18 @@ class Applier(object):
                     except SoftTimeLimitExceeded:
                         cause="Task timeout"
                         logger.error(cause)
+                        handle_admin_error_mail("NETCONF Error: SoftTimeLimitExceeded Error during edit_config operation", "exception="+str(e)+"\nfor NETCONF configuration="+str(configuration))
                         return False, cause
                     except TimeLimitExceeded:
                         cause="Task timeout"
                         logger.error(cause)
+                        handle_admin_error_mail("NETCONF Error: TimeLimitExceeded Error during edit_config operation", "exception="+str(e)+"\nfor NETCONF configuration="+str(configuration))
                         return False, cause
                     except RPCError as e:
                         cause="NETCONF RPC Error: "+str(e)
                         logger.error(cause)
                         m.discard_changes()
+                        handle_admin_error_mail("NETCONF Error: RPC Error during edit_config operation", "exception"+str(e)+"\nfor configuration="+str(configuration))
                         return False, cause
                     except Exception as e:
                         traceback.print_exc()
@@ -343,7 +347,9 @@ class Applier(object):
                         cause = cause.replace('\n', '')
                         logger.error(cause)
                         m.discard_changes()
+                        handle_admin_error_mail("NETCONF Error: general exception during edit_config operation", "exception"+str(e)+"\nfor configuration="+str(configuration))
                         return False, cause
+
                     if edit_is_successful:
                         try:
                             if ":confirmed-commit" in m.server_capabilities:
@@ -366,20 +372,24 @@ class Applier(object):
                         except SoftTimeLimitExceeded:
                             cause="Task timeout"
                             logger.error(cause)
+                            handle_admin_error_mail("NETCONF Error: SoftTimeLimitExceeded Error during commit operation", "exception="+str(e)+"\nfor NETCONF configuration="+str(configuration))
                             return False, cause
                         except TimeLimitExceeded:
                             cause="Task timeout"
                             logger.error(cause)
+                            handle_admin_error_mail("NETCONF Error: TimeLimitExceeded Error during commit operation", "exception="+str(e)+"\nfor NETCONF configuration="+str(configuration))
                             return False, cause
                         except RPCError as e:
                             cause="NETCONF RPC Error: "+str(e)
                             logger.error(cause)
                             m.discard_changes()
+                            handle_admin_error_mail("NETCONF Error: RPC Error during commit operation", "exception="+str(e)+"\nfor configuration="+str(configuration))
                             return False, cause
                         except Exception as e:
                             cause="Caught commit confirmed exception: type='%s' str='%s' => reason='%s'" %(type(e), str(e), reason)
                             cause=cause.replace('\n', '')
                             logger.error(cause)
+                            handle_admin_error_mail("NETCONF Error: general exception during commit operation", "exception="+str(e)+"\nfor configuration="+str(configuration))
                             return False, cause
 
                         if settings.COMMIT:
@@ -401,27 +411,35 @@ class Applier(object):
                                 except SoftTimeLimitExceeded:
                                     cause="Task timeout"
                                     logger.error(cause)
+                                    handle_admin_error_mail("NETCONF Error: SoftTimeLimitExceeded Error during commit2 operation", "exception="+str(e)+"\nfor NETCONF configuration="+str(configuration))
                                     return False, cause
                                 except TimeLimitExceeded:
                                     cause="Task timeout"
                                     logger.error(cause)
+                                    handle_admin_error_mail("NETCONF Error: TimeLimitExceeded Error during commit2 operation", "exception="+str(e)+"\nfor NETCONF configuration="+str(configuration))
                                     return False, cause
                                 except RPCError as e:
                                     cause="NETCONF RPC Error: "+str(e)
                                     logger.error(cause)
                                     m.discard_changes()
+                                    handle_admin_error_mail("NETCONF Error: RPC Error during commit2 operation", "exception="+str(e)+"\nfor configuration="+str(configuration))
                                     return False, cause
                                 except Exception as e:
                                     cause="Caught commit exception: type='%s' str='%s' => reason='%s'" %(type(e), str(e), reason)
                                     cause=cause.replace('\n', '')
                                     logger.error(cause)
+                                    handle_admin_error_mail("NETCONF Error: Exception during commit2 operation", "exception="+str(e)+"\nfor configuration="+str(configuration))
                                     return False, cause
           else:
             return False, "No configuration was supplied"
+
         except Exception as e:
                             cause="NETCONF connection exception: %s %s" %(e,reason)
                             cause=cause.replace('\n', '')
                             logger.error(cause)
+
+                            handle_admin_error_mail("NETCONF Error: general connection exception", "exception="+str(e)+"\nfor configuration="+str(configuration))
+
                             cause_user="NETCONF connection failed"
                             return False, cause_user
         finally:
