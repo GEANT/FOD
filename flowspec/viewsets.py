@@ -1,4 +1,5 @@
 import json
+import datetime
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -497,7 +498,7 @@ class StatsRoutesViewSet(viewsets.ViewSet):
     
 class StatsAllRoutesViewSet(viewsets.ViewSet):
     """
-    A simple Vieset for retrieving statistics of the route by
+    A simple Vieset for retrieving statistics of all routes by
     an authenticated user.
     """
     permission_classes = (IsAuthenticated,)
@@ -513,6 +514,39 @@ class StatsAllRoutesViewSet(viewsets.ViewSet):
           route_stats.append(json.loads(route_stat.content.decode('utf-8')))
             
         return Response(route_stats, status=status.HTTP_200_OK)
+      
+      
+
+class StatsAllRoutesLastTSViewSet(viewsets.ViewSet):
+    """
+    A simple Vieset for retrieving statistics of all routes with last time stamp by
+    an authenticated user.
+    """
+    permission_classes = (IsAuthenticated,)
+    def retrieve(self, request):
+        logger.info("StatsRoutesViewSet:::retrieve(): ")
+        queryset = Route.objects.all()
+        from flowspec.views import routestats
+        route_stats = []
+        for r in queryset:
+          route = get_object_or_404(queryset, id=r.id)
+          logger.info("StatsRoutesViewSet:::retrieve(): route.name="+str(route.name))
+          route_stat = routestats(request, route.name)
+          route_stat_data = json.loads(route_stat.content.decode('utf-8'))
+          
+          converted_data = list(map(self.time_stamp_converter, route_stat_data["data"]))
+          max_stats =  max(converted_data, key=lambda x: x["time_stamp"])
+          del max_stats["time_stamp"]
+          route_stat_data["data"] = [max_stats]
+          
+          route_stats.append(route_stat_data)
+            
+        return Response(route_stats, status=status.HTTP_200_OK)
+      
+    def time_stamp_converter(self, item):
+        ts = datetime.datetime.strptime(item["ts"],'%Y-%m-%dT%H:%M:%S.%f')
+        item["time_stamp"] = ts
+        return item
 
 #############################################################################
 #############################################################################
