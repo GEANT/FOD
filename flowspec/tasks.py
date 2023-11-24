@@ -76,6 +76,7 @@ def add(routepk, callback=None):
 
 @shared_task(ignore_result=True, autoretry_for=(TimeLimitExceeded, SoftTimeLimitExceeded), retry_backoff=True, retry_kwargs={'max_retries': settings.NETCONF_MAX_RETRY_BEFORE_ERROR})
 def edit(routepk, route_original__data, callback=None):
+    logger.info("tasks::edit(): delayed edit")
     from flowspec.models import Route
     route = Route.objects.get(pk=routepk)
     status_pre = route.status
@@ -100,8 +101,10 @@ def edit(routepk, route_original__data, callback=None):
     #logger.info("tasks::edit(): route_original__object_type="+str(type(route_original__object))+" route_original__object="+str(route_original__object))
 
     #applier = PR.Applier(route_object=route)
+    logger.info("tasks::edit(): invoking applier")
     applier = PR.Applier(route_object=route, route_objects_all=Route.objects.all(), route_object_original=route_original__data)
     commit, response, response_lowlevel = applier.apply(operation="replace")
+    logger.info(f"tasks::edit(): response from applier {response}")
     if commit:
         route.status = "ACTIVE"
         route.response = response
@@ -252,6 +255,7 @@ def batch_delete(routes, **kwargs):
 
 @shared_task(ignore_result=True)
 def announce(messg, user, route):
+  logger.info("tasks::announce(): delayed announce")
 
   route_dict = model_to_dict(route)
   rule_changelog_logger.info(messg+" route_dict="+str(route_dict))

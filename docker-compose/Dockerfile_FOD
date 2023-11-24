@@ -27,4 +27,5 @@ RUN ./install-debian.sh --basesw_python --here__with_venv_relative --supervisord
 #COPY docker-compose/fod_setup_environment.sh /opt/setup_environment.sh # includes trying to redo step 1 + step 2 again (at least ensure everything is really up-to-date)
 #COPY docker-compose/fod_setup_environment.sh /opt/setup_environment.sh # only to the least minimal adaptions necessary in the bind-mounted FOD dir are performed
 COPY docker-compose/fod_setup_environment-step3.sh /opt/setup_environment.sh
+RUN echo "source /opt/FOD/venv/bin/activate" >> /root/.bashrc
 CMD /opt/setup_environment.sh && /opt/FOD/pythonenv ./manage.py migrate && supervisord -c docker-compose/fod_celery_supervisord.conf

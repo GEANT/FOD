@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.http import Http404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 
@@ -20,7 +21,11 @@ from flowspec.serializers import (
 from flowspec.validators import check_if_rule_exists
 from rest_framework.response import Response
 
+from flowspec.renderers import PlainTextRenderer
+
 from flowspec.tasks import *
+
+import utils.route_spec_utils as route_spec_utils
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "flowspec_viewsets.log", False)
@@ -495,6 +500,24 @@ class StatsRoutesViewSet(viewsets.ViewSet):
         route = get_object_or_404(queryset, id=pk)
         logger.info("StatsRoutesViewSet:::retrieve(): route.name="+str(route.name))
         return routestats(request, route.name)
+
+class ExaBGPConfViewSet(viewsets.ViewSet):
+    """
+    A simple Viewset for retrieving exabgp configs.
+    """
+    renderer_classes = [PlainTextRenderer]
+    serializer_class = RouteSerializer
+    permission_classes = (IsAuthenticated,)
+    def list(self, request):
+        logger.info("ExaBGPConfViewSet:::retrieve()")
+
+        queryset = Route.objects.filter(status__exact='ACTIVE')
+        
+        context = {
+          'routes': queryset
+        }
+        return Response( render_to_string(f'conf/exabgp.txt', context) )
+
 
 #############################################################################
 #############################################################################

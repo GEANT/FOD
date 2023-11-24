@@ -17,7 +17,7 @@ def logger_init_default(logger_name, logfile_basename, test_logging):
 
   if hasattr(settings, "LOG_LEVEL"):
     if settings.LOG_LEVEL == "error":
-      LOG_LEVEL = logging.ERRORG
+      LOG_LEVEL = logging.ERROR
     elif settings.LOG_LEVEL == "warn":
       LOG_LEVEL = logging.WARN
     elif settings.LOG_LEVEL == "info":

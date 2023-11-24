@@ -1,0 +1,17 @@
+neighbor {{ remote_nodeid }} {
+    router-id {{ local_nodeid }};
+    local-address {{ local_ip }};
+    local-as {{ local_asn }};
+
+    peer-as {{ remote_asn }};
+    peer-address {{ remote_ip }};
+
+    family {
+        ipv4 unicast;
+        ipv4 flow;
+    }
+
+    {{ flow_conf }}
+
+}
+

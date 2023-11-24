@@ -6,31 +6,31 @@ services:
     command: /opt/FOD/pythonenv ./manage.py runserver 0.0.0.0:8000
     container_name: fod
     depends_on:
-            - celery
+      - celery
 
     privileged: true
     expose:
-        - "8000"
+      - "8000"
     ports:
-        - "0.0.0.0:8000:8000"
+      - "0.0.0.0:8000:8000"
     env_file:
-        - ./docker-compose/.env_fod
+      - ./docker-compose/.env_fod
     networks:
       mgmt:
       xfod:
         ipv4_address: 10.197.36.2
     volumes:
-        - ./:/opt/FOD
+      - ./:/opt/FOD
 
   celery:
     build:
         context: .
         dockerfile: docker-compose/Dockerfile_FOD
     image: flowspydjango
-    command: sh -c '/opt/setup_environment.sh && while ! mysqladmin -h db ping; do echo "DB not yet ready, waiting 1 sec"; sleep 1; done && echo "database is ready" && /opt/FOD/pythonenv ./manage.py migrate && exec supervisord -c docker-compose/fod_celery_supervisord.conf'
+    command: sh -c '/opt/setup_environment.sh && while ! mysqladmin -h db ping; do echo "DB not yet ready, waiting 1 sec"; sleep 1; done && echo "database is ready" && /opt/FOD/pythonenv ./manage.py migrate && exec /opt/FOD/pythonenv ./manage.py celery_worker'
     container_name: celeryfod
     depends_on:
-            - db
+      - db
     privileged: true
     env_file:
       - ./docker-compose/.env_fod
@@ -39,13 +39,35 @@ services:
       xfod:
         ipv4_address: 10.197.36.6
     volumes:
-        - ./:/opt/FOD
+      - ./:/opt/FOD
     healthcheck:
-        test: /opt/FOD/pythonenv celery -b redis://redis/0 inspect ping
-        interval: 30s
-        timeout: 20s
-        retries: 3
-        #start_period: 30s
+      test: /opt/FOD/pythonenv celery -b redis://redis/0 inspect ping
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      #start_period: 30s
+
+  exabgp1:
+    build:
+      context: ./exabgp-remote
+    image: fodexabgp
+    container_name: fodexabgp
+    networks:
+      mgmt:
+      xfod:
+        ipv4_address: 10.197.36.8
+    environment:
+      FOD_API_URL:    "http://fod:8000/api"
+      FOD_API_TOKEN:  "deb3252a1435302dd579448b792ee7fae57641b6"
+      LOCAL_NODEID:   "10.197.36.8"
+      LOCAL_IP:       "10.197.36.8"
+      LOCAL_ASN:      "1001"
+      REMOTE_NODEID:  "10.197.36.3"
+      REMOTE_IP:      "10.197.36.3"
+      REMOTE_ASN:     "2001"
+    volumes:
+      - ./exabgp-remote:/opt/exabgp
+    command: sh -c "pwd; ls; supervisord -c ./fod_exabgp_supervisord.conf"
 
   redis:
     image: redis:latest
@@ -74,59 +96,59 @@ services:
 
   freertr:
     build:
-        context: docker-compose
-        dockerfile: Dockerfile_FREERTR
+      context: docker-compose
+      dockerfile: Dockerfile_FREERTR
     container_name: freertr
     privileged: true
     expose:
-        - "23"
+      - "23"
     ports:
-        - "127.0.0.1:2323:2323"
+      - "127.0.0.1:2323:2323"
     env_file:
-        - ./docker-compose/.env_freertr
+      - ./docker-compose/.env_freertr
     networks:
       mgmt:
       nhost1:
-              ipv4_address: 10.1.10.3
+        ipv4_address: 10.1.10.3
       nhost2:
-              ipv4_address: 10.2.10.3
+        ipv4_address: 10.2.10.3
       xfod:
-              ipv4_address: 10.197.36.3
+        ipv4_address: 10.197.36.3
     depends_on:
-        - fod
+      - fod
     volumes:
-        - freertr:/opt
-        - ./freertr/run:/rtr/run/
+      - freertr:/opt
+      - ./freertr/run:/rtr/run/
 
   host1:
     build:
-        context: docker-compose
-        dockerfile: Dockerfile_HOST1
+      context: docker-compose
+      dockerfile: Dockerfile_HOST1
     container_name: host1
     privileged: true
     env_file:
-        - ./docker-compose/.env_host1
+      - ./docker-compose/.env_host1
     networks:
       mgmt:
       nhost1:
-             ipv4_address: 10.1.10.11
+        ipv4_address: 10.1.10.11
     depends_on:
-        - fod
+      - fod
     #volumes:
     #    - freertr:/opt
 
   host2:
     build:
-        context: docker-compose
-        dockerfile: Dockerfile_HOST2
+      context: docker-compose
+      dockerfile: Dockerfile_HOST2
     container_name: host2
     privileged: true
     env_file:
-        - ./docker-compose/.env_host2
+      - ./docker-compose/.env_host2
     networks:
       mgmt:
       nhost2:
-             ipv4_address: 10.2.10.12
+        ipv4_address: 10.2.10.12
     depends_on:
         - fod
     #volumes:
@@ -157,9 +179,9 @@ networks:
   nhost2:
     driver: bridge
     ipam:
-       driver: default
-       config:
-               - subnet: 10.2.10.0/24
+      driver: default
+      config:
+        - subnet: 10.2.10.0/24
 
 volumes:
   freertr:
