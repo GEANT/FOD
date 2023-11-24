@@ -27,7 +27,7 @@ services:
         context: .
         dockerfile: docker-compose/Dockerfile_FOD
     image: flowspydjango
-    command: sh -c '/opt/setup_environment.sh && while ! mysqladmin -h db ping; do echo "DB not yet ready, waiting 1 sec"; sleep 1; done && echo "database is ready" && /opt/FOD/pythonenv ./manage.py migrate && exec supervisord -c docker-compose/fod_celery_supervisord.conf'
+    command: sh -c '/opt/setup_environment.sh && while ! mysqladmin -h db ping; do echo "DB not yet ready, waiting 1 sec"; sleep 1; done && echo "database is ready" && /opt/FOD/pythonenv ./manage.py migrate && exec /opt/FOD/pythonenv ./manage.py celery_worker'
     container_name: celeryfod
     depends_on:
       - db

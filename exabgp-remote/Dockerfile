@@ -13,7 +13,9 @@ RUN mkdir -p /var/run/supervisor /opt/exabgp
 WORKDIR /opt/exabgp
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-RUN mkfifo /opt/exabgp/run/exabgp.{in,out}
-RUN chmod 666 /opt/exabgp/run/exabgp.{in,out}
+RUN mkfifo /var/run/exabgp.in
+RUN mkfifo /var/run/exabgp.out
+RUN chmod 666 /var/run/exabgp.in
+RUN chmod 666 /var/run/exabgp.out
 
 CMD supervisord -c ./fod_exabgp_supervisord.conf
