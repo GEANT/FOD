@@ -309,7 +309,7 @@ echo1 "$0: 4.a.1.b. show freertr flowspec status/statistics (before removing the
 (set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)')
 
 echo1 "$0: 4.a.2. proper removing of the blocking rule via BGP:" 1>&2
-(set -x; docker exec -ti clab-rtr005-fod1 ./inst/helpers/enable_rule.sh 10.1.10.1/32 10.2.10.2/32 1 0 "" "" 0) # first parameter: src IP prefix; second parameter: dst IP prefix; 3-rd parameter: 1=icmp ; 4-th parameter: 0=disable rule on router if it exists and is active or just create rule in INACTIVE state in FoD DB 
+(set -x; docker exec -ti clab-rtr005-fod1 ./inst/helpers/enable_rule.sh 10.1.10.1/32 10.2.10.2/32 1 0 "" 0) # first parameter: src IP prefix; second parameter: dst IP prefix; 3-rd parameter: 1=icmp ; 4-th parameter: 0=disable rule on router if it exists and is active or just create rule in INACTIVE state in FoD DB 
 
 echo1 "$0:        list demo rules in FoD:" 1>&2
 (set -x; docker exec -ti clab-rtr005-fod1 ./inst/helpers/list_rules_db.sh | grep "10.1.10..*/32.*10.2.10..*/32" || true) | output_with_specific_colormarks 'testrtr1_'
@@ -347,8 +347,7 @@ echo1 "$0: 4.b.2. show freertr flowspec status/statistics (before ping NOT to be
 (set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks "drp=[0-9]"
 
 echo1 "$0: 4.b.3. proper ping NOT to be blocked:" 1>&2
-(set -x; docker exec -ti clab-rtr005-host1 ping -c 10 10.2.10.2)
-#(set -x; docker exec -ti clab-rtr005-host2 ping -c 10 10.1.10.1)
+(set -x; docker exec -ti clab-rtr005-host1 ping -c 5 10.2.10.2)
 
 echo1 "$0: 4.b.4. show freertr flowspec status/statistics (after ping NOT to be blocked):" 1>&2
 (set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks "drp=[0-9]"
