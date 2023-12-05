@@ -203,7 +203,7 @@ sleep 2
 
 echo1 "$0:        ping proper (not to be blocked):" 1>&2
 docker exec -d -ti host1 ping -c 1 10.2.10.12
-(set -x; docker exec -ti host1 ping -c 7 10.2.10.12)
+(set -x; docker exec -ti host1 ping -c 5 10.2.10.12)
 echo 1>&2
 
 echo1 "$0:        freertr policy-map and block counters:" 1>&2
