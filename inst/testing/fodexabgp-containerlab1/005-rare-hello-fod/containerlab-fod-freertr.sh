@@ -230,8 +230,8 @@ echo1 "$0: 3.a.1.a. show exabgp current exported rules/routes (before adding the
 (set -x; docker exec -ti clab-rtr005-fod1 sh -c '. ./venv/bin/activate && exabgpcli show adj-rib out extensive') | output_with_specific_colormarks .
 
 echo1 "$0: 3.a.1.b. show freertr flowspec status/statistics (before adding the blocking rule):" 1>&2
-(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks "drp=[0-9]"
-
+#(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks "drp=[0-9]"
+(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks '(f01:200a:20a:202:200a:10a:103:8101)|(drp=.*1-1.*10.1.10..*.*10.2.10..*)'
 
 echo1 "$0: 3.a.2. proper adding of blocking rule:" 1>&2
 (set -x; docker exec -ti clab-rtr005-fod1 ./inst/helpers/enable_rule.sh 10.1.10.1/32 10.2.10.2/32 1 1 "" 0) # first parameter: src IP prefix; second parameter: dst IP prefix; third parameter: 1=icmp ; 4-th parameter: 1=enable rule on router, i.e., push it now
@@ -243,8 +243,8 @@ echo1 "$0: 3.a.3.a. show exabgp current exported rules/routes (after adding the 
 (set -x; docker exec -ti clab-rtr005-fod1 sh -c '. ./venv/bin/activate && exabgpcli show adj-rib out extensive') | output_with_specific_colormarks .
 
 echo1 "$0: 3.a.3.b. show freertr flowspec status/statistics (after adding the blocking rule):" 1>&2
-(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks "drp=[0-9]"
-
+#(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks "drp=[0-9]"
+(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks '(f01:200a:20a:202:200a:10a:103:8101)|(drp=.*1-1.*10.1.10..*.*10.2.10..*)'
 
 #
 
