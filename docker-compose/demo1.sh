@@ -140,7 +140,7 @@ fi
 #
 
 echo0 "$0: 0.b. running freertr_disable_offload hack" 1>&2
-(set -x ./docker-compose/freertr_disable_offload.sh) || true
+(set -x; ./docker-compose/freertr_disable_offload.sh) || true
 echo 1>&2
 
 #
