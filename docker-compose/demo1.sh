@@ -189,7 +189,7 @@ waitdelay1
 clear
 echo 1>&2
 
-echo1 "$0: 1.b. initial ping between host1 and host2:" 1>&2
+echo1 "$0: 1.b. initial ping between host1 (attacker 10.1.10.11) and host2 (victim 10.2.10.12):" 1>&2
 
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
 (set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive')

@@ -166,6 +166,7 @@ echo1 "$0: 1.b.0. check freetrtr flowspec status/statistics (before unblocked pi
 
 
 echo1 "$0: 1.b.1 unblocked ping (FoD's exabgp not yet connected to freertr)" 1>&2
+docker exec -d -ti clab-rtr005-host1 ping -c 1 10.2.10.2
 (set -x; docker exec -ti clab-rtr005-host1 ping -c 5 10.2.10.2)
 #(set -x; docker exec -ti clab-rtr005-host2 ping -c 5 10.1.10.1)
 
