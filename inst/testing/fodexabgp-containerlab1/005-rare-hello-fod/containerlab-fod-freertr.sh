@@ -93,11 +93,11 @@ function show_container_overview()
 {
   echo 'container overview:'
   echo 
-  echo "                                                <---> host 1 (attacker $attacker_ip)"
-  echo '                                               /'
+  echo "                                                 <---> host 1 (attacker $attacker_ip)"
+  echo '                                                /'
   echo " FoD+exaBGP ($fod_bgp_ip) <-> Freertr ($freertr_bgp_ip)"
-  echo '                                               \'
-  echo "                                                <---> host 2 (victim   $victim_ip)"
+  echo '                                                \'
+  echo "                                                 <---> host 2 (victim   $victim_ip)"
   echo 
   echo 
 }
