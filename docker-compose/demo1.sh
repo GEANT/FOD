@@ -4,6 +4,8 @@
 
 # ./docker-compose/README.txt
 
+#################################
+
 use_novol=1
 
 if [ "$use_novol" = 1 ]; then
@@ -104,11 +106,11 @@ function show_container_overview()
 {
   echo 'container overview:'
   echo 
-  echo '                 <---> host 1 (attacker 10.1.10.11)'
+  echo "                 <---> host 1 (attacker $attacker_ip)"
   echo '                /'
   echo ' FoD <-> Freertr '
   echo '                \'
-  echo '                 <---> host 2 (victim   10.2.10.12)'
+  echo "                 <---> host 2 (victim   $victim_ip)"
   echo 
   echo 
 }
@@ -143,6 +145,15 @@ fi
 #################################
 
 set -e
+
+##
+
+
+##
+
+# helpers defintions
+attacker_ip="10.1.10.11"
+victim_ip="10.2.10.12"
 
 ##
 
