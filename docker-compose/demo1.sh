@@ -249,8 +249,8 @@ echo1 "$0:        freertr policy-map and block counters:" 1>&2
 sleep 2
 
 echo1 "$0:        ping proper NOT to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
-docker exec -d -ti host1 ping -c 1 10.2.10.12
-(set -x; docker exec -ti host1 ping -c 5 10.2.10.12)
+#docker exec -d -ti host1 ping -c 1 10.2.10.12
+(set -x; docker exec -ti host1 ping -c 5 10.2.10.12) | output_with_specific_colormarks "packets transmitted, .* received, .* packet loss"
 
 echo1 "$0:        freertr policy-map and block counters:" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
@@ -306,7 +306,7 @@ echo1 "$0:        show freertr flowpec status/statistics (before ping to be bloc
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])"
 
 echo1 "$0:        ping proper to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
-(set -x; docker exec -ti host1 ping -c 5 10.2.10.12) || true
+(set -x; ! docker exec -ti host1 ping -c 5 10.2.10.12) | output_with_specific_colormarks "packets transmitted, .* received, .* packet loss"
 
 echo1 "$0:        show freertr flowspec status/statistics (after ping to be blocked):" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])"
