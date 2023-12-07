@@ -20,6 +20,10 @@ fi
 #################################
 # helper functions
 
+function echocol1n() {
+   echo -n -e "\e[33;1m$*\e[0m"
+}
+
 function echocol1() {
    echo -e "\e[33;1m$*\e[0m"
 }
@@ -48,12 +52,32 @@ function echo0 () {
   )
 }
 
+function echo1waitpress() {
+  echocol1n "."
+  (stty -echo
+   trap 'stty echo' EXIT
+   read
+   stty echo
+   trap '' EXIT)
+  echo -e -n "  "      
+}
+
 function echo1 () {
   (set +e	
+
+    if [ "$waite" = "-1" ]; then
+      echo1waitpress
+    fi
+
     echocol1 "$@"
     echo 1>&2
 
-    [ "$waite" = 0 ] || sleep "$waite"
+    if [ "$waite" = "-1" ]; then
+      #sleep "2"
+      echo1waitpress
+    elif [ "$waite" != 0 ]; then 
+      sleep "$waite"
+    fi
   ) 
 }
 
@@ -76,6 +100,19 @@ function output_with_specific_colormarks() {
   fi
 }  
 
+function show_container_overview()
+{
+  echo 'container overview:'
+  echo 
+  echo '                 <---> host 1 (attacker 10.1.10.11)'
+  echo '                /'
+  echo ' FoD <-> Freertr '
+  echo '                \'
+  echo '                 <---> host 2 (victim   10.2.10.12)'
+  echo 
+  echo 
+}
+
 #################################
 
 wait1=30
@@ -85,21 +122,23 @@ if [ "$1" = "--waittime" ]; then
   shift 1
   wait1="$1"
   shift 1
-fi
-
-if [ "$1" = "--waitecho" ]; then
-  shift 1
-  waite=2
-elif [ "$1" = "--nowaitecho" ]; then
-  shift 1
-  waite=0
-fi  
-
-if [ "$1" = "--keypress" ]; then
+elif [ "$1" = "--waitkey" -o "$1" = "--wk" ]; then
   shift 1
   wait1="-1"
   waite=2
 fi
+
+if [ "$1" = "--echotime" ]; then
+  shift 1
+  waite=2
+elif [ "$1" = "--noechotime" ]; then
+  shift 1
+  waite=0
+elif [ "$1" = "--echokey" -o "$1" = "--ek" ]; then
+  shift 1
+  wait1="-1"
+  waite="-1"
+fi  
 
 #################################
 
@@ -172,6 +211,8 @@ echo 1>&2
 echo1 "$0: demo proper:" 1>&2
 #echo 1>&2
 
+show_container_overview
+
 echo1 "$0: 1. demo part1: initial ping between host1 and host2" 1>&2
 #echo 1>&2
 
@@ -191,8 +232,10 @@ echo 1>&2
 
 echo1 "$0: 1.b. initial ping between host1 (attacker 10.1.10.11) and host2 (victim 10.2.10.12):" 1>&2
 
+show_container_overview
+
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
-(set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive')
+((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 echo 1>&2
 
 echo1 "$0:        freertr policy-map and block counters:" 1>&2
@@ -201,7 +244,7 @@ echo 1>&2
 
 sleep 2
 
-echo1 "$0:        ping proper (not to be blocked):" 1>&2
+echo1 "$0:        ping proper NOT to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
 docker exec -d -ti host1 ping -c 1 10.2.10.12
 (set -x; docker exec -ti host1 ping -c 5 10.2.10.12)
 echo 1>&2
@@ -222,11 +265,13 @@ echo1 "$0: 2. demo part2: blocked ping between host1 and host2" 1>&2
 
 sleep 2
 
+show_container_overview
+
 echo1 "$0: 2.a. adding of blocking rule:" 1>&2
 #echo 1>&2
 
 echo1 "$0:        show exabgp current exported rules/routes (before adding the blocking rule):" 1>&2
-(set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | output_with_specific_colormarks .
+((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 echo 1>&2
 
 echo1 "$0:        show freertr flowspec status/statistics (before adding the blocking rule):" 1>&2
@@ -243,7 +288,7 @@ echo1 "$0:        list demo rules in FoD:" 1>&2
 echo 1>&2
 
 echo1 "$0:        show exabgp current exported rules/routes (after adding the blocking rule):" 1>&2
-(set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | output_with_specific_colormarks .
+((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 echo 1>&2
 
 echo1 "$0:        show freertr flowspec status/statistics (after adding the blocking rule):" 1>&2
@@ -260,15 +305,17 @@ echo1 "$0: 2.b. blocked ping between host1 and host2:" 1>&2
 
 sleep 2
 
+show_container_overview
+
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
-(set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | output_with_specific_colormarks .
+((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 echo 1>&2
 
 echo1 "$0:        show freertr flowpec status/statistics (before ping to be blocked):" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
 echo 1>&2
 
-echo1 "$0:        proper ping (to be blocked):" 1>&2
+echo1 "$0:        ping proper to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
 (set -x; docker exec -ti host1 ping -c 5 10.2.10.12) || true
 echo 1>&2
 
