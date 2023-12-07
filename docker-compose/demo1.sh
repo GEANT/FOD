@@ -38,7 +38,7 @@ function waitdelay1 () {
 
     echo 1>&2
     if [ "$arg1" = "-1" ]; then
-      echocol1 "press RETURN" 1>&2
+      echocol1n "press RETURN" 1>&2
       read	
     else
       echocol1 "waiting $arg1 seconds" 1>&2
@@ -106,11 +106,11 @@ function show_container_overview()
 {
   echo 'container overview:'
   echo 
-  echo "                 <---> host 1 (attacker $attacker_ip)"
-  echo '                /'
-  echo ' FoD <-> Freertr '
-  echo '                \'
-  echo "                 <---> host 2 (victim   $victim_ip)"
+  echo "                                             <---> host 1 (attacker $attacker_ip)"
+  echo '                                            /'
+  echo " FoD ($fod_bgp_ip) <-> Freertr ($freertr_bgp_ip)"
+  echo '                                            \'
+  echo "                                             <---> host 2 (victim   $victim_ip)"
   echo 
   echo 
 }
@@ -154,6 +154,8 @@ set -e
 # helpers defintions
 attacker_ip="10.1.10.11"
 victim_ip="10.2.10.12"
+fod_bgp_ip="10.197.36.2"
+freertr_bgp_ip="10.197.36.3"
 
 ##
 
@@ -334,4 +336,6 @@ echo1 "$0:        show freertr flowspec status/statistics (after ping to be bloc
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
 echo 1>&2
 
+
+##
 
