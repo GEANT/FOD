@@ -93,11 +93,11 @@ function show_container_overview()
 {
   echo 'container overview:'
   echo 
-  echo "                                             <---> host 1 (attacker $attacker_ip)"
-  echo '                                            /'
-  echo " FoD ($fod_bgp_ip) <-> Freertr ($freertr_bgp_ip)"
-  echo '                                            \'
-  echo "                                             <---> host 2 (victim   $victim_ip)"
+  echo "                                                <---> host 1 (attacker $attacker_ip)"
+  echo '                                               /'
+  echo " FoD+exaBGP ($fod_bgp_ip) <-> Freertr ($freertr_bgp_ip)"
+  echo '                                               \'
+  echo "                                                <---> host 2 (victim   $victim_ip)"
   echo 
   echo 
 }
@@ -130,17 +130,6 @@ elif [ "$1" = "--echokey" -o "$1" = "--ek" ]; then
 fi  
 
 #################################
-
-
-#wait_time_for_time_to_read=10
-#if [ "$1" = "--quick" ]; then
-#  shift 1
-#  wait_time_for_time_to_read=0
-#fi
-#
-#echo "$0: wait_time_for_time_to_read=$wait_time_for_time_to_read" 1>&2
-
-###
 
 set -e
 
@@ -358,8 +347,7 @@ echo1 "$0: 4.a.3.a. show exabgp current exported rules/routes (after removing th
 ((set -x; docker exec -ti clab-rtr005-fod1 sh -c '. ./venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 
 echo1 "$0: 4.a.3.b. show freertr flowspec status/statistics (after removing the blocking rule):" 1>&2
-(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)' | output_with_specific_colormarks '(f01:200a:20a:202:200a:10a:103:8101)|(drp=[0-9])'
-)
+(set -x; docker exec -ti clab-rtr005-rtr1 bash -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | (exec 3<>/dev/tcp/127.0.0.1/2323; cat >&3; cat <&3; exec 3<&-)') | output_with_specific_colormarks '(f01:200a:20a:202:200a:10a:103:8101)|(drp=[0-9])'
 
 #
 

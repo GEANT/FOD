@@ -71,6 +71,7 @@ function echo1 () {
       echo1waitpress
     fi
 
+    echo 1>&2
     echocol1 "$@"
     echo 1>&2
 
@@ -106,11 +107,11 @@ function show_container_overview()
 {
   echo 'container overview:'
   echo 
-  echo "                                             <---> host 1 (attacker $attacker_ip)"
-  echo '                                            /'
-  echo " FoD ($fod_bgp_ip) <-> Freertr ($freertr_bgp_ip)"
-  echo '                                            \'
-  echo "                                             <---> host 2 (victim   $victim_ip)"
+  echo "                                                    <---> host 1 (attacker $attacker_ip)"
+  echo '                                                   /'
+  echo " FoD+exaBGP ($fod_bgp_ip) <-> Freertr ($freertr_bgp_ip)"
+  echo '                                                   \'
+  echo "                                                    <---> host 2 (victim   $victim_ip)"
   echo 
   echo 
 }
@@ -172,15 +173,12 @@ if [ "$count_up" != 4 ]; then
 
   echo1 "$0: 0.a.1. tearing down docker-compse set completely" 1>&2
   (set -x; docker-compose -f "$docker_compose_spec__file" down)
-  echo 1>&2
 
   echo1 "$0: 0.a.2. (re-)building docker-compose set" 1>&2
   (set -x; docker-compose -f "$docker_compose_spec__file" build)
-  echo 1>&2
 
   echo1 "$0: 0.a.3. bringing docker-compose set up" 1>&2
   (set -x; docker-compose -f "$docker_compose_spec__file" up -d)
-  echo 1>&2
 
   reinit_done=1
 
@@ -193,7 +191,6 @@ fi
 
 echo0 "$0: 0.b. running freertr_disable_offload hack" 1>&2
 (set -x; ./docker-compose/freertr_disable_offload.sh) || true
-echo 1>&2
 
 #
 
@@ -219,15 +216,12 @@ fi
 # start proper of demo
 
 clear
-echo 1>&2
 
 echo1 "$0: demo proper:" 1>&2
-#echo 1>&2
 
 show_container_overview
 
 echo1 "$0: 1. demo part1: initial ping between host1 and host2" 1>&2
-#echo 1>&2
 
 
 echo1 "$0: 1.a. disabling any left-over rules in FoD:" 1>&2
@@ -241,7 +235,6 @@ waitdelay1
 #
 
 clear
-echo 1>&2
 
 echo1 "$0: 1.b. initial ping between host1 (attacker 10.1.10.11) and host2 (victim 10.2.10.12):" 1>&2
 
@@ -249,18 +242,15 @@ show_container_overview
 
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
-echo 1>&2
 
 echo1 "$0:        freertr policy-map and block counters:" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
-echo 1>&2
 
 sleep 2
 
 echo1 "$0:        ping proper NOT to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
 docker exec -d -ti host1 ping -c 1 10.2.10.12
 (set -x; docker exec -ti host1 ping -c 5 10.2.10.12)
-echo 1>&2
 
 echo1 "$0:        freertr policy-map and block counters:" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
@@ -270,51 +260,40 @@ waitdelay1
 #
 
 clear
-echo 1>&2
 
-#echo 1>&2
 echo1 "$0: 2. demo part2: blocked ping between host1 and host2" 1>&2
-#echo 1>&2
 
 sleep 2
 
 show_container_overview
 
 echo1 "$0: 2.a. adding of blocking rule:" 1>&2
-#echo 1>&2
 
 echo1 "$0:        show exabgp current exported rules/routes (before adding the blocking rule):" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
-echo 1>&2
 
 echo1 "$0:        show freertr flowspec status/statistics (before adding the blocking rule):" 1>&2
-(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks '(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=.*1-1.*10.1.10.11.*10.2.10.12)'
-echo 1>&2
+(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks '(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])'
 
 echo1 "$0:        proper adding of blocking rule:" 1>&2
-#docker exec -ti "$fod_container_name" ./inst/helpers/add_rule.sh 10.1.10.11 10.2.10.12 1
 (set -x; docker exec -ti "$fod_container_name" ./inst/helpers/enable_rule.sh 10.1.10.11/32 10.2.10.12/32 1 "" "" 0)
-echo 1>&2
 
 echo1 "$0:        list demo rules in FoD:" 1>&2
 (set -x; docker exec -ti "$fod_container_name" ./inst/helpers/list_rules_db.sh | grep "10.1.10.11/32.*10.2.10.12/32" || true) | output_with_specific_colormarks 'testrtr1_'
-echo 1>&2
 
 echo1 "$0:        show exabgp current exported rules/routes (after adding the blocking rule):" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
-echo 1>&2
 
 echo1 "$0:        show freertr flowspec status/statistics (after adding the blocking rule):" 1>&2
-(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks '(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=.*1-1.*10.1.10.11.*10.2.10.12)'
+(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks '(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])'
 
 waitdelay1
 
 #
 
 clear
-echo 1>&2
+
 echo1 "$0: 2.b. blocked ping between host1 and host2:" 1>&2
-#echo 1>&2
 
 sleep 2
 
@@ -322,20 +301,15 @@ show_container_overview
 
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
-echo 1>&2
 
 echo1 "$0:        show freertr flowpec status/statistics (before ping to be blocked):" 1>&2
-(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
-echo 1>&2
+(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])"
 
 echo1 "$0:        ping proper to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
 (set -x; docker exec -ti host1 ping -c 5 10.2.10.12) || true
-echo 1>&2
 
 echo1 "$0:        show freertr flowspec status/statistics (after ping to be blocked):" 1>&2
-(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
-echo 1>&2
-
+(set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])"
 
 ##
 
