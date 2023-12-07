@@ -221,7 +221,7 @@ echo1 "$0: demo proper:" 1>&2
 
 show_container_overview
 
-echo1 "$0: 1. demo part1: initial ping between host1 and host2" 1>&2
+echo1 "$0: 1. demo part1: initial ping between host1 and host2:" 1>&2
 
 
 echo1 "$0: 1.a. disabling any left-over rules in FoD:" 1>&2
@@ -261,7 +261,7 @@ waitdelay1
 
 clear
 
-echo1 "$0: 2. demo part2: blocked ping between host1 and host2" 1>&2
+echo1 "$0: 2. demo part2: blocked ping between host1 and host2:" 1>&2
 
 sleep 2
 
