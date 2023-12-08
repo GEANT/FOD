@@ -244,7 +244,7 @@ show_container_overview
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 
-echo1 "$0:        freertr policy-map and block counters:" 1>&2
+echo1 "$0:        show freertr flowspec peerings/DB/counters:" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
 
 sleep 2
@@ -253,7 +253,7 @@ echo1 "$0:        ping proper NOT to be blocked (attacker 10.1.10.11 -> victim 1
 #docker exec -d -ti host1 ping -c 1 10.2.10.12
 (set -x; docker exec -ti host1 ping -c 5 10.2.10.12) | output_with_specific_colormarks "packets transmitted, .* received, .* packet loss"
 
-echo1 "$0:        freertr policy-map and block counters:" 1>&2
+echo1 "$0:        show freertr flowspec peerings/DB/counters:" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "drp=[0-9]"
 
 waitdelay1
@@ -273,7 +273,7 @@ echo1 "$0: 2.a. adding of blocking rule:" 1>&2
 echo1 "$0:        show exabgp current exported rules/routes (before adding the blocking rule):" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 
-echo1 "$0:        show freertr flowspec status/statistics (before adding the blocking rule):" 1>&2
+echo1 "$0:        show freertr flowspec peerings/DB/counters (before adding the blocking rule):" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks '(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])'
 
 echo1 "$0:        proper adding of blocking rule:" 1>&2
@@ -285,7 +285,7 @@ echo1 "$0:        list demo rules in FoD:" 1>&2
 echo1 "$0:        show exabgp current exported rules/routes (after adding the blocking rule):" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 
-echo1 "$0:        show freertr flowspec status/statistics (after adding the blocking rule):" 1>&2
+echo1 "$0:        show freertr flowspec peerings/DB/counters (after adding the blocking rule):" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks '(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])'
 
 waitdelay1
@@ -303,13 +303,13 @@ show_container_overview
 echo1 "$0:        show exabgp current exported rules/routes:" 1>&2
 ((set -x; docker exec -ti "$fod_container_name" sh -c '. /opt/venv/bin/activate && exabgpcli show adj-rib out extensive') | grep . || echo "no rules in exabgp DB") | output_with_specific_colormarks .
 
-echo1 "$0:        show freertr flowpec status/statistics (before ping to be blocked):" 1>&2
+echo1 "$0:        show freertr flowspec peerings/DB/counters (before ping to be blocked):" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])"
 
 echo1 "$0:        ping proper to be blocked (attacker 10.1.10.11 -> victim 10.2.10.12):" 1>&2
 (set -x; ! docker exec -ti host1 ping -c 5 10.2.10.12) | output_with_specific_colormarks "packets transmitted, .* received, .* packet loss"
 
-echo1 "$0:        show freertr flowspec status/statistics (after ping to be blocked):" 1>&2
+echo1 "$0:        show freertr flowspec peerings/DB/counters (after ping to be blocked):" 1>&2
 (set -x; docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323') | output_with_specific_colormarks "(f01:200a:20a:c02:200a:10a:b03:8101)|(drp=[0-9])"
 
 ##
