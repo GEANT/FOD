@@ -89,8 +89,10 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                     else:
                         results[routename][xtype][counter] = int(val)
                   else:
+                    logger.debug("snmp stats: initial add2 %s %s %s %s = %s" %(transportTarget, counter, tablename, routename, int(val)))
                     results[routename][xtype] = { counter: int(val) } 
                 else:
+                    logger.debug("snmp stats: initial add1 %s %s %s %s = %s" %(transportTarget, counter, tablename, routename, int(val)))
                     results[routename] = { xtype: { counter: int(val) } }
                 logger.debug("%s %s %s %s = %s" %(transportTarget, counter, tablename, routename, int(val)))
                 
@@ -385,9 +387,19 @@ def poll_snmp_statistics():
             if rule_status=="ACTIVE":
               try:
                 if xtype==xtype_default:
+                  logger.info("poll_snmp_statistics(): 1a STATISTICS_PER_RULE rule_id="+str(rule_id))
                   counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype_default]}
                 else:
-                  counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype_default], "value_dropped": newdata[flowspec_params_str][xtype]}
+                  logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id))
+                  try:
+                    val1 = newdata[flowspec_params_str][xtype_default]
+                  except Exception:
+                    pass
+                  try:
+                    val2 = newdata[flowspec_params_str][xtype]
+                  except Exception:
+                    pass
+                  counter = {"ts": nowstr, "value": val1, "value_dropped": val2}
 
                 counter_is_null = False
               except Exception as e:
@@ -466,6 +478,7 @@ def poll_snmp_statistics():
     logger.info("poll_snmp_statistics(): polling end: old_nowstr="+str(nowstr)+" last_poll_no_time="+str(last_poll_no_time))
 
 def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
+    rule_id=str(rule_id)
     logger.debug("add_initial_zero_value(): rule_id="+str(rule_id))
 
     # get new data
@@ -505,12 +518,14 @@ def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
 
     try:
         if rule_id in history_per_rule:
+              logger.error("add_initial_zero_value(): rule_id="+str(rule_id)+" : already in hist");
               rec = history_per_rule[rule_id]
               last_rec = rec[0]
               if last_rec==None or (zero_or_null and last_rec['value']==0) or ((not zero_or_null) and last_rec['value']!=0):
                 rec.insert(0, counter)
                 history_per_rule[rule_id] = rec[:samplecount]
         else:
+              logger.error("add_initial_zero_value(): rule_id="+str(rule_id)+" : missing in hist");
               if zero_or_null:
                 history_per_rule[rule_id] = [counter]
 
