@@ -116,7 +116,19 @@ setup_netconf__pass="netconf"
 
 #
 
-setup_exabgp=0
+
+if [ "$FOD_PROXY_CLASS" = "proxy_exabgp" ]; then
+  setup_exabgp=1
+elif [ "$FOD_PROXY_CLASS" = "proxy_exabgp_remote" ]; then
+  setup_exabgp=2
+else
+  setup_exabgp=0
+fi
+
+echo "$0: FOD_PROXY_CLASS=$FOD_PROXY_CLASS => initial setup_exabgp=$setup_exabgp" 1>&2
+
+#
+
 setup_exabgp_full=0
 
 setup_exabgp__nodeid=1.1.1.1
@@ -458,6 +470,10 @@ while [ $# -gt 0 ]; do
     setup_exabgp=1
     shift 1
     setup_exabgp_full=0
+  elif [ $# -ge 1 -a "$1" = "--exabgp_remote" ]; then 
+    shift 1
+    setup_exabgp=2
+    shift 1
   elif [ $# -ge 1 -a "$1" = "--exabgp" ]; then # currently 6 params follow
     shift 1
     setup_exabgp=1
@@ -1072,6 +1088,10 @@ EOF
     echo "$0: setting up exabgp fod conf" 1>&2
 
     echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp"' >> flowspy/settings_local.py
+  elif [ "$setup_exabgp" = 2 ]; then
+    echo "$0: setting up exabgp remote fod conf" 1>&2
+
+    echo -e '\n#added by install-*.sh:\nPROXY_CLASS="proxy_exabgp_remote"' >> flowspy/settings_local.py
   fi
 
   ##
