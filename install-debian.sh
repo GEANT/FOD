@@ -714,10 +714,12 @@ if [ "$install_fodproper" = 0 -a "$install_basesw_python" = 1 ]; then
 
   ##
 
-  # fix for broken anyjson and cl
-  # TODO: fix this more cleanly
-  pip install 'setuptools==57.5.0'
-  pip install wheel
+  if false; then
+    # fix for broken anyjson and cl
+    # TODO: fix this more cleanly
+    pip install 'setuptools==57.5.0'
+    pip install wheel
+  fi
 
   pip install -r requirements.txt
 
