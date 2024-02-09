@@ -142,9 +142,21 @@ def get_snmp_stats():
 
     snmpEngine = SnmpEngine()
 
+    ##
+
+    try:
+      snmp_bulk_get__non_repeaters = settings.SNMP_BULK_GET__NON_REPEATERS
+    except Exception as e:
+      snmp_bulk_get__non_repeaters = 0
+
+    try:
+      snmp_bulk_get__max_repetitions = settings.SNMP_BULK_GET__MAX_REPETITIONS
+    except Exception as e:
+      snmp_bulk_get__max_repetitions = 10
+
     # Submit initial GETNEXT requests and wait for responses
     for authData, transportTarget, varBinds in targets:
-        bulkCmd(snmpEngine, authData, transportTarget, ContextData(), 0, 50,
+        bulkCmd(snmpEngine, authData, transportTarget, ContextData(), snmp_bulk_get__non_repeaters, snmp_bulk_get__max_repetitions,
                 *varBinds, **dict(cbFun=snmpCallback, cbCtx=(authData, transportTarget.transportAddr, results)))
 
     snmpEngine.transportDispatcher.runDispatcher()

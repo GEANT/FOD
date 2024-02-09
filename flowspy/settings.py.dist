@@ -560,6 +560,9 @@ NETCONF_PORT = 830
 # Default community string
 SNMP_COMMUNITY = "abcd"
 
+SNMP_BULK_GET__MAX_REPETITIONS = 10
+SNMP_BULK_GET__NON_REPEATERS = 0
+
 # list of IP addresses, each IP is a dict with "ip", "port" (optional, default
 # is 161), "community" (optional, default is SNMP_COMMUNITY) keys
 SNMP_IP = [
