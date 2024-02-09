@@ -191,7 +191,6 @@ def load_history():
             f.close()
     except:
         logger.info("There is no file with SNMP historical data.")
-        pass
     return history
 
 def save_history(history, nowstr):
@@ -395,12 +394,10 @@ def poll_snmp_statistics():
                     val1 = newdata[flowspec_params_str][xtype_default]
                   except Exception:
                     val1 = 1
-                    pass
                   try:
                     val2 = newdata[flowspec_params_str][xtype]
                   except Exception:
                     val2 = 1
-                    pass
                   counter = {"ts": nowstr, "value": val1, "value_dropped": val2}
 
                 counter_is_null = False
