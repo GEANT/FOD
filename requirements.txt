@@ -40,4 +40,5 @@ pytest-django==4.4.0
 psutil
 longerusername
 intervaltree
+pyasn1==0.4.8  
 exabgp
