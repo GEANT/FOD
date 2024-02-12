@@ -33,6 +33,10 @@ logger = flowspec.logging_utils.logger_init_default(__name__, "celery_snmpstats.
 
 identoffset = len(settings.SNMP_CNTPACKETS) + 1
 
+#
+
+last_snmp_var_got__from__transportTarget__hash = {}
+
 # Wait for responses or errors, submit GETNEXT requests for further OIDs
 # noinspection PyUnusedLocal,PyUnusedLocal
 def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
@@ -44,12 +48,17 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
     # debug - which router replies:
     #print('%s via %s' % (authData, transportTarget))
 
+    try:
+        last_snmp_var_got__from__transportTarget = last_snmp_var_got__from__transportTarget[str(transportTarget)]
+    except:
+        last_snmp_var_got__from__transportTarget = "null"
+
     # CNTPACKETS and CNTBYTES are of the same length
     if errorIndication:
-        logger.error('snmpCallback(): Bad errorIndication.')
+        logger.error('snmpCallback(): Bad errorIndication: transportTarget={} last_snmp_var_got__from__transportTarget={}'.format(transportTarget, last_snmp_var_got__from__transportTarget))
         return 0
     elif errorStatus:
-        logger.error('snmpCallback(): Bad errorStatus.')
+        logger.error('snmpCallback(): Bad errorStatus: transportTarget={} last_snmp_var_got__from__transportTarget={}'.format(transportTarget, last_snmp_var_got__from__transportTarget))
         return 0
     for varBindRow in varBindTable:
         for name, val in varBindRow:
@@ -61,6 +70,8 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
             else:
                 logger.debug('snmpCallback(): Finished {}.'.format(transportTarget))
                 return 0
+
+            last_snmp_var_got__from__transportTarget__hash[tabstoptr(transportTarget)]=name
 
             ident = name[identoffset:]
             ordvals = [int(i) for i in ident.split(".")]
@@ -153,6 +164,8 @@ def get_snmp_stats():
       snmp_bulk_get__max_repetitions = settings.SNMP_BULK_GET__MAX_REPETITIONS
     except Exception as e:
       snmp_bulk_get__max_repetitions = 10
+
+    last_snmp_var_got__from__transportTarget__hash = {} # reset history of snmp vars seen from a router
 
     # Submit initial GETNEXT requests and wait for responses
     for authData, transportTarget, varBinds in targets:
