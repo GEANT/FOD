@@ -152,7 +152,7 @@ sub get_snmp_rulename
   if (defined($thenaction)) {
     if ($thenaction eq 'discard') {
     } elsif ($thenaction =~ /^rate-limit-([0-9]+([Mk]?))$/) {
-      $rulename = $1."_".$rulename;
+      $rulename = uc($1)."_".$rulename;
       $counter_type_value = 3; # policer
     }
   }

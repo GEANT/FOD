@@ -43,7 +43,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
           errorStatus, errorIndex, varBindTable, cbCtx):
   try:
     (authData, transportTarget, results) = cbCtx
-    logger.error('snmpCallback(): called')
+    #logger.info('snmpCallback(): called {}'.format(transportTarget))
 
     # debug - which router replies:
     #print('%s via %s' % (authData, transportTarget))
@@ -71,7 +71,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                 logger.debug('snmpCallback(): Finished {}.'.format(transportTarget))
                 return 0
 
-            last_snmp_var_got__from__transportTarget__hash[tabstoptr(transportTarget)]=name
+            last_snmp_var_got__from__transportTarget__hash[str(transportTarget)]=name
 
             ident = name[identoffset:]
             ordvals = [int(i) for i in ident.split(".")]
@@ -84,13 +84,13 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                 len2 = ordvals[len1] + 1
                 routename = "".join([chr(i) for i in ordvals[len1 + 1:len1 + len2]])
 
-                logger.error("routename="+str(routename))
+                #logger.info("routename="+str(routename))
                 xtype='counter'
-                if re.match(r'^[0-9]+[Mk]_', routename):
+                if re.match(r'^[0-9]+[MmKk]_', routename):
                     ary=re.split(r'_', routename, maxsplit=1)
                     xtype=ary[0]
                     routename=ary[1]
-                logger.error("=> routename="+str(routename)+" xtype="+str(xtype))
+                #logger.info("=> routename="+str(routename)+" xtype="+str(xtype))
 
                 # add value into dict
                 if routename in results:
@@ -271,7 +271,7 @@ def helper_get_countertype_of_rule(ruleobj):
    for thenaction in ruleobj.then.all():
        if thenaction.action and thenaction.action=='rate-limit':
            limit_rate=thenaction.action_value
-           xtype=str(limit_rate)
+           xtype=str(limit_rate).upper()
    return xtype
 
 #
@@ -398,8 +398,8 @@ def poll_snmp_statistics():
               counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
               counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
             else:
-              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_dropped": null_measurement }
-              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_dropped": zero_measurement }
+              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_matched": null_measurement }
+              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_matched": zero_measurement }
 
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
@@ -416,14 +416,14 @@ def poll_snmp_statistics():
                 else:
                   logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id))
                   try:
-                    val1 = newdata[flowspec_params_str][xtype_default]
+                    val_dropped = newdata[flowspec_params_str][xtype_default]
                   except Exception:
-                    val1 = 1
+                    val_dropped = 1
                   try:
-                    val2 = newdata[flowspec_params_str][xtype]
+                    val_matched = newdata[flowspec_params_str][xtype]
                   except Exception:
-                    val2 = 1
-                  counter = {"ts": nowstr, "value": val1, "value_dropped": val2}
+                    val_matched = 1
+                  counter = { "ts": nowstr, "value": val_dropped, "value_matched": val_matched }
 
                 counter_is_null = False
               except Exception as e:
@@ -536,7 +536,7 @@ def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
     if xtype==xtype_default:
       counter = {"ts": nowstr, "value": zero_measurement }
     else:
-      counter = {"ts": nowstr, "value": zero_measurement, "value_dropped": zero_measurement }
+      counter = {"ts": nowstr, "value": zero_measurement, "value_matched": zero_measurement }
         
     samplecount = settings.SNMP_MAX_SAMPLECOUNT
 

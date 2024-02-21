@@ -152,12 +152,12 @@ function plotGraph(route_then_action, data)
    var ybytesdata = Array();
    var ybytesdatarel = Array();
 
-   var ydroppedpkgdata = Array();
-   var ydroppedpkgdatarel = Array();
-   var ydroppedbytesdata = Array();
-   var ydroppedbytesdatarel = Array();
+   var ymatchedpkgdata = Array();
+   var ymatchedpkgdatarel = Array();
+   var ymatchedbytesdata = Array();
+   var ymatchedbytesdatarel = Array();
 
-   var ydropped_available = false;
+   var ymatched_available = false;
 
    for (i=0; i<data["data"].length; i++) {
        var d = data["data"][data["data"].length - 1 - i];
@@ -178,21 +178,29 @@ function plotGraph(route_then_action, data)
            ybytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
        }
 
-       if (d.value_dropped!=undefined) {
-         ydropped_available=true
+       if (d.value_matched!=undefined) {
+         ymatched_available=true
+	 ymatched_packets = d.value_matched.packets;
+	 ymatched_bytes = d.value_matched.bytes;
+       } else if (d.value_dropped!=undefined) { // support for ".value_dropped" which actually really effectively was matched bytes/packets (as having been wrongly used/named, and which was in use for a short time in 2024-02)
+         ymatched_available=true
+	 ymatched_packets = d.value_dropped.packets;
+	 ymatched_bytes = d.value_dropped.bytes;
+       }
 
-         ydroppedpkgdata[i] = d.value_dropped.packets;
-         ydroppedbytesdata[i] = d.value_dropped.bytes;
+       if (ymatched_available) {
+         ymatchedpkgdata[i] = ymatched_packets;
+         ymatchedbytesdata[i] = ymatched_bytes;
   
          if (i == 0) {
-             ydroppedpkgdatarel[i] = 0;
-             ydroppedbytesdatarel[i] = 0;
+             ymatchedpkgdatarel[i] = 0;
+             ymatchedbytesdatarel[i] = 0;
          } else {
-             delta = (ydroppedpkgdata[i]===undefined) ? undefined : (ydroppedpkgdata[i-1]===undefined) ? ydroppedpkgdata[i] : (ydroppedpkgdata[i] - ydroppedpkgdata[i-1]);
-             ydroppedpkgdatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
+             delta = (ymatchedpkgdata[i]===undefined) ? undefined : (ymatchedpkgdata[i-1]===undefined) ? ymatchedpkgdata[i] : (ymatchedpkgdata[i] - ymatchedpkgdata[i-1]);
+             ymatchedpkgdatarel[i] = (delta===undefined || delta>=0) ? delta : 0;
   
-             bytesdelta = (ydroppedbytesdata[i]===undefined) ? undefined : (ydroppedbytesdata[i-1]===undefined) ? ydroppedbytesdata[i] : (ydroppedbytesdata[i] - ydroppedbytesdata[i-1]);
-             ydroppedbytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
+             bytesdelta = (ymatchedbytesdata[i]===undefined) ? undefined : (ymatchedbytesdata[i-1]===undefined) ? ymatchedbytesdata[i] : (ymatchedbytesdata[i] - ymatchedbytesdata[i-1]);
+             ymatchedbytesdatarel[i] = (bytesdelta===undefined || bytesdelta>=0) ? bytesdelta : 0;
          }
   
   
@@ -228,24 +236,24 @@ function plotGraph(route_then_action, data)
 
 
    if (is_drop_rule) {
-     matched_text = "matched and dropped";
+     dropped_text = "matched and dropped";
      value1__borderColor = drop__borderColor;
      value1__pointbackgroundColor = drop__pointbackgroundColor;
      value1__backgroundColor = drop__backgroundColor;
    } else if (is_accept_rule) {
-     matched_text = "matched and accepted";
+     dropped_text = "matched and accepted";
      value1__borderColor = accept__borderColor;
      value1__pointbackgroundColor = accept__pointbackgroundColor;
      value1__backgroundColor = accept__backgroundColor;
    } else { 
-     matched_text = "matched";
-     value1__borderColor = matched__borderColor;
-     value1__pointbackgroundColor = matched__pointbackgroundColor;
-     value1__backgroundColor = matched__backgroundColor;
+     dropped_text = "dropped";
+     value1__borderColor = drop__borderColor;
+     value1__pointbackgroundColor = drop__pointbackgroundColor;
+     value1__backgroundColor = drop__backgroundColor;
    }
   
    var ypkg_datasets = [{
-           label: '# packets '+matched_text,
+           label: '# packets '+dropped_text,
            data: ypkgdata,
            borderWidth: 2,
            borderColor: value1__borderColor,
@@ -256,7 +264,7 @@ function plotGraph(route_then_action, data)
            //backgroundColor: "#99bfff"
        }];
    var ypkgrel_datasets = [{
-           label: '# packets '+matched_text,
+           label: '# packets '+dropped_text,
            data: ypkgdatarel,
            borderWidth: 2,
            borderColor: value1__borderColor,
@@ -267,7 +275,7 @@ function plotGraph(route_then_action, data)
            //backgroundColor: "#ff877a"
        }];
    var ybytes_datasets = [{
-           label: '# bytes '+matched_text,
+           label: '# bytes '+dropped_text,
            data: ybytesdata,
            borderWidth: 2,
            borderColor: value1__borderColor,
@@ -278,7 +286,7 @@ function plotGraph(route_then_action, data)
            //backgroundColor: "#99bfff"
        }];
     var ybytesrel_datasets = [{
-           label: '# bytes '+matched_text,
+           label: '# bytes '+dropped_text,
            data: ybytesdatarel,
            borderWidth: 2,
            borderColor: value1__borderColor,
@@ -290,38 +298,38 @@ function plotGraph(route_then_action, data)
        }];
 
 
-   if (ydropped_available) {
+   if (ymatched_available) {
      ypkg_datasets.push({
-           label: '# packets dropped',
-           data: ydroppedpkgdata,
+           label: '# packets matched',
+           data: ymatchedpkgdata,
            borderWidth: 2,
-           borderColor: drop__borderColor,
-           pointBackgroundColor: drop__pointbackgroundColor,
-           backgroundColor: drop__backgroundColor
+           borderColor: matched__borderColor,
+           pointBackgroundColor: matched__pointbackgroundColor,
+           backgroundColor: matched__backgroundColor
        });
      ypkgrel_datasets.push({
-           label: '# packets dropped',
-           data: ydroppedpkgdatarel,
+           label: '# packets matched',
+           data: ymatchedpkgdatarel,
            borderWidth: 2,
-           borderColor: drop__borderColor,
-           pointBackgroundColor: drop__pointbackgroundColor,
-           backgroundColor: drop__backgroundColor
+           borderColor: matched__borderColor,
+           pointBackgroundColor: matched__pointbackgroundColor,
+           backgroundColor: matched__backgroundColor
        });
      ybytes_datasets.push({
-           label: '# bytes dropped',
-           data: ydroppedbytesdata,
+           label: '# bytes matched',
+           data: ymatchedbytesdata,
            borderWidth: 2,
-           borderColor: drop__borderColor,
-           pointBackgroundColor: drop__pointbackgroundColor,
-           backgroundColor: drop__backgroundColor
+           borderColor: matched__borderColor,
+           pointBackgroundColor: matched__pointbackgroundColor,
+           backgroundColor: matched__backgroundColor
        });
      ybytesrel_datasets.push({
-           label: '# bytes dropped',
-           data: ydroppedbytesdatarel,
+           label: '# bytes matched',
+           data: ymatchedbytesdatarel,
            borderWidth: 2,
-           borderColor: drop__borderColor,
-           pointBackgroundColor: drop__pointbackgroundColor,
-           backgroundColor: drop__backgroundColor
+           borderColor: matched__borderColor,
+           pointBackgroundColor: matched__pointbackgroundColor,
+           backgroundColor: matched__backgroundColor
        });
    }
 

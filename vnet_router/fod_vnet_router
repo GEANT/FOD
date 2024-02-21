@@ -948,8 +948,10 @@ elif [ "$1" = "--process_ruleinfo" ]; then #arg
 
       fi
       
-      counter_values_read="$random_value_read_bytes $random_value_read_pkgs"
-      counter_values_drop="$random_value_drop_bytes $random_value_drop_pkgs"
+      #counter_values_read="$random_value_read_bytes $random_value_read_pkgs"
+      #counter_values_drop="$random_value_drop_bytes $random_value_drop_pkgs"
+      counter_values_drop="$random_value_read_bytes $random_value_read_pkgs"
+      counter_values_read="$random_value_drop_bytes $random_value_drop_pkgs"
     fi
 
     ##
