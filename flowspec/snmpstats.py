@@ -86,9 +86,9 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
 
                 #logger.info("routename="+str(routename))
                 xtype='counter'
-                if re.match(r'^[0-9]+[MmKk]_', routename):
+                if re.match(r'^[0-9]+[MmKkGgTtPpEeZzYy]_', routename):
                     ary=re.split(r'_', routename, maxsplit=1)
-                    xtype=ary[0]
+                    xtype=unify_ratelimit_value(ary[0])
                     routename=ary[1]
                 #logger.info("=> routename="+str(routename)+" xtype="+str(xtype))
 
@@ -263,6 +263,50 @@ def helper_rule_ts_parse(ts_string):
 
 #
 
+unify_ratelimit_value__unit_map = {
+           "k" : 1000,
+           "m" : 1000**2,
+           "g" : 1000**3,
+           "t" : 1000**4,
+           "p" : 1000**5,
+           "e" : 1000**6,
+           "z" : 1000**7,
+           "y" : 1000**8,
+           }
+
+def unify_ratelimit_value(rate_limit_value):
+
+   result1 = re.match(r'^([0-9]+)([MmKkGgTtPpEeZzYy])', rate_limit_value)
+   if result1:
+      #print(dir(result1), file=sys.stderr)
+      number_part = result1.group(1)
+      unit_part = result1.group(2)
+
+      num = int(number_part) * unify_ratelimit_value__unit_map[unit_part.lower()]
+
+      if num >= 1000**8 and num % 1000**8 == 0:
+          ret = str(int(num / 1000**8)) + "Y"
+      elif num >= 1000**7 and num % 1000**7 == 0:
+          ret = str(int(num / 1000**7)) + "Z"
+      elif num >= 1000**6 and num % 1000**6 == 0:
+          ret = str(int(num / 1000**6)) + "E"
+      elif num >= 1000**5 and num % 1000**5 == 0:
+          ret = str(int(num / 1000**5)) + "P"
+      elif num >= 1000**4 and num % 1000**4 == 0:
+          ret = str(int(num / 1000**4)) + "T"
+      elif num >= 1000**3 and num % 1000**3 == 0:
+          ret = str(int(num / 1000**3)) + "G"
+      elif num >= 1000**2 and num % 1000**2 == 0:
+          ret = str(int(num / 1000**2)) + "M"
+      elif num >= 1000 and num % 1000 == 0:
+          ret = str(int(num / 1000)) + "K"
+
+   else: # TODO: maybe warn if unknown format
+     ret = rate_limit_value
+
+   return ret
+
+
 xtype_default='counter'
 
 def helper_get_countertype_of_rule(ruleobj):
@@ -272,7 +316,7 @@ def helper_get_countertype_of_rule(ruleobj):
        if thenaction.action and thenaction.action=='rate-limit':
            limit_rate=thenaction.action_value
            xtype=str(limit_rate).upper()
-   return xtype
+   return unify_ratelimit_value(xtype)
 
 #
 
