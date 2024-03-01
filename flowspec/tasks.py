@@ -106,11 +106,12 @@ def edit(routepk, route_original__data, callback=None):
         route.status = "ACTIVE"
         route.response = response
         route.save() # save() has to be called before snmp_add_initial_zero_value, as last_updated DB filed is updated now on every call of save() and last db_measurement time must become >= this new last_updated value
-        try:
-          #snmp_add_initial_zero_value.delay(str(route.id), True)
-          snmp_add_initial_zero_value(routepk, route.id, True)
-        except Exception as e:
-          logger.error("tasks::edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
+        if False: # actually wrong to use it for an edited active rule, as the stats values do not drop to zero on the JUNOS router
+          try:
+            #snmp_add_initial_zero_value.delay(str(route.id), True)
+            snmp_add_initial_zero_value(routepk, route.id, True)
+          except Exception as e:
+            logger.error("tasks::edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
     elif response=="Task timeout":
         if deactivate_route.request.retries < settings.NETCONF_MAX_RETRY_BEFORE_ERROR:
             # repeat the action
