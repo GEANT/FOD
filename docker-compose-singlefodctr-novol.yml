@@ -91,6 +91,8 @@ networks:
 
   xfod:
     driver: bridge
+    driver_opts: 
+        com.docker.network.bridge.enable_ip_masquerade: 'false'
     ipam:
       driver: default
       config:
@@ -98,6 +100,8 @@ networks:
 
   nhost1:
     driver: bridge
+    driver_opts: 
+        com.docker.network.bridge.enable_ip_masquerade: 'false'
     ipam:
       driver: default
       config:
@@ -105,6 +109,8 @@ networks:
 
   nhost2:
     driver: bridge
+    driver_opts: 
+        com.docker.network.bridge.enable_ip_masquerade: 'false'
     ipam:
        driver: default
        config:
