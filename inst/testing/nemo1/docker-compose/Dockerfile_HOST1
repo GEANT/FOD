@@ -1,0 +1,11 @@
+
+#FROM floui/tiny-net-tools:latest
+FROM ubuntu:latest
+
+RUN apt-get update -yy && DEBIAN_FRONTEND="noninteractive" apt-get install -yy net-tools iputils-ping tcpdump tshark hping3 nmap iperf
+
+#RUN ifconfig -a
+
+#CMD /bin/sh -c 'route add default gw 10.1.10.3; while true; do sleep 1000000; done'
+CMD /bin/sh -c 'route add -net 10.2.10.0/24 gw 10.1.10.3; while true; do sleep 1000000; done'
+
