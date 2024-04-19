@@ -55,7 +55,7 @@ def add(routepk, callback=None):
         route.response = response
         route.save()
         #snmp_add_initial_zero_value.delay(str(route.id), True)
-        snmp_add_initial_zero_value(routepk, route.id, True) # route must exist, so that snmp_add_initial_zero_value can find it in DB
+        snmp_add_initial_zero_value(routepk, route.id, add_initial_zero_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False) # route must exist, so that snmp_add_initial_zero_value can find it in DB
     elif response=="Task timeout":
         if deactivate_route.request.retries < settings.NETCONF_MAX_RETRY_BEFORE_ERROR:
             # repeat the action
@@ -82,11 +82,17 @@ def edit(routepk, callback=None):
         route.status = "ACTIVE"
         route.response = response
         route.save() # save() has to be called before snmp_add_initial_zero_value, as last_updated DB filed is updated now on every call of save() and last db_measurement time must become >= this new last_updated value
-        try:
-          #snmp_add_initial_zero_value.delay(str(route.id), True)
-          snmp_add_initial_zero_value(routepk, route.id, True)
-        except Exception as e:
-          logger.error("tasks::edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
+
+        update_remember_last_value = False; # TODO check whether rate-limit changed ...
+
+        if update_remember_last_value: 
+          # actually wrong to use add_initial_zero_value=True for an edited active rule, as the stats values do not drop to zero on the JUNOS router
+          try:
+            #snmp_add_initial_zero_value.delay(str(route.id), True)
+            #snmp_add_initial_zero_value(routepk, route.id, True, True, True)
+            snmp_add_initial_zero_value(routepk, route.id, add_initial_zero_value=False, zero_or_null=True, reset_remember_last_value=False, update_remember_last_value=True)
+          except Exception as e:
+            logger.error("tasks::edit(): route="+str(route)+", ACTIVE, add_initial_zero_value failed: "+str(e))
     elif response=="Task timeout":
         if deactivate_route.request.retries < settings.NETCONF_MAX_RETRY_BEFORE_ERROR:
             # repeat the action
@@ -130,7 +136,7 @@ def deactivate_route(routepk, **kwargs):
     if commit:
         route.status="INACTIVE"
         try:
-            snmp_add_initial_zero_value(routepk, route.id, False)
+            snmp_add_initial_zero_value(routepk, route.id, add_initial_zero_value=True, zero_or_null=False, reset_remember_last_value=True, update_remember_last_value=False)
         except Exception as e:
             logger.error("tasks::deactivate_route(): route="+str(route)+", INACTIVE, add_null_value failed: "+str(e))
 
@@ -442,7 +448,7 @@ def poll_snmp_statistics():
       logger.info("poll_snmp_statistics(): after os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
 @shared_task(ignore_result=True, max_retries=0)
-def snmp_add_initial_zero_value(routepk, route_id, zero_or_null=True):
+def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
     from flowspec import snmpstats
     logger.info("snmp_add_initial_zero_value(): routepk="+str(routepk)+" route_id="+str(route_id))
    
@@ -474,11 +480,27 @@ def snmp_add_initial_zero_value(routepk, route_id, zero_or_null=True):
         pid = os.getpid()
         logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
-        try:
-          snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
-          logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" sucesss")
-        except Exception as e:
-          logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" failed: "+str(e))
+        if add_initial_zero_value:
+          try:
+            snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
+            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value sucesss")
+          except Exception as e:
+            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value failed: "+str(e))
+
+        if reset_remember_last_value:
+          try:
+            snmpstats.clean_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
+            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
+          except Exception as e:
+            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
+
+        else if update_remember_last_value:
+          try:
+            snmpstats.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
+            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
+          except Exception as e:
+            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
+
 
         #exit_process()
 

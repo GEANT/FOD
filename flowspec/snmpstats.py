@@ -43,7 +43,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
           errorStatus, errorIndex, varBindTable, cbCtx):
   try:
     (authData, transportTarget, results) = cbCtx
-    logger.error('snmpCallback(): called')
+    #logger.info('snmpCallback(): called {}'.format(transportTarget))
 
     # debug - which router replies:
     #print('%s via %s' % (authData, transportTarget))
@@ -71,7 +71,7 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                 logger.debug('snmpCallback(): Finished {}.'.format(transportTarget))
                 return 0
 
-            last_snmp_var_got__from__transportTarget__hash[tabstoptr(transportTarget)]=name
+            last_snmp_var_got__from__transportTarget__hash[str(transportTarget)]=name
 
             ident = name[identoffset:]
             ordvals = [int(i) for i in ident.split(".")]
@@ -84,13 +84,13 @@ def snmpCallback(snmpEngine, sendRequestHandle, errorIndication,
                 len2 = ordvals[len1] + 1
                 routename = "".join([chr(i) for i in ordvals[len1 + 1:len1 + len2]])
 
-                logger.error("routename="+str(routename))
+                #logger.info("routename="+str(routename))
                 xtype='counter'
-                if re.match(r'^[0-9]+[Mk]_', routename):
+                if re.match(r'^[0-9]+[MmKkGgTtPpEeZzYy]_', routename):
                     ary=re.split(r'_', routename, maxsplit=1)
-                    xtype=ary[0]
+                    xtype=unify_ratelimit_value(ary[0])
                     routename=ary[1]
-                logger.error("=> routename="+str(routename)+" xtype="+str(xtype))
+                #logger.info("=> routename="+str(routename)+" xtype="+str(xtype))
 
                 # add value into dict
                 if routename in results:
@@ -263,6 +263,50 @@ def helper_rule_ts_parse(ts_string):
 
 #
 
+unify_ratelimit_value__unit_map = {
+           "k" : 1000,
+           "m" : 1000**2,
+           "g" : 1000**3,
+           "t" : 1000**4,
+           "p" : 1000**5,
+           "e" : 1000**6,
+           "z" : 1000**7,
+           "y" : 1000**8,
+           }
+
+def unify_ratelimit_value(rate_limit_value):
+
+   result1 = re.match(r'^([0-9]+)([MmKkGgTtPpEeZzYy])', rate_limit_value)
+   if result1:
+      #print(dir(result1), file=sys.stderr)
+      number_part = result1.group(1)
+      unit_part = result1.group(2)
+
+      num = int(number_part) * unify_ratelimit_value__unit_map[unit_part.lower()]
+
+      if num >= 1000**8 and num % 1000**8 == 0:
+          ret = str(int(num / 1000**8)) + "Y"
+      elif num >= 1000**7 and num % 1000**7 == 0:
+          ret = str(int(num / 1000**7)) + "Z"
+      elif num >= 1000**6 and num % 1000**6 == 0:
+          ret = str(int(num / 1000**6)) + "E"
+      elif num >= 1000**5 and num % 1000**5 == 0:
+          ret = str(int(num / 1000**5)) + "P"
+      elif num >= 1000**4 and num % 1000**4 == 0:
+          ret = str(int(num / 1000**4)) + "T"
+      elif num >= 1000**3 and num % 1000**3 == 0:
+          ret = str(int(num / 1000**3)) + "G"
+      elif num >= 1000**2 and num % 1000**2 == 0:
+          ret = str(int(num / 1000**2)) + "M"
+      elif num >= 1000 and num % 1000 == 0:
+          ret = str(int(num / 1000)) + "K"
+
+   else: # TODO: maybe warn if unknown format
+     ret = rate_limit_value
+
+   return ret
+
+
 xtype_default='counter'
 
 def helper_get_countertype_of_rule(ruleobj):
@@ -271,8 +315,8 @@ def helper_get_countertype_of_rule(ruleobj):
    for thenaction in ruleobj.then.all():
        if thenaction.action and thenaction.action=='rate-limit':
            limit_rate=thenaction.action_value
-           xtype=str(limit_rate)
-   return xtype
+           xtype=str(limit_rate).upper()
+   return unify_ratelimit_value(xtype)
 
 #
 
@@ -398,8 +442,8 @@ def poll_snmp_statistics():
               counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement }
               counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement }
             else:
-              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_dropped": null_measurement }
-              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_dropped": zero_measurement }
+              counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_matched": null_measurement }
+              counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_matched": zero_measurement }
 
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
             #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
@@ -412,18 +456,19 @@ def poll_snmp_statistics():
               try:
                 if xtype==xtype_default:
                   logger.info("poll_snmp_statistics(): 1a STATISTICS_PER_RULE rule_id="+str(rule_id))
-                  counter = {"ts": nowstr, "value": newdata[flowspec_params_str][xtype_default]}
+                  val_dropped = newdata[flowspec_params_str][xtype_default]
+                  counter = {"ts": nowstr, "value": val_dropped}
                 else:
                   logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id))
                   try:
-                    val1 = newdata[flowspec_params_str][xtype_default]
+                    val_dropped = newdata[flowspec_params_str][xtype_default]
                   except Exception:
-                    val1 = 1
+                    val_dropped = 1
                   try:
-                    val2 = newdata[flowspec_params_str][xtype]
+                    val_matched = newdata[flowspec_params_str][xtype]
                   except Exception:
-                    val2 = 1
-                  counter = {"ts": nowstr, "value": val1, "value_dropped": val2}
+                    val_matched = 1
+                  counter = { "ts": nowstr, "value": val_dropped, "value_matched": val_matched }
 
                 counter_is_null = False
               except Exception as e:
@@ -482,6 +527,7 @@ def poll_snmp_statistics():
                     elif not last_is_null and not rule_newer_than_last:
                         logger.debug("poll_snmp_statistics(): STATISTICS_PER_RULE: rule_id="+str(rule_id)+" case existing active 00")
                         rec.insert(0, counter)
+                        history_per_rule[str(rule_id)+".last"] = counter
 
                   history_per_rule[rule_id] = rec[:samplecount]
             except Exception as e:
@@ -536,7 +582,7 @@ def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
     if xtype==xtype_default:
       counter = {"ts": nowstr, "value": zero_measurement }
     else:
-      counter = {"ts": nowstr, "value": zero_measurement, "value_dropped": zero_measurement }
+      counter = {"ts": nowstr, "value": zero_measurement, "value_matched": zero_measurement }
         
     samplecount = settings.SNMP_MAX_SAMPLECOUNT
 
@@ -562,4 +608,104 @@ def add_initial_zero_value(rule_id, route_obj, zero_or_null=True):
         logger.error("add_initial_zero_value(): failure: exception: "+str(e))
 
     unlock_history_file()
+
+##
+
+# workaround for rate limiting rules whose rate limit is changed while the rule is active -> old (absoluet) matched statistics value would be lost afterwards and not be counted as part of the future (absolute) matched statistics value; because the oid keys for the matched value (depending on the rate limit) in the SNMP table have changed
+#
+# to be called before the rule's rate-limit is changed on the router
+#
+# TODO; call this function on change of an active rate limit rule whose rate limit is changed: remember_oldmatched__for_changed_ratelimitrules_whileactive()
+# TODO: on decativation of the rule the remembered matched value offset set in this function has to be cleared (add new function for this and call it appropriately): clean_oldmatched__for_changed_ratelimitrules_whileactive()
+# TODO: use the remembered matched value offset in get_snmp_stats (add to matched value gathered from SNMP)
+#
+
+def remember_oldmatched__for_changed_ratelimitrules_whileactive(rule_id, route_obj):
+    rule_id=str(rule_id)
+    logger.debug("remember_oldmatched__for_changed_ratelimitrules_whileactive(): rule_id="+str(rule_id))
+
+    # get new data
+    now = datetime.now()
+    nowstr = now.isoformat()
+
+    key_last_measurement = str(rule_id)+".last"
+    key_remember_oldmatched = str(rule_id)+".remember_oldmatched_offset"
+
+    # lock history file access
+    success = lock_history_file(wait=1, reason="remember_oldmatched__for_changed_ratelimitrules_whileactive("+str(rule_id)+","+str(zero_or_null)+")")
+    if not success: 
+      logger.error("remember_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file failed, aborting");
+      return False
+
+    # load history
+    history = load_history()
+
+    try:
+      history_per_rule = history['_per_rule']
+    except Exception as e:
+      history_per_rule = {}
+
+    try:
+      last_matched__measurement_value = history_per_rule[key_last_measurement]["value_matched"]
+    except:
+      last_matched__measurement_value = 0
+
+    try:
+      last_matched__remember_offset_value = history_per_rule[key_remember_oldmatched]["value_matched"]
+    except:
+      last_matched__remember_offset_value = 0
+
+    #
+
+    last_matched__remember_offset_value = last_matched__remember_offset_value + last_matched__measurement_value
+
+    counter = { "ts": nowstr, "value_matched": last_matched__remember_offset_value }
+        
+    try:
+        history_per_rule[key_remember_oldmatched] = counter
+
+        history['_per_rule'] = history_per_rule
+
+        # store updated history
+        save_history(history, nowstr)
+
+    except Exception as e:
+        logger.error("remember_oldmatched__for_changed_ratelimitrules_whileactive(): failure: exception: "+str(e))
+
+    unlock_history_file()
+
+
+def clean_oldmatched__for_changed_ratelimitrules_whileactive(rule_id, route_obj):
+    rule_id=str(rule_id)
+    logger.debug("clean_oldmatched__for_changed_ratelimitrules_whileactive(): rule_id="+str(rule_id))
+
+    key_remember_oldmatched = str(rule_id)+".remember_oldmatched_offset"
+
+    # lock history file access
+    success = lock_history_file(wait=1, reason="clean_oldmatched__for_changed_ratelimitrules_whileactive("+str(rule_id)+","+str(zero_or_null)+")")
+    if not success: 
+      logger.error("clean_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file failed, aborting");
+      return False
+
+    # load history
+    history = load_history()
+
+    try:
+      history_per_rule = history['_per_rule']
+    except Exception as e:
+      history_per_rule = {}
+
+    try:
+        history_per_rule[key_remember_oldmatched] = {}
+
+        history['_per_rule'] = history_per_rule
+
+        # store updated history
+        save_history(history, nowstr)
+
+    except Exception as e:
+        logger.error("clean_oldmatched__for_changed_ratelimitrules_whileactive(): failure: exception: "+str(e))
+
+    unlock_history_file()
+
 
