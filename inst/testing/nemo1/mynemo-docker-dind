@@ -1,0 +1,467 @@
+#!/bin/bash
+
+if [ "-h" = "$1" -o "--help" = "$1" ]; then
+  shift 1
+
+  # simple inline help-annotation support
+  #grep "#arg" "$0" | grep -v "#noarg" | sed -e 's/^[ 	]*#arg$//' -e 's/^#arg \+//' 1>&2 #noarg
+  grep "#xarg" "$0" | grep -v "#noarg" | sed -e 's/^[ 	]*#xarg$//' -e 's/^#xarg \+//' 1>&2 #noarg
+  exit 2
+
+fi
+
+##
+
+#xarg usage: ./mynemo-docker-dind ... :
+#xarg 
+#xarg 1: build+start outer container in general + run setup inside:
+#xarg ./mynemo-docker-dind --build-and-setup [ --build-without-data ] [ --prune ] [ --pre-setup-shcode " SHELL_CODE " ] [ --curl | --w3m | --wget | --notest ] [ --log1 | --log0 | --logall | --nologcheck ] [ --verbose ... { arguments to setup.sh } ]
+#xarg 
+#xarg 1.a. example: build+start outer container with pre-existing, checked-out nemo-repos + run setup inside:
+#xarg build outer docker container and run setup inside and test nemo access (assumes correctly checked out nemo repos in current dir):
+#xarg ./mynemo-docker-dind --build-and-setup --prune --verbose # short form: /mynemo-docker-dind --all1 
+#xarg 
+#xarg 1.b. example: build+start outer container with inside checking-out nemo-repos + run setup inside:
+#xarg build outer docker container and clone gitlab repos and run setup inside and test nemo access (assumes ssh agent running with access to gitlab, env var SSH_AUTH_SOCK in current shell correspondingly set; and ./mygit_clone_nemo0 to reside in current dir):
+#xarg ./mynemo-docker-dind --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose # short form: /mynemo-docker-dind --all0
+#xarg 
+#xarg 1.c. internals of the building process:
+#xarg ./mynemo-docker-dind --dockerfile-output [ --build-without-data ] # output outside dockerfile
+#xarg ./mynemo-docker-dind --docker-build [ --build-without-data ] [ --prune-all | --prune ] # create outside dockerfile + build and run outside docker container; make sure inner docker is fully started and ready
+#xarg ./mynemo-docker-dind --setup [ --pre-setup-shcode " SHELL_CODE " ] [ --curl | --w3m | --wget | --notest ] [ --log1 | --log0 | --logall | --nologcheck ] [ --verbose ... { arguments to setup.sh } ]
+#xarg ./mynemo-docker-dind --build-and-bash [ --build-without-data ] [ --prune-all | --prune ] [ ... { arguments to bash } ] # like --build ... and run bash inside
+#xarg 
+#xarg 2. after outer docker container is build and running (and inside docker started and accesisble):
+#xarg 
+#xarg ./mynemo-docker-dind --bash [ ... { arguments to bash } ] # enter shell (with SSH_AUTH_SOCK set appropriately)
+#xarg 
+#xarg ./mynemo-docker-dind --curl # test nemo access via curl
+#xarg ./mynemo-docker-dind --wget # test nemo access via wget
+#xarg ./mynemo-docker-dind --w3m  # test nemo access via w3m interactive text browser
+#xarg 
+#xarg ./mynemo-docker-dind --logs0  # show inside docker logs for container nemo_fishtank-nginx_1
+#xarg ./mynemo-docker-dind --logs1  # show inside docker logs for container nemo_fishtank_1
+#xarg ./mynemo-docker-dind --logsall # show inside docker logs for all containers 
+#xarg 
+#xarg ./mynemo-docker-dind --exec ... # run command in outer container
+#xarg ./mynemo-docker-dind --docker ... # run docker command in outer container # e.g. --docker ps
+#xarg ./mynemo-docker-dind --docker.containerids # get inside container ids
+#xarg 
+
+##
+
+docker_outer__docker_file_name="Dockerfile-nemo-all"
+docker_outer__image_name="nemo-all1"
+docker_outer__container_name="nemo-all1"
+
+docker_outer_hostname="localhost"
+
+#
+
+if [ "$1" = "--dockerfile-output" ]; then #arg
+  shift 1
+
+  #set -x
+
+  COPY_CMD="COPY . /nemo-all"
+  if [ "$1" = "--build-without-data" ]; then #arg opt
+    shift 1
+    COPY_CMD="COPY my* /nemo-all/"
+  fi    
+  
+  cat <<EOF
+#FROM debian:latest
+FROM debian:stable
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y docker.io docker-compose jq pwgen gawk
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
+
+#COPY . /nemo-all
+$COPY_CMD
+
+WORKDIR /nemo-all
+CMD [ "/sbin/init" ]
+
+EOF
+
+#
+
+elif [ "$1" = "--docker-build" ]; then #arg
+  shift 1
+
+  echo "$0: docker-build: args=$*" 1>&2
+  echo 1>&2
+
+  ##
+
+  echo "# show git commits of nemo repos:" 1>&2
+  for dir1 in nemo-*; do
+    echo "$dir1: "
+    (cd "$dir1" && git show-ref master)
+  done
+  echo 1>&2
+
+  find ./etc ./secrets 1>&2
+
+  ##
+  
+  #set -x
+
+  ##
+
+  args1=()
+  if [ "$1" != "${1#--build-with}" ]; then #arg opt
+    args1=("$1") #arg
+    shift 1
+  fi
+
+  ##
+
+  set -e
+
+  echo "# prepare Dockerfile for debian-docker-in-docker ${args1[@]}:" 1>&2
+  (set -x; "$0" --dockerfile-output "${args1[@]}" > "$docker_outer__docker_file_name")
+  echo 1>&2
+
+  echo "# build debian-docker-in-docker image:" 1>&2
+  (set -x; docker build -f "$docker_outer__docker_file_name" -t "$docker_outer__image_name" .)
+  echo 1>&2
+
+  ##
+
+  echo "# stopping potentially running old debian-docker-in-docker container:" 1>&2
+  (set -x; docker stop "$docker_outer__container_name") || true
+  echo 1>&2
+
+  echo "# removing old debian-docker-in-docker container:" 1>&2
+  (set -x; docker rm "$docker_outer__container_name") || true
+  echo 1>&2
+
+  echo "# check for old debian-docker-in-docker container:" 1>&2
+  (set -x; docker ps -a "$docker_outer__container_name") || true
+  #(set -x; docker ps -a) || true
+  echo 1>&2
+
+  ##
+
+  #echo "# starting new debian-docker-in-docker container:" 1>&2
+  #docker_outer__container_name="$(set -x; docker run --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name" sh -c "ls -l /nemo-all; tree -d /nemo-all/")"
+  #echo "docker_outer__image_name=$docker_outer__image_name" 1>&2
+  #echo 1>&2
+
+  #exit 
+
+  #echo "# pruning outer volume dind1:" 1>&2
+  #(set -x; docker volume rm dind1)
+  outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
+  echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
+  #(set -x; rm -rf /var/lib/docker/volumes/dind1/_data/containers/*)
+  (set -x; rm -rf "$outer_docker_space_dir/volumes/dind1/_data/containers/"*) || true
+  echo 1>&2
+
+  ##
+  
+  #echo "# pruning outer docker networks:" 1>&2
+  #(set -x; yes | docker network prune)
+
+  #network1_name="freertr_xnemo-flow-input"
+  network1_name="nemo1_xnemo-flow-input"
+  echo "# setting up extra docker network for $network1_name:" 1>&2
+  #(set -x; docker network inspect dind-mgmt || docker network create -d bridge dind-mgmt)
+  #(set -x; docker network inspect nemo-flow-input || docker network create -d bridge nemo-flow-input)
+  #(set -x; docker network inspect "freertr_nhost1" || docker network create -d bridge --subnet 10.1.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost1")
+  #(set -x; docker network inspect "freertr_nhost2" || docker network create -d bridge --subnet 10.2.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost2")
+  #(set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.198.36.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
+  (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
+
+  ## 
+
+  echo "# starting new debian-docker-in-docker container:" 1>&2
+  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
+  #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
+  #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
+  docker network connect "$network1_name" "$docker_outer__container_name"
+  echo 1>&2
+    
+  echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
+  (set -x; docker exec -ti "$docker_outer__container_name" sh -c "sleep 1; while ! docker ps >/dev/null; do sleep 1; done; echo docker-inside running")
+  echo 1>&2
+ 
+  #echo "# check test1:" 1>&2 
+  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
+  #echo 1>&2
+
+  #exit
+
+  if [ "$1" = "--prune-all" ]; then #arg opt
+    shift 1
+
+    echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )")
+    echo 1>&2
+
+    echo "# inside debian-docker-in-docker container: remove any docker-inside containers:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker rm \$(docker ps -a | awk 'NR>1 { print \$1; }' )") || true
+    echo 1>&2
+
+    echo "# inside debian-docker-in-docker container: remove any running docker-inside images:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker rmi \$(docker images | awk 'NR>1 { print \$3; }' )") || true
+    echo 1>&2
+     
+    echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" docker system prune -f)
+    (set -x; docker exec -ti "$docker_outer__container_name" docker volume prune -f)
+    echo 1>&2
+
+
+  elif [ "$1" = "--prune" ]; then #arg opt
+    shift 1
+    echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )") || true
+    echo 1>&2
+    
+    echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" docker system prune -f)
+    (set -x; docker exec -ti "$docker_outer__container_name" docker volume prune -f)
+    echo 1>&2
+  fi
+    
+  echo "# inside debian-docker-in-docker container: showing existing docker-inside volumes:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" docker volume ls)
+  echo 1>&2
+
+  echo "# inside debian-docker-in-docker container: showing existing docker-inside images:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" docker images)
+  echo 1>&2
+
+  echo "# inside debian-docker-in-docker container: showing existing docker-inside containers:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" docker ps -a)
+  echo 1>&2
+
+#
+
+elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
+  shift 1
+
+  if [ "$1" = "--pre-setup-shcode" ]; then #arg opt
+    shift 1
+    pre_setup_script_code="$1" #arg # to be run via sh -c ... # should exit with zero status otherwise execution will stop
+    shift 1
+
+    echo "# inside debian-docker-in-docker running pre_setup_script_code=$pre_setup_script_code:" 1>&2
+    (set -x; docker exec -ti "$docker_outer__container_name" bash -c "export SSH_AUTH_SOCK=/ssh-auth-sock; cd /nemo-all; $pre_setup_script_code") 
+  fi
+
+  use_test__access1="curl"
+  if [ "$1" = "--curl" ]; then #arg opt #default
+    shift 1
+    use_test__access1="curl"
+  elif [ "$1" = "--wget" ]; then #arg opt
+    shift 1
+    use_test__access1="wget"
+  elif [ "$1" = "--w3m" ]; then #arg opt
+    shift 1
+    use_test__access1="w3m"
+  elif [ "$1" = "--notest" ]; then #arg opt
+    shift 1
+    use_test__access1="notest"
+  fi
+
+  logcheck="1"
+  if [ "$1" = "--log1" ]; then #arg opt #default
+    shift 1
+    logcheck=1
+  elif [ "$1" = "--log0" ]; then #arg opt
+    shift 1
+    logcheck=2
+  elif [ "$1" = "--logall" ]; then #arg opt
+    shift 1
+    logcheck="all"
+  elif [ "$1" = "--nologcheck" ]; then #arg opt
+    shift 1
+    logcheck=""
+  fi
+
+  ##
+
+  echo "# inside debian-docker-in-docker status of /nemo-all dir prior to running setup.sh:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
+
+  echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
+  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh --verbose "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  echo 1>&2
+
+  #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
+  ##(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
+  #(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
+  #echo 1>&2
+
+  if [ "$use_test__access1" = "w3m" ]; then
+    "$0" --inside-run-w3m || true
+  elif [ "$use_test__access1" = "wget" ]; then
+    "$0" --inside-run-wget || true
+  elif [ "$use_test__access1" = "curl" ]; then
+    "$0" --inside-run-curl || true
+  else
+    :
+  fi
+
+  if [ "$logcheck" = "1" ]; then
+    "$0" --logs1 
+  elif [ "$logcheck" = "2" ]; then
+    "$0" --logs0
+  elif [ "$logcheck" = "all" ]; then
+    "$0" --logsall
+  else
+    :
+  fi
+
+#
+
+elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access to web UI with curl (assumes empty client cert pwd)
+  shift 1
+
+  echo "# inside debian-docker-in-docker container: test access to UI via curl+lynx (assumes empty password for the client certificate):" 1>&2
+  #(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
+  (set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
+  status1="$?"
+
+  echo 1>&2
+
+  exit "$status1"
+
+#
+
+elif [ "$1" = "--wget" -o "$1" = "--inside-run-wget" ]; then #arg # test access to web UI with wget (assumes empty client cert pwd)$
+  shift 1
+
+  echo "# inside debian-docker-in-docker container: test access to UI via wget (assumes empty password for the client certificate):" 1>&2
+  (set -x; docker exec "$docker_outer__container_name" wget --no-check-certificate --certificate=/nemo-all/secrets/CA/admin.crt --private-key=/nemo-all/secrets/CA/admin.key https://localhost/)
+  status1="$?"
+
+  echo 1>&2
+  
+  exit "$status1"
+
+#
+
+elif [ "$1" = "--w3m" -o "$1" = "--inside-run-w3m" ]; then #arg # test access to web UI with interactive w3m (assumes empty client cert pwd)$
+  shift 1
+
+  echo "# inside debian-docker-in-docker container: test access to UI via w3m (assumes empty password for the client certificate):" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" w3m -o ssl_verify_server=false -o ssl_cert_file=/nemo-all/secrets/CA/admin.crt -o ssl_key_file=/nemo-all/secrets/CA/admin.key https://localhost/)
+  status1="$?"
+
+  echo 1>&2
+  
+  exit "$status1"
+
+#
+
+elif [ "$1" = "--exec" ]; then #arg
+  shift 1
+
+  (set -x; docker exec -ti "$docker_outer__container_name" "$@")
+  
+elif [ "$1" = "--bash" ]; then #arg
+  shift 1
+
+  [ $# = 0 ] && set -- -i #arg defaults
+  
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; exec bash "$@"' -- "$@")
+
+elif [ "$1" = "--docker" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker "$@")
+
+elif [ "$1" = "--docker.containerids" ]; then #arg
+  shift 1
+
+  exec docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$1; }'"
+
+#
+
+elif [ "$1" = "--logs0" -o "$1" = "--get-nemo-logs0" ]; then #arg # get nemo_fishtank-nginx_1 logs
+  shift 1
+
+  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank-nginx_1 :" 1>&2
+  #(set -x; docker exec -ti "$docker_outer__container_name" docker logs nemo_fishtank-nginx_1)
+  (set -x; docker exec "$docker_outer__container_name" docker logs nemo_fishtank-nginx_1)
+  echo 1>&2
+
+elif [ "$1" = "--logs1" -o "$1" = "--get-nemo-logs1" ]; then #arg # get nemo_fishtank_1 logs
+  shift 1
+
+  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank_1 :" 1>&2
+  #(set -x; docker exec -ti "$docker_outer__container_name" docker logs nemo_fishtank_1)
+  (set -x; docker exec "$docker_outer__container_name" docker logs nemo_fishtank_1)
+  echo 1>&2
+
+elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all all nemo_*logs
+  shift 1
+
+  echo "# inside debian-docker-in-docker container: all docker logs :" 1>&2
+  (set -x; docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
+  echo 1>&2
+
+#
+
+elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside 
+  shift 1
+
+  pass_args1=()
+
+  while [ $# -gt 0 ]; do #arg loop
+    if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
+      pass_args1=("${pass_args1[@]}" "$1")
+      shift 1
+    else
+      break
+     fi
+  done #arg loop
+  #arg
+
+  "$0" --docker-build "${pass_args1[@]}"
+  "$0" --run-setup-inside "$@" #arg rest
+
+elif [ "$1" = "--build-and-bash" ]; then #arg # 
+  shift 1
+
+  while [ $# -gt 0 ]; do #arg loop
+    if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
+      pass_args1=("${pass_args1[@]}" "$1")
+      shift 1
+    else
+      break
+     fi
+  done #arg loop
+  #arg
+
+  "$0" --docker-build "${pass_args1[@]}"
+  "$0" --bash "$@" #arg rest
+
+#
+
+elif [ "$1" = "--all1" ]; then #arg # --all --prune --verbose
+  shift 1
+
+  #exec "$0" --all --prune --verbose "$@" #arg rest
+  exec "$0" --build-and-setup --prune --verbose "$@" #arg rest
+
+elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
+  shift 1
+
+  #exec "$0" --build-and-bash --build-without-data -c './mygit_clone_nemo0 && cd nemo-docker && ./setup.sh "$@"' -- "$@" #arg rest
+  exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose
+
+else 
+
+  #exec "$0" --docker-build--and--run-setup-inside "$@"
+  #exit 2
+  exec "$0" -h
+
+fi
+
