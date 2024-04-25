@@ -482,6 +482,10 @@ def edit_route(request, route_slug):
         )
         return HttpResponseRedirect(reverse("group-routes"))
     route_original = deepcopy(route_edit)
+                
+    last__then_action__string = route_original.then_action1_string()
+    logger.info("views::edit(): debug: pre pre route.then1="+last__then_action__string)
+
     if request.POST:
         request_data = request.POST.copy()
         if request.user.is_superuser:
@@ -569,7 +573,22 @@ def edit_route(request, route_slug):
             route.save()
             if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
                 form.save_m2m()
-                route.commit_edit()
+
+                #logger.info("views::edit(): debug: pre route.then.all()="+str(route_original.then.all()))
+                #str_prefix="rate-limit:"
+                #rate_limit=""
+                #for then_action in route_original.then.all():
+                #    logger.info("views::edit(): pre debug: str="+str(then_action))
+                #    logger.info("views::edit(): pre debug: str="+str(then_action)[0:len(str_prefix)])
+                #    if str(then_action)[0:len(str_prefix)]==str_prefix:
+                #        logger.info("views::edit(): pre debug: rate-limit")
+                #        rate_limit=str(then_action)[len(str_prefix)+1:]
+                #logger.info("views::edit(): debug: pre after loop")
+                #last__then_action__string = route_original.then_action1_string()
+                logger.info("views::edit(): debug: pre pre route.then1="+last__then_action__string)
+
+                route.commit_edit(last__then_action__string=last__then_action__string)
+
             return HttpResponseRedirect(reverse("group-routes"))
         else:
             if not request.user.is_superuser:
