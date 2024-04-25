@@ -632,7 +632,7 @@ def remember_oldmatched__for_changed_ratelimitrules_whileactive(rule_id, route_o
     key_remember_oldmatched = str(rule_id)+".remember_oldmatched_offset"
 
     # lock history file access
-    success = lock_history_file(wait=1, reason="remember_oldmatched__for_changed_ratelimitrules_whileactive("+str(rule_id)+","+str(zero_or_null)+")")
+    success = lock_history_file(wait=1, reason="remember_oldmatched__for_changed_ratelimitrules_whileactive("+str(rule_id)+")")
     if not success: 
       logger.error("remember_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file failed, aborting");
       return False
@@ -647,19 +647,28 @@ def remember_oldmatched__for_changed_ratelimitrules_whileactive(rule_id, route_o
 
     try:
       last_matched__measurement_value = history_per_rule[key_last_measurement]["value_matched"]
+      last_matched__measurement_value__pkts = last_matched__measurement_value__pkts["packets"]
+      last_matched__measurement_value__bytes = last_matched__measurement_value__pkts["bytes"]
     except:
-      last_matched__measurement_value = 0
+      last_matched__measurement_value__pkts = 0
+      last_matched__measurement_value__bytes = 0
 
     try:
       last_matched__remember_offset_value = history_per_rule[key_remember_oldmatched]["value_matched"]
+      last_matched__remember_offset_value__pkts = last_matched__remember_offset_value["packets"]
+      last_matched__remember_offset_value__bytes = last_matched__remember_offset_value["bytes"]
     except:
-      last_matched__remember_offset_value = 0
+      last_matched__remember_offset_value__pkts = 0
+      last_matched__remember_offset_value__bytes = 0
 
     #
+      
+    #logger.info("remember_oldmatched__for_changed_ratelimitrules_whileactive(): last_matched__measurement_value="+str(last_matched__measurement_value)+" last_matched__remember_offset_value="+str(last_matched__remember_offset_value));
 
-    last_matched__remember_offset_value = last_matched__remember_offset_value + last_matched__measurement_value
+    last_matched__remember_offset_value__pkts = last_matched__remember_offset_value__pkts + last_matched__measurement_value__pkts
+    last_matched__remember_offset_value__bytes = last_matched__remember_offset_value__bytes + last_matched__measurement_value__bytes
 
-    counter = { "ts": nowstr, "value_matched": last_matched__remember_offset_value }
+    counter = { "ts": nowstr, "value_matched": { "packets" : last_matched__remember_offset_value__pkts, "bytes" : last_matched__remember_offset_value__bytes } }
         
     try:
         history_per_rule[key_remember_oldmatched] = counter
