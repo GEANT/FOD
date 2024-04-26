@@ -469,14 +469,33 @@ def poll_snmp_statistics():
                   try:
                     val_matched = newdata[flowspec_params_str][xtype]
 
+                    logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id)+" before last_matched__remember_offset_value fix: val_matched="+str(val_matched))
+
+                    ##
+
+                    val_matched__pkts = newdata[flowspec_params_str][xtype]["packets"]
+                    val_matched__bytes = newdata[flowspec_params_str][xtype]["bytes"]
+
                     key_remember_oldmatched = str(rule_id)+".remember_oldmatched_offset"
                     try:
                       last_matched__remember_offset_value = history_per_rule[key_remember_oldmatched]["value_matched"]
+                      logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id)+" before last_matched__remember_offset_value fix: last_matched__remember_offset_value="+str(last_matched__remember_offset_value))
+
                       last_matched__remember_offset_value__pkts = last_matched__remember_offset_value["packets"]
                       last_matched__remember_offset_value__bytes = last_matched__remember_offset_value["bytes"]
                     except:
                       last_matched__remember_offset_value__pkts = 0
                       last_matched__remember_offset_value__bytes = 0
+
+                    val_matched__pkts = val_matched__pkts + last_matched__remember_offset_value__pkts
+                    val_matched__bytes = val_matched__bytes + last_matched__remember_offset_value__bytes
+
+                    newdata[flowspec_params_str][xtype]["packets"] = val_matched__pkts
+                    newdata[flowspec_params_str][xtype]["bytes"] = val_matched__bytes
+                  
+                    logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id)+" after last_matched__remember_offset_value fix: val_matched="+str(val_matched))
+
+                    ##
 
                   except Exception:
                     val_matched = 1
