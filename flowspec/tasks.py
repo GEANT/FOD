@@ -488,7 +488,7 @@ def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_
           try:
             logger.info("snmp_add_initial_zero_value(): (3) routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
             snmpstats.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
-            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
+            logger.info("snmp_add_initial_zero_value(): (4) routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
           except Exception as e:
             logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
 
