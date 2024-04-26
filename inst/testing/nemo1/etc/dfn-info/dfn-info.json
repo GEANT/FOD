@@ -1,0 +1,12 @@
+{
+  "routers": [
+    {
+      "name": "test2",
+      "ip4": "10.197.36.3",
+      "samplerate": "1",
+      "category": "core",
+      "latitude": "1",
+      "longitude": "1"
+    }
+  ]
+}
