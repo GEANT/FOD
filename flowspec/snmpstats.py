@@ -460,14 +460,29 @@ def poll_snmp_statistics():
                   counter = {"ts": nowstr, "value": val_dropped}
                 else:
                   logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id))
+
                   try:
                     val_dropped = newdata[flowspec_params_str][xtype_default]
                   except Exception:
                     val_dropped = 1
+
                   try:
                     val_matched = newdata[flowspec_params_str][xtype]
+
+                    key_remember_oldmatched = str(rule_id)+".remember_oldmatched_offset"
+                    try:
+                      last_matched__remember_offset_value = history_per_rule[key_remember_oldmatched]["value_matched"]
+                      last_matched__remember_offset_value__pkts = last_matched__remember_offset_value["packets"]
+                      last_matched__remember_offset_value__bytes = last_matched__remember_offset_value["bytes"]
+                    except:
+                      last_matched__remember_offset_value__pkts = 0
+                      last_matched__remember_offset_value__bytes = 0
+
                   except Exception:
                     val_matched = 1
+
+                  ##
+
                   counter = { "ts": nowstr, "value": val_dropped, "value_matched": val_matched }
 
                 counter_is_null = False
@@ -647,8 +662,8 @@ def remember_oldmatched__for_changed_ratelimitrules_whileactive(rule_id, route_o
 
     try:
       last_matched__measurement_value = history_per_rule[key_last_measurement]["value_matched"]
-      last_matched__measurement_value__pkts = last_matched__measurement_value__pkts["packets"]
-      last_matched__measurement_value__bytes = last_matched__measurement_value__pkts["bytes"]
+      last_matched__measurement_value__pkts = last_matched__measurement_value["packets"]
+      last_matched__measurement_value__bytes = last_matched__measurement_value["bytes"]
     except:
       last_matched__measurement_value__pkts = 0
       last_matched__measurement_value__bytes = 0
