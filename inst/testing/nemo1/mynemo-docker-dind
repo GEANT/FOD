@@ -58,13 +58,13 @@ fi
 #xarg 
 #xarg 3. related to freertr+host1+host2 docker-compose:
 #xarg 
-#xarg ./mynemo-docker-dind --freertr-testnet-prep-and-run" # prep and run docker-compose for freertr+host1+host2 (started in back-ground)
-#xarg ./mynemo-docker-dind --freertr-console" # enter freertr container and open telnet to freertr console
-#xarg ./mynemo-docker-dind --freertr-host1-ping-host2" # enter host1 container and run ping host2
-#xarg ./mynemo-docker-dind --freertr-host2-ping-host1" # enter host2 container and run ping host1
-#xarg ./mynemo-docker-dind --freertr-tshark-netconf" # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
-#xarg ./mynemo-docker-dind --nemo-tshark-netconf" # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
-#xarg ./mynemo-docker-dind --nemo-get-filename-of-cerfile" # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+#xarg ./mynemo-docker-dind --freertr-testnet-prep-and-run # prep and run docker-compose for freertr+host1+host2 (started in back-ground)
+#xarg ./mynemo-docker-dind --freertr-console # enter freertr container and open telnet to freertr console
+#xarg ./mynemo-docker-dind --freertr-host1-ping-host2 # enter host1 container and run ping host2
+#xarg ./mynemo-docker-dind --freertr-host2-ping-host1 # enter host2 container and run ping host1
+#xarg ./mynemo-docker-dind --freertr-tshark-netconf # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
+#xarg ./mynemo-docker-dind --nemo-tshark-netconf # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+#xarg ./mynemo-docker-dind --nemo-get-filename-of-cerfile # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
 
 ##
 
