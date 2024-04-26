@@ -22,6 +22,10 @@ docker-compose -f docker-compose-freertr-ddos.yml up
 ./docker-compose/freertr_disable_offload.sh
 
 
+alternative to sequence of commands above (combines all of them): ./mynemo-docker-dind --freertr-testnet-prep-and-run 
+(actually uses "docker-compose -f docker-compose-freertr-ddos.yml up -d" for back-grounding)
+
+
 2) (outer) nemo docker-in-docker container:
 (pre-requisites: nemo-* dirs checked-out in this sub dir)
 
@@ -58,8 +62,17 @@ docker exec -ti freertr telnet 127.1 2323
 # run show command
 docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "show policy-map flowspec CORE ipv4"; echo exit; } | netcat 127.1 2323'
 
+= some helpers
 
-= docker compose definitions and dependencyies:
+./mynemo-docker-dind --freertr-console # enter freertr container and open telnet to freertr console
+./mynemo-docker-dind --freertr-host1-ping-host2 # enter host1 container and run ping host2
+./mynemo-docker-dind --freertr-host2-ping-host1 # enter host2 container and run ping host1
+./mynemo-docker-dind --freertr-tshark-netconf # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
+./mynemo-docker-dind --nemo-tshark-netconf # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+
+./mynemo-docker-dind --nemo-get-filename-of-cerfile # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+
+= docker compose definitions and dependencies:
 
 ./docker-compose-freertr-ddos.yml :
 
@@ -99,6 +112,5 @@ connected by IP address 10.197.36.2 to freertr (IP address 10.197.36.3), used fo
 
 host1: interface IP address 10.1.10.11 (connected to freertr interface IP address 10.1.10.3)
 host2: interface IP address 10.2.10.12 (connected to freertr interface IP address 10.1.10.3)
-
 
 

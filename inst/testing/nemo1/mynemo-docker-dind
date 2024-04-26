@@ -3,9 +3,17 @@
 if [ "-h" = "$1" -o "--help" = "$1" ]; then
   shift 1
 
-  # simple inline help-annotation support
+  # simple inline help-annotation nicely support
   #grep "#arg" "$0" | grep -v "#noarg" | sed -e 's/^[ 	]*#arg$//' -e 's/^#arg \+//' 1>&2 #noarg
   grep "#xarg" "$0" | grep -v "#noarg" | sed -e 's/^[ 	]*#xarg$//' -e 's/^#xarg \+//' 1>&2 #noarg
+  exit 2
+
+elif [ "-hh" = "$1" -o "--2help" = "$1" ]; then
+  shift 1
+
+  # simple inline help-annotation support
+  grep "#arg" "$0" | grep -v "#noarg" | sed -e 's/^[ 	]*#arg$//' -e 's/^#arg \+//' 1>&2 #noarg
+  #grep "#xarg" "$0" | grep -v "#noarg" | sed -e 's/^[ 	]*#xarg$//' -e 's/^#xarg \+//' 1>&2 #noarg
   exit 2
 
 fi
@@ -42,11 +50,21 @@ fi
 #xarg ./mynemo-docker-dind --logs0  # show inside docker logs for container nemo_fishtank-nginx_1
 #xarg ./mynemo-docker-dind --logs1  # show inside docker logs for container nemo_fishtank_1
 #xarg ./mynemo-docker-dind --logsall # show inside docker logs for all containers 
+#xarg ./mynemo-docker-dind --logsall2.tailf # run tail -f on log files actively written in nemo outer container
 #xarg 
 #xarg ./mynemo-docker-dind --exec ... # run command in outer container
 #xarg ./mynemo-docker-dind --docker ... # run docker command in outer container # e.g. --docker ps
 #xarg ./mynemo-docker-dind --docker.containerids # get inside container ids
 #xarg 
+#xarg 3. related to freertr+host1+host2 docker-compose:
+#xarg 
+#xarg ./mynemo-docker-dind --freertr-testnet-prep-and-run" # prep and run docker-compose for freertr+host1+host2 (started in back-ground)
+#xarg ./mynemo-docker-dind --freertr-console" # enter freertr container and open telnet to freertr console
+#xarg ./mynemo-docker-dind --freertr-host1-ping-host2" # enter host1 container and run ping host2
+#xarg ./mynemo-docker-dind --freertr-host2-ping-host1" # enter host2 container and run ping host1
+#xarg ./mynemo-docker-dind --freertr-tshark-netconf" # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
+#xarg ./mynemo-docker-dind --nemo-tshark-netconf" # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+#xarg ./mynemo-docker-dind --nemo-get-filename-of-cerfile" # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
 
 ##
 
@@ -400,12 +418,17 @@ elif [ "$1" = "--logs1" -o "$1" = "--get-nemo-logs1" ]; then #arg # get nemo_fis
   (set -x; docker exec "$docker_outer__container_name" docker logs nemo_fishtank_1)
   echo 1>&2
 
-elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all all nemo_*logs
+elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all nemo_*logs
   shift 1
 
   echo "# inside debian-docker-in-docker container: all docker logs :" 1>&2
   (set -x; docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
   echo 1>&2
+
+elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log files in nemo container
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\.log$/ && /w\\s+REG/ { print \$(NF); }' | sort -u)")
 
 #
 
@@ -456,6 +479,53 @@ elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
 
   #exec "$0" --build-and-bash --build-without-data -c './mygit_clone_nemo0 && cd nemo-docker && ./setup.sh "$@"' -- "$@" #arg rest
   exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose
+
+#arg
+
+elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docker-compose for freertr+host1+host2 (started in back-ground)
+  shift 1
+
+  set -e
+
+  docker-compose -f docker-compose-freertr-ddos.yml build
+
+  docker-compose -f docker-compose-freertr-ddos.yml down || true
+
+  docker-compose -f docker-compose-freertr-ddos.yml up -d
+
+  ./docker-compose/freertr_disable_offload.sh
+
+elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open telnet to freertr console
+  shift 1
+
+  exec docker exec -ti freertr telnet 127.1 2323
+
+elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container and run ping host2
+  shift 1
+
+  exec docker exec -ti host1 ping 10.2.10.12
+
+elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container and run ping host1
+  shift 1
+
+  exec docker exec -ti host2 ping 10.1.10.11
+
+elif [ "$1" = "--freertr-tshark-netconf" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
+  shift 1
+
+  exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3
+
+elif [ "$1" = "--nemo-tshark-netconf" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+  shift 1
+
+  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1
+
+elif [ "$1" = "--nemo-get-filename-of-cerfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+  shift 1
+
+  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/secrets/CA/admin.p12"
+
+#arg
 
 else 
 
