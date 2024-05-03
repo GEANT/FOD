@@ -460,6 +460,35 @@ def poll_snmp_statistics():
       os._exit(0)
       logger.info("poll_snmp_statistics(): after os._exit() in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
 
+##
+
+def snmp_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
+
+        logger.info("snmp_add_initial_zero_value_inner(): called: routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
+
+        if add_initial_value:
+          try:
+            snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
+            logger.debug("snmp_add_initial_zero_value_inner(): (1) routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value sucesss")
+          except Exception as e:
+            logger.error("snmp_add_initial_zero_value_inner(): (1) routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value failed: "+str(e))
+
+        if reset_remember_last_value:
+          try:
+            snmpstats.clean_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
+            logger.debug("snmp_add_initial_zero_value_inner(): (2) routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
+          except Exception as e:
+            logger.error("snmp_add_initial_zero_value_inner(): (2) routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
+
+        elif update_remember_last_value:
+          try:
+            logger.info("snmp_add_initial_zero_value_inner(): (3a) routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
+            snmpstats.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
+            logger.info("snmp_add_initial_zero_value_inner(): (3b) routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
+          except Exception as e:
+            logger.error("snmp_add_initial_zero_value_inner(): (4) routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
+
+
 @shared_task(ignore_result=True, max_retries=0)
 def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
     from flowspec import snmpstats
@@ -478,29 +507,7 @@ def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_
 
     if not use_fork:
     
-        logger.info("snmp_add_initial_zero_value(): (2) routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
-
-        if add_initial_value:
-          try:
-            snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
-            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value sucesss")
-          except Exception as e:
-            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value failed: "+str(e))
-
-        if reset_remember_last_value:
-          try:
-            snmpstats.clean_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
-            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
-          except Exception as e:
-            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
-
-        elif update_remember_last_value:
-          try:
-            logger.info("snmp_add_initial_zero_value(): (3) routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
-            snmpstats.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
-            logger.info("snmp_add_initial_zero_value(): (4) routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
-          except Exception as e:
-            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
+       snmp_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
 
     else:
       signal.signal(signal.SIGCHLD, handleSIGCHLD)
@@ -516,28 +523,8 @@ def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_
         ppid = pid
         pid = os.getpid()
         logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
-
-        if add_initial_value:
-          try:
-            snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
-            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value sucesss")
-          except Exception as e:
-            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value failed: "+str(e))
-
-        if reset_remember_last_value:
-          try:
-            snmpstats.clean_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
-            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
-          except Exception as e:
-            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
-
-        elif update_remember_last_value:
-          try:
-            snmpstats.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
-            logger.debug("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
-          except Exception as e:
-            logger.error("snmp_add_initial_zero_value(): routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
-
+       
+        snmp_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
 
         #exit_process()
 
