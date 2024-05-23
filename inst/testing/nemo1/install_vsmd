@@ -1,0 +1,27 @@
+
+apt install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
+perl -MCPAN -e 'install (Net::CIDR::Lite)'
+perl -MCPAN -e 'install (Text::CSV_XS)'
+mkdir /usr/share/xt_geoip
+
+(
+cd /usr/share/xt_geoip
+/usr/libexec/xtables-addons/xt_geoip_dl
+/usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip
+)
+
+apt-get install virtualenv
+virtualenv venv
+. venv/bin/activate
+
+pip install -r requirements.txt 
+
+export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
+
+mkdir -p /services/etc/nemo/
+touch /services/etc/nemo/nemo.conf
+echo "[vsmd]" >> /services/etc/nemo/nemo.conf
+
+echo TODO: configure /services/etc/nemo/nemo.conf
+echo use ./bin/adm.py OR ./bin/nemo-vsmd
+
