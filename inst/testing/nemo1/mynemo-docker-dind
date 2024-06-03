@@ -69,9 +69,11 @@ fi
 
 ##
 
-docker_outer__image_name="nemo-all2"
-docker_outer__container_name="nemo-all2"
-docker_outer_volume_forinnerdockerdir="dind2"
+docker_outer__image_name="nemo-all1"
+docker_outer__container_name="nemo-all1"
+docker_outer_volume_forinnerdockerdir="dind1"
+
+outer_https_port="8000"
 
 docker_log_prefix="_1" # has to be consistent with docker_outer__container_name?
 
@@ -203,7 +205,7 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ## 
 
   echo "# starting new debian-docker-in-docker container:" 1>&2
-  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
+  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "$docker_outer__image_name")
   #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   docker network connect "$network1_name" "$docker_outer__container_name"
