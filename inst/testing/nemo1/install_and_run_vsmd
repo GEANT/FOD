@@ -46,6 +46,11 @@ if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/ne
   cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
 fi
 
+if [ ! -f /services/data/vsmd/vsmd.sqlite ]; then
+  mkdir -p /services/data/vsmd/
+  touch /services/data/vsmd/vsmd.sqlite
+fi
+
 echo TODO: configure /services/etc/nemo/nemo.conf
 echo use ./bin/adm.py OR ./bin/nemo-vsmd
 
