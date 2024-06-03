@@ -75,7 +75,7 @@ docker_outer_volume_forinnerdockerdir="dind1"
 
 outer_https_port="8000"
 
-docker_log_prefix="_1" # has to be consistent with docker_outer__container_name?
+docker_log_postfix="_1" # has to be consistent with docker_outer__container_name?
 
 #
 
