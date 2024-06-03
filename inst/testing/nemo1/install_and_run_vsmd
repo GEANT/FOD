@@ -1,0 +1,54 @@
+#!/bin/bash
+
+if [ ! -f /.nemo_vsmd_setuped ]; then
+
+  set -e	
+
+  apt-get -yyy install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
+  perl -MCPAN -e 'install (Net::CIDR::Lite)'
+  perl -MCPAN -e 'install (Text::CSV_XS)'
+  mkdir -p /usr/share/xt_geoip
+
+  (
+    cd /usr/share/xt_geoip
+    /usr/libexec/xtables-addons/xt_geoip_dl
+    /usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip
+  )
+
+  apt-get -yyy install virtualenv
+
+  touch /.nemo_vsmd_setuped
+
+fi
+
+#
+
+cd nemo-vsmd/
+
+if [ ! -d venv ]; then
+   virtualenv venv
+fi
+
+. venv/bin/activate
+
+pip install -r requirements.txt 
+
+export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
+
+mkdir -p /services/etc/nemo/
+
+if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
+  #touch /services/etc/nemo/nemo.conf
+  #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
+  #
+  #cp -vf ./doc/nemo.conf.example /services/etc/nemo/nemo.conf
+  #
+  cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
+fi
+
+echo TODO: configure /services/etc/nemo/nemo.conf
+echo use ./bin/adm.py OR ./bin/nemo-vsmd
+
+exec ./bin/nemo-vsmd "$@"
+
+

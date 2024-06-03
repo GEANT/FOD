@@ -1,0 +1,29 @@
+[vsmd]
+countermeasurectl: /opt/countermeasure/countermeasure.py
+offrampctl: /bin/echo
+flowspec_redirect: 65023:172
+
+#rpc_host: localhost
+rpc_host: 172.18.0.1
+rpc_port: 3236
+
+sqlite_db: /services/data/vsmd/vsmd.sqlite
+
+#ssl_key: /services/etc/nemo/ssl/testvm.test.org.key
+#ssl_cert: /services/etc/nemo/ssl/testvm.test.org.pem
+#ssl_ca: /services/etc/nemo/ssl/test-ca-chain.pem
+ssl_key:  /nemo-all/secrets/nemo-analyse.key
+ssl_cert: /nemo-all/secrets/nemo-analyse.pem
+ssl_ca:   /nemo-all/secrets/nemo-analyse-cachain.pem
+
+stats_interval: 60
+
+[nemo_identities]
+
+# TODO: replace by actual fingerprint? of cert:
+F13A90C5F2637C6AECF744126D6BE46A27BDACCE: Nemo Testinstanz
+
+[Nemo Testinstanz]
+cidr_ro: 10.0.1.0/24
+cidr_rw: 127.0.0.0/8
+
