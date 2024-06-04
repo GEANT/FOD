@@ -535,12 +535,12 @@ elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 contain
 elif [ "$1" = "--freertr-tshark-netconf" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
   shift 1
 
-  exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3
+  exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3 "$@"
 
 elif [ "$1" = "--nemo-tshark-netconf" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
 
-  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1
+  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
 
 elif [ "$1" = "--nemo-get-filename-of-certfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
   shift 1
@@ -565,6 +565,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    "$0" --freertr-testnet-prep-and-run
    "$0" --freertr-host2-ping-host1.bg
    "$0" --freertr-host1-ping-host2.bg
+
+   # test tshark
+   "$0" --nemo-tshark-netconf -a duration:20
 
    "$0" --exec ./install_and_run_vsmd --install_only
 
