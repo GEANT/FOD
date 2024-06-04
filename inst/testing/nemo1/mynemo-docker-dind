@@ -515,10 +515,22 @@ elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container 
 
   exec docker exec -ti host1 ping 10.2.10.12
 
+elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 container and run ping host2
+  shift 1
+
+  docker exec host1 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
+  docker exec host1 screen -S ping2 -d -m ping 10.2.10.12
+
 elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container and run ping host1
   shift 1
 
   exec docker exec -ti host2 ping 10.1.10.11
+
+elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 container and run ping host1
+  shift 1
+
+  docker exec host2 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
+  docker exec host2 screen -S ping1 -d -m ping 10.1.10.11
 
 elif [ "$1" = "--freertr-tshark-netconf" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
   shift 1
@@ -549,7 +561,11 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    set -x
 
    "$0" --all1
+
    "$0" --freertr-testnet-prep-and-run
+   "$0" --freertr-host2-ping-host1.bg
+   "$0" --freertr-host1-ping-host2.bg
+
    "$0" --exec ./install_and_run_vsmd --install_only
 
    "$0" --nemo-get-dirname-onhost
