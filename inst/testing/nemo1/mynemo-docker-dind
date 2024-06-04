@@ -576,6 +576,11 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    "$0" --exec ./install_and_run_vsmd --install_only
 
+   # TODO: install certs for vsmd communication (client side)
+   "$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
+   "$0" --exec cp -vf secrets/nemo-analyse.pem etc/nemo-erkennung/mitigated/cert.pem
+   "$0" --exec cp -vf secrets/nemo-analyse-cachain.pem etc/nemo-erkennung/mitigated/chain.pem
+
    echo
    echo "# logfiles in outer nemo container:" 
    "$0" --logsall2
