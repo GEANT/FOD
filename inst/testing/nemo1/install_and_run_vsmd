@@ -5,6 +5,9 @@ if [ ! -f /.nemo_vsmd_setuped ]; then
   set -e	
 
   apt-get -yyy install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
+
+  export PERL_MM_USE_DEFAULT=1
+
   perl -MCPAN -e 'install (Net::CIDR::Lite)'
   perl -MCPAN -e 'install (Text::CSV_XS)'
   mkdir -p /usr/share/xt_geoip
@@ -54,6 +57,11 @@ fi
 echo TODO: configure /services/etc/nemo/nemo.conf
 echo use ./bin/adm.py OR ./bin/nemo-vsmd
 
-exec ./bin/nemo-vsmd "$@"
+if [ "$1" = "--install_only" ]; then
+  echo "use ./bin/nemo-vsmd to run inside outer container"
+else	
+  exec ./bin/nemo-vsmd "$@"
+fi
+
 
 

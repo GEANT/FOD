@@ -317,7 +317,8 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh --verbose "$@"' -- "$@")
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
   echo 1>&2
 
   #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
@@ -539,6 +540,20 @@ elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside 
 
   echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
 
+#arg
+
+elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
+   shift 1
+
+   set -e 
+   set -x
+
+   "$0" --all1
+   "$0" --freertr-testnet-prep-and-run
+   "$0" --exec ./install_and_run_vsmd --install_only
+
+   "$0" --nemo-get-dirname-onhost
+   "$0" --nemo-get-filename-of-certfile 
 
 #arg
 
