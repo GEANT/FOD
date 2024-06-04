@@ -435,10 +435,15 @@ elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all 
   (set -x; docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
   echo 1>&2
 
+elif [ "$1" = "--logsall2" ]; then #arg # determine all active log files in nemo container
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$(docker inspect "$docker_outer__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')/root")
+
 elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log files in nemo container
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\.log$/ && /w\\s+REG/ { print \$(NF); }' | sort -u)")
+  (set -x; docker exec "$docker_outer__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
 #
 
@@ -571,7 +576,16 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    "$0" --exec ./install_and_run_vsmd --install_only
 
+   echo
+   echo "# logfiles in outer nemo container:" 
+   "$0" --logsall2
+
+   echo
+   echo "# nemo installation dir in outer nemo container:" 
    "$0" --nemo-get-dirname-onhost
+
+   echo
+   echo "# client cert file:" 
    "$0" --nemo-get-filename-of-certfile 
 
 #arg
