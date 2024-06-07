@@ -1,4 +1,9 @@
 =======
+1.8.2 RELEASE (2024/06)
+Improvements and enhancements
+        - Introduced separate mitigation statistics for matched vs. dropped packets/bytes (JUNOS-specific use of firewall MIB for mitigation statistics)
+
+=======
 1.8.1 RELEASE (2023/11)
 Improvements and enhancements
         - Enhancement of the Dockerfiles for testing and reference-installation
