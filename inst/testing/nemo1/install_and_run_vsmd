@@ -54,6 +54,17 @@ if [ ! -f /services/data/vsmd/vsmd.sqlite ]; then
   touch /services/data/vsmd/vsmd.sqlite
 fi
 
+if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+  /nemo-all/install_vsmd_certs
+fi
+
+echo "vsmd params to configure (in https://localhost:8000/admin/mitigate/vsmd/):"
+echo "name:     vsmd1"
+echo "url:      https://vmsd1:3236/RPC2"
+echo "cafile:   /services/etc/nemo/vmsd1.ca.crt.pem"
+echo "keyfile:  /services/etc/nemo/vmsd1.site.key.pem"
+echo "certfile: /services/etc/nemo/vmsd1.site.crt.pem"
+
 echo TODO: configure /services/etc/nemo/nemo.conf
 echo use ./bin/adm.py OR ./bin/nemo-vsmd
 

@@ -12,9 +12,13 @@ sqlite_db: /services/data/vsmd/vsmd.sqlite
 #ssl_key: /services/etc/nemo/ssl/testvm.test.org.key
 #ssl_cert: /services/etc/nemo/ssl/testvm.test.org.pem
 #ssl_ca: /services/etc/nemo/ssl/test-ca-chain.pem
-ssl_key:  /nemo-all/secrets/nemo-analyse.key
-ssl_cert: /nemo-all/secrets/nemo-analyse.pem
-ssl_ca:   /nemo-all/secrets/nemo-analyse-cachain.pem
+#ssl_key:  /nemo-all/secrets/nemo-analyse.key
+#ssl_cert: /nemo-all/secrets/nemo-analyse.pem
+#ssl_ca:   /nemo-all/secrets/nemo-analyse-cachain.pem
+ssl_key:  /nemo-all/secrets/vmsd1.site.key.pem
+ssl_cert: /nemo-all/secrets/vmsd1.site.crt.pem
+ssl_ca:   /nemo-all/secrets/vmsd1.ca.crt.pem
+
 
 stats_interval: 60
 
@@ -22,6 +26,7 @@ stats_interval: 60
 
 # TODO: replace by actual fingerprint? of cert:
 F13A90C5F2637C6AECF744126D6BE46A27BDACCE: Nemo Testinstanz
+__FINGERPRINT__ : Nemo Testinstanz vmsd1
 
 [Nemo Testinstanz]
 cidr_ro: 10.0.1.0/24
