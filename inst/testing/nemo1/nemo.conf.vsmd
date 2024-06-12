@@ -28,7 +28,22 @@ stats_interval: 60
 F13A90C5F2637C6AECF744126D6BE46A27BDACCE: Nemo Testinstanz
 __FINGERPRINT__ : Nemo Testinstanz vmsd1
 
-[Nemo Testinstanz]
-cidr_ro: 10.0.1.0/24
-cidr_rw: 127.0.0.0/8
+[Nemo Testinstanz vsmd1]
+#cidr_ro: 10.0.1.0/24
+#cidr_rw: 127.0.0.0/8
+cidr_ro: 0.0.0.0/0
+cidr_rw: 0.0.0.0/0
+
+[exa_plugin]
+logfile: /services/exa_plugin.log
+rpc_host: 172.18.0.1
+rpc_port: 3237
+
+[offrampctl]
+router: rare
+ssh_username: freerouter
+ssh_keyfile: /services/etc/nemo/id_rsa
+ssh_proxies: 172.18.0.1
+
+
 

@@ -26,7 +26,8 @@ fi
 
 #
 
-cd nemo-vsmd/
+(
+cd /nemo-all/nemo-offramctl/
 
 if [ ! -d venv ]; then
    virtualenv venv
@@ -35,8 +36,64 @@ fi
 . venv/bin/activate
 
 pip install -r requirements.txt 
-
 export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
+)
+
+####
+
+# install stuff for offramp host (= localhost)
+
+apt-get install openssh-server
+systemctl enable ssh
+systemctl start ssh
+
+#
+
+adduser -m freertr
+
+#
+
+cat > /home/freertr/test1 <<EOF
+#!/bin/bash
+echo "Hello World" 
+EOF
+chmod +x /home/freertr/test1
+
+cat > /home/freertr/rare <<EOF
+#!/bin/bash
+echo "Hello World" # TODO # use freertr mitigation stats script here instead
+EOF
+chmod +x /home/freertr/rare
+
+#
+
+ssh-keygen -b 2048 -t rsa
+
+cp -fv /root/.ssh/id_rsa /services/etc/nemo/id_rsa 1>&2
+
+mkdir -p /home/freertr/.ssh/
+chown freerouter /home/freertr/.ssh/
+chmod u+rwx,go-rw /home/freertr/.ssh/
+cat /root/.ssh/id_rsa.pub >> /home/freertr/.ssh/authorized_keys
+
+# consist ssh connection to offramp host: consistent with ./nemo.conf.vsmd
+ssh -i /root/.ssh/id_rsa freerouter@172.18.0.1 ./test1
+
+###
+# install vsmd pre-requisites
+
+cd /nemo-all/nemo-vsmd/
+
+if [ ! -d venv ]; then
+   virtualenv venv
+fi
+
+. venv/bin/activate
+
+pip install -r requirements.txt 
+export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
+
+# conf vsmd
 
 mkdir -p /services/etc/nemo/
 
@@ -45,7 +102,7 @@ if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/ne
   #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
   #
   #cp -vf ./doc/nemo.conf.example /services/etc/nemo/nemo.conf
-  #
+  # ./nemo.conf.vsmd
   cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
 fi
 
