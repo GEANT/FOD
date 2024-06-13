@@ -17,6 +17,7 @@ RUN apt-get -yyy install python3
 RUN apt-get -yyy install openssh-server
 
 COPY . /nemo-all/
+RUN rm -rf /nemo-all/nemo-vsmd/venv/
 
 CMD [ "/sbin/init" ]
 

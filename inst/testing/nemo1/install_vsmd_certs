@@ -32,6 +32,9 @@ if docker info; then
   
   # ./nemo.conf.vsmd
   sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /services/etc/nemo/nemo.conf
+  
+  cp /nemo-all/nemo.conf.vsmd /nemo-all/nemo.conf.vsmd.use
+  sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /nemo-all/nemo.conf.vsmd.use
 
 else
 
