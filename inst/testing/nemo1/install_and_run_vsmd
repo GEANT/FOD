@@ -1,88 +1,83 @@
 #!/bin/bash
 
-if [ ! -f /.nemo_vsmd_setuped ]; then
+#if [ ! -f /.nemo_vsmd-desp0_setuped ]; then
+#
+#  set -e	
+#
+#  apt-get -yyy install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
+#
+#  export PERL_MM_USE_DEFAULT=1
+#
+#  perl -MCPAN -e 'install (Net::CIDR::Lite)'
+#  perl -MCPAN -e 'install (Text::CSV_XS)'
+#  mkdir -p /usr/share/xt_geoip
+#
+#  (
+#    cd /usr/share/xt_geoip
+#    /usr/libexec/xtables-addons/xt_geoip_dl
+#    /usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip
+#  )
+#
+#  apt-get -yyy install virtualenv
+#  touch /.nemo_vsmd-deps0_setuped
+#fi
 
-  set -e	
+/nemo-all/install_vsmd_deps0
 
-  apt-get -yyy install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
-
-  export PERL_MM_USE_DEFAULT=1
-
-  perl -MCPAN -e 'install (Net::CIDR::Lite)'
-  perl -MCPAN -e 'install (Text::CSV_XS)'
-  mkdir -p /usr/share/xt_geoip
-
-  (
-    cd /usr/share/xt_geoip
-    /usr/libexec/xtables-addons/xt_geoip_dl
-    /usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip
-  )
-
-  apt-get -yyy install virtualenv
-
-  touch /.nemo_vsmd_setuped
-
+if [ "$1" = "--stage1" ]; then
+  exit
 fi
 
 #
 
-(
-cd /nemo-all/nemo-offramctl/
-
-if [ ! -d venv ]; then
-   virtualenv venv
+apt-get -yyy install python3
+if python3 --version | grep -q 3.9; then
+  apt-get -yyy install python3-daemon
 fi
 
-. venv/bin/activate
+#
 
-pip install -r requirements.txt 
-export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
-)
+if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+  /nemo-all/install_vsmd_certs
+fi
 
-####
+#
 
-# install stuff for offramp host (= localhost)
-
-apt-get install openssh-server
+apt-get -yyy install openssh-server
 systemctl enable ssh
 systemctl start ssh
 
-#
+useradd -m freerouter
 
-adduser -m freertr
-
-#
-
-cat > /home/freertr/test1 <<EOF
-#!/bin/bash
-echo "Hello World" 
+if [ ! -f /home/freerouter/test1 ]; then
+  cat > /home/freerouter/test1 <<EOF
+#!/bin/sh
+echo "Hello" 
 EOF
-chmod +x /home/freertr/test1
+  chmod +x /home/freerouter/test1
+fi
 
-cat > /home/freertr/rare <<EOF
-#!/bin/bash
-echo "Hello World" # TODO # use freertr mitigation stats script here instead
+if [ ! -f /home/freerouter/rare ]; then
+  cat > /home/freerouter/rare <<EOF
+#!/bin/sh
+echo "Hello" # TODO: use freertr stats script instead
 EOF
-chmod +x /home/freertr/rare
+  chmod +x /home/freerouter/rare
+fi
+
+if [ ! -f /root/.ssh/id_rsa ]; then
+  ssh-keygen -t rsa -b 2048
+  mkdir -p /home/freerouter/.ssh/
+  chown freerouter: /home/freerouter/.ssh/
+  chmod og-rx /home/freerouter/.ssh/
+  cat /root/.ssh/id_rsa.pub >>/home/freerouter/.ssh/authorized_keys
+fi
+
+ssh freerouter@172.18.0.1 ./test1
 
 #
 
-ssh-keygen -b 2048 -t rsa
-
-cp -fv /root/.ssh/id_rsa /services/etc/nemo/id_rsa 1>&2
-
-mkdir -p /home/freertr/.ssh/
-chown freerouter /home/freertr/.ssh/
-chmod u+rwx,go-rw /home/freertr/.ssh/
-cat /root/.ssh/id_rsa.pub >> /home/freertr/.ssh/authorized_keys
-
-# consist ssh connection to offramp host: consistent with ./nemo.conf.vsmd
-ssh -i /root/.ssh/id_rsa freerouter@172.18.0.1 ./test1
-
-###
-# install vsmd pre-requisites
-
-cd /nemo-all/nemo-vsmd/
+cd nemo-vsmd/
 
 if [ ! -d venv ]; then
    virtualenv venv
@@ -90,10 +85,16 @@ fi
 
 . venv/bin/activate
 
-pip install -r requirements.txt 
-export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
+if python3 --version | grep -q 3.9 && ! pip --version; then # is venv pip broken?
+  rm -f venv/bin/pip 
+  hash -r
+  type -p pip
+fi
+type -p pip
 
-# conf vsmd
+pip install -r requirements.txt 
+
+export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
 
 mkdir -p /services/etc/nemo/
 
@@ -102,6 +103,7 @@ if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/ne
   #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
   #
   #cp -vf ./doc/nemo.conf.example /services/etc/nemo/nemo.conf
+  #
   # ./nemo.conf.vsmd
   cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
 fi
@@ -111,9 +113,9 @@ if [ ! -f /services/data/vsmd/vsmd.sqlite ]; then
   touch /services/data/vsmd/vsmd.sqlite
 fi
 
-if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-  /nemo-all/install_vsmd_certs
-fi
+#if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+#	/nemo-all/install_vsmd_certs
+#fi
 
 echo "vsmd params to configure (in https://localhost:8000/admin/mitigate/vsmd/):"
 echo "name:     vsmd1"
@@ -128,7 +130,7 @@ echo use ./bin/adm.py OR ./bin/nemo-vsmd
 if [ "$1" = "--install_only" ]; then
   echo "use ./bin/nemo-vsmd to run inside outer container"
 else	
-  exec ./bin/nemo-vsmd "$@"
+  exec ./bin/nemo-vsmd --debug "$@"
 fi
 
 

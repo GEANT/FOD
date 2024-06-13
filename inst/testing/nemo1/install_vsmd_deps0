@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ ! -f /.nemo_vsmd-deps0_setuped ]; then
+
+  set -x
+  set -e	
+  
+  apt-get -yyy install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
+  
+  export PERL_MM_USE_DEFAULT=1
+  
+  perl -MCPAN -e 'install (Net::CIDR::Lite)'
+  perl -MCPAN -e 'install (Text::CSV_XS)'
+  mkdir -p /usr/share/xt_geoip
+  
+  (
+    cd /usr/share/xt_geoip
+    /usr/libexec/xtables-addons/xt_geoip_dl
+    /usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip
+  )
+  
+  apt-get -yyy install virtualenv
+  
+  touch /.nemo_vsmd-deps0_setuped
+
+fi
+

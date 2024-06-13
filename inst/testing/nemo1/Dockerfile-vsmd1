@@ -1,0 +1,22 @@
+
+# docker build -f Dockerfile-vsmd1 -t vsmd1 .
+# docker stop vsmd1; docker rm vsmd1; docker run -d --privileged --network host --mount type=bind,source=/nemo-all/etc/,target=/nemo-all/etc/ --name vsmd1 vsmd1; docker exec -ti vsmd1 ./install_and_run_vsmd
+
+FROM debian:oldstable
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
+
+WORKDIR /nemo-all
+
+COPY install_vsmd_deps0 /nemo-all/
+
+RUN ./install_vsmd_deps0 
+
+RUN apt-get -yyy install python3
+RUN apt-get -yyy install openssh-server
+
+COPY . /nemo-all/
+
+CMD [ "/sbin/init" ]
+

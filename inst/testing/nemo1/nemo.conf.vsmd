@@ -38,12 +38,11 @@ cidr_rw: 0.0.0.0/0
 logfile: /services/exa_plugin.log
 rpc_host: 172.18.0.1
 rpc_port: 3237
-
+ 
 [offrampctl]
 router: rare
 ssh_username: freerouter
 ssh_keyfile: /services/etc/nemo/id_rsa
 ssh_proxies: 172.18.0.1
-
 
 
