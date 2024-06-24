@@ -99,7 +99,7 @@ else
     echo "checking existing venv" 1>&2
     # check for broken venv or venv inconsistent with OS python installation
     . venv/bin/activate
-    if pip --version; then # is venv pip broken?
+    if ! pip --version; then # is venv pip broken?
       echo "existing venv is broken, removing it" 1>&2
       rm -rf venv/
       echo "initing new venv" 1>&2
