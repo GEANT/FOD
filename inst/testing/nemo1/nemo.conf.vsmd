@@ -1,0 +1,48 @@
+[vsmd]
+countermeasurectl: /opt/countermeasure/countermeasure.py
+offrampctl: /bin/echo
+flowspec_redirect: 65023:172
+
+#rpc_host: localhost
+rpc_host: 172.18.0.1
+rpc_port: 3236
+
+sqlite_db: /services/data/vsmd/vsmd.sqlite
+
+#ssl_key: /services/etc/nemo/ssl/testvm.test.org.key
+#ssl_cert: /services/etc/nemo/ssl/testvm.test.org.pem
+#ssl_ca: /services/etc/nemo/ssl/test-ca-chain.pem
+#ssl_key:  /nemo-all/secrets/nemo-analyse.key
+#ssl_cert: /nemo-all/secrets/nemo-analyse.pem
+#ssl_ca:   /nemo-all/secrets/nemo-analyse-cachain.pem
+ssl_key:  /nemo-all/secrets/vmsd1.site.key.pem
+ssl_cert: /nemo-all/secrets/vmsd1.site.crt.pem
+ssl_ca:   /nemo-all/secrets/vmsd1.ca.crt.pem
+
+
+stats_interval: 60
+
+[nemo_identities]
+
+# TODO: replace by actual fingerprint? of cert:
+F13A90C5F2637C6AECF744126D6BE46A27BDACCE: Nemo Testinstanz
+__FINGERPRINT__ : Nemo Testinstanz vmsd1
+
+[Nemo Testinstanz vsmd1]
+#cidr_ro: 10.0.1.0/24
+#cidr_rw: 127.0.0.0/8
+cidr_ro: 0.0.0.0/0
+cidr_rw: 0.0.0.0/0
+
+[exa_plugin]
+logfile: /services/exa_plugin.log
+rpc_host: 172.18.0.1
+rpc_port: 3237
+ 
+[offrampctl]
+router: rare
+ssh_username: freerouter
+ssh_keyfile: /services/etc/nemo/id_rsa
+ssh_proxies: 172.18.0.1
+
+

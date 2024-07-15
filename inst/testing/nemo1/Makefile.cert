@@ -1,0 +1,239 @@
+
+##
+
+export SHELL:=/bin/bash
+
+MAKEFILE_THIS:= $(lastword $(MAKEFILE_LIST))
+MAKEFILE_DIR:= $(shell dirname $(MAKEFILE_THIS))
+	
+MYMAKE00:= $(MAKE) -f $(MAKEFILE_THIS)
+MYMAKE0:= $(MAKE) $(MAKE_OPTS) -f $(MAKEFILE_THIS)
+MYMAKE:= $(MYMAKE0) --no-print-directory
+
+##
+
+all: mysite.crt_ssign
+
+#.SECONDARY: 
+.PRECIOUS: %.key.pwd
+.PRECIOUS: %.pkey0.pem
+.PRECIOUS: %.pkey1.pem
+.PRECIOUS: %.key.pem
+.PRECIOUS: %.csr.pem
+.PRECIOUS: %.ssign.key.pem
+.PRECIOUS: %.ssign.crt.pem
+.PRECIOUS: %.ca.key.pem
+.PRECIOUS: %.ca.crt.pem
+.PRECIOUS: %.inter.key.pem
+.PRECIOUS: %.inter.crt.pem
+.PRECIOUS: %.site.key.pem
+.PRECIOUS: %.site.crt.pem
+.PRECIOUS: %.site2.key.pem
+.PRECIOUS: %.site2.crt.pem
+
+
+##
+
+%.key.pwd:
+	@#dd if=/dev/random bs=1 count=100 of="$@"
+	@#cat /dev/random | tr -d $$'\x0a\\0' | dd bs=1 count=100 of="$@"
+	@#dd if=/dev/random bs=1 | tr -d $$'\x0a\\000' | dd bs=1 count=100 of="$@"
+	@#dd if=/dev/random bs=1 count=100 of="$@"
+	dd if=/dev/random bs=1 | tr -d '\012\000' | dd bs=1 count=100 of="$@"
+
+%.key.pwd.verify: %.key.pwd
+	if hexdump -C "$<" | grep -E '(\<0a\>)|(\<00\>)'; then false; fi
+
+##
+
+#KEY_BITLENGTH:=1024
+KEY_BITLENGTH:=4096
+#KEY_BITLENGTH:=8192
+
+%.pkey0.pem: %.key.pwd
+	$(MYMAKE00) "$*.key.pwd.verify"
+	openssl genrsa -des3 -passout "file:$<" -out "$@" $(KEY_BITLENGTH)
+
+%.pkey1.pem: 
+	openssl genrsa -nodes3 -out "$@" $(KEY_BITLENGTH)
+
+#
+
+%.key.pem: %.pkey0.pem
+	openssl rsa -passin "file:$*.key.pwd" -in "$<" -out "$@"
+
+##
+
+#%.csr: %.priv_key0
+#	openssl req -new \
+#		-subj "/C=DE/ST=Bavaria/L=Munich/O=LRZ-CNM-Team/OU=KOM/CN=`hostname -f`/Email=test@lrz.de" \
+#		-passin "file:$*.pwd_key" -key "$<" -out "$@"
+
+ifeq ($(CERT_SUBJECT),)
+	
+ifeq ($(CERT_HOSTNAME_FULL),)
+#HOSTNAME_FULL:=$(shell hostname -f)
+CERT_HOSTNAME_FULL:=$(shell hostname -f)
+endif
+
+#CERT_SUBJECT := /C=DE/ST=Bavaria/L=Garching b. Muenchen/O=Bayerische Akademie der Wissenschaften/OU=Leibniz-Rechenzentrum, KOM, CNM-Team/CN=$(HOSTNAME_FULL)/Email=cnm-team@lrz.de 
+CERT_SUBJECT := /C=DE/ST=State/L=City/O=Org1/OU=Org-Unit1,Team1/CN=$(CERT_HOSTNAME_FULL)/Email=test@$(CERT_HOSTNAME_FULL) 
+
+CA_CERT_SUBJECT := /C=DE/ST=State/L=City/O=Org1/OU=Org-Unit1,Team1/CN=$(CERT_HOSTNAME_FULL)-ca/Email=test@$(CERT_HOSTNAME_FULL)-ca
+
+INTER_CERT_SUBJECT := /C=DE/ST=State/L=City/O=Org1/OU=Org-Unit1,Team1/CN=$(CERT_HOSTNAME_FULL)-inter/Email=test@$(CERT_HOSTNAME_FULL)-inter
+
+endif
+
+%.inter.csr.pem: %.inter.pkey0.pem
+	openssl req -new \
+		-passin "file:$*.inter.key.pwd" \
+		-key "$<" \
+		-out "$@" \
+		-subj "$(INTER_CERT_SUBJECT)" \
+		-config <( printf "\
+			[req]\n\
+			default_bits = 8192\n\
+			distinguished_name = req_distinguished_name\n\
+			x509_extensions = v3_intermediate_ca\n\
+			prompt = no\n\
+			[req_distinguished_name]\n\
+			countryName = XX\n\
+			stateOrProvinceName = N/A\n\
+			localityName = N/A\n\
+			organizationName = Self-signed certificate\n\
+			commonName = 120.0.0.1: Self-signed certificate\n\
+			[req_ext]\n\
+			subjectAltName = @alt_names\n\
+			[v3_req]\n\
+			subjectAltName = @alt_names\n\
+			[alt_names]\n\
+			IP.1 = 127.0.0.1\n\
+			[v3_ca]\n\
+			subjectKeyIdentifier = hash\n\
+			authorityKeyIdentifier = keyid:always,issuer\n\
+			basicConstraints = critical,CA:true\n\
+			#keyUsage = critical, digitalSignature, cRLSign, keyCertSign\n\
+			keyUsage = critical, cRLSign, keyCertSign\n\
+			[ v3_intermediate_ca ]\n\
+			subjectKeyIdentifier = hash\n\
+			authorityKeyIdentifier = keyid:always,issuer\n\
+			basicConstraints = critical, CA:true, pathlen:0\n\
+			keyUsage = critical, digitalSignature, cRLSign, keyCertSign\n\
+                           ") 
+
+%.csr.pem: %.pkey0.pem
+	openssl req -new \
+		-passin "file:$*.key.pwd" \
+		-key "$<" \
+		-out "$@" \
+		-subj "$(CERT_SUBJECT)" \
+		-config <( printf "\
+			[req]\n\
+			default_bits = 8192\n\
+			distinguished_name = req_distinguished_name\n\
+			req_extensions = req_ext\n\
+			x509_extensions = v3_req\n\
+			prompt = no\n\
+			[req_distinguished_name]\n\
+			countryName = XX\n\
+			stateOrProvinceName = N/A\n\
+			localityName = N/A\n\
+			organizationName = Self-signed certificate\n\
+			commonName = 120.0.0.1: Self-signed certificate\n\
+			[req_ext]\n\
+			subjectAltName = @alt_names\n\
+			[v3_req]\n\
+			subjectAltName = @alt_names\n\
+			[alt_names]\n\
+			IP.1 = 127.0.0.1\n\
+                           ") 
+
+%.ssign.crt.pem : %.ssign.csr.pem
+	$(MYMAKE) "$*.ssign.key.pem"
+	openssl x509 -req \
+	         -in "$<" \
+		 -signkey "$*.ssign.key.pem" \
+		 -out "$@" \
+		 -days 365 
+
+%.site.crt.pem : %.site.csr.pem
+	$(MYMAKE) "$*.ca.crt.pem"
+	$(MYMAKE) "$*.site.key.pem"
+	openssl x509 -req \
+	         -in "$<" \
+		 -CAkey "$*.ca.key.pem" \
+		 -CA "$*.ca.crt.pem" \
+                 -CAcreateserial \
+		 -out "$@" \
+		 -days 365 
+
+%.site2.crt.pem : %.site2.csr.pem
+	$(MYMAKE) "$*.inter.crt.pem"
+	$(MYMAKE) "$*.site2.key.pem"
+	openssl x509 -req \
+	         -in "$<" \
+		 -CAkey "$*.inter.key.pem" \
+		 -CA "$*.inter.crt.pem" \
+                 -CAcreateserial \
+		 -out "$@" \
+		 -days 365 
+
+%.inter.crt.pem : %.inter.csr.pem
+	$(MYMAKE) "$*.ca.crt.pem"
+	$(MYMAKE) "$*.inter.key.pem"
+	openssl x509 -req \
+	         -in "$<" \
+		 -CAkey "$*.ca.key.pem" \
+		 -CA "$*.ca.crt.pem" \
+                 -CAcreateserial \
+		 -out "$@" \
+		 -days 365 
+
+#
+
+%.ca.crt.pem : %.ca.key.pem
+	openssl req -new -x509 \
+		-key "$<" \
+		-out "$@" \
+		-sha256 \
+		-subj "$(CA_CERT_SUBJECT)"\
+		-days 1825 \
+		-config <( printf "\
+			[req]\n\
+			default_bits = 4096\n\
+			distinguished_name = req_distinguished_name\n\
+			x509_extensions = v3_ca\n\
+			prompt = no\n\
+			[CA_edi]\n\
+			name_opt = ca_default\n\
+			cert_opt = ca_default\n\
+			x509_extensions = usr_cert\n\
+			[req_distinguished_name]\n\
+			countryName = XX\n\
+			stateOrProvinceName = N/A\n\
+			localityName = N/A\n\
+			organizationName = Self-signed certificate\n\
+			commonName = 120.0.0.1: Self-signed certificate\n\
+			[v3_ca]\n\
+			subjectKeyIdentifier = hash\n\
+			authorityKeyIdentifier = keyid:always,issuer\n\
+			basicConstraints = critical,CA:true\n\
+			#keyUsage = critical, digitalSignature, cRLSign, keyCertSign\n\
+			keyUsage = critical, cRLSign, keyCertSign\n\
+			[usr_cert]\n\
+			basicConstraints=CA:FALSE\n\
+			nsCertType = client, email\n\
+			keyUsage = nonRepudiation, digitalSignature, keyEncipherment, keyAgreement\n\
+		") \
+
+%.cachain.pem: %.inter.crt.pem
+	#cat "$*.ca.crt.pem" "$<" > "$@"
+	cat "$*.ca.crt.pem" "$<" "$*.site2.crt.pem" > "$@"
+
+%.csr.pem.dump: %.csr.pem
+	openssl req -in "$<" -noout -text | less -S
+
+%.crt.pem.dump: %.crt.pem
+	openssl x509 -inform PEM -in '$<' -text -purpose -fingerprint -sha1 -fingerprint -sha1 | less -S
+

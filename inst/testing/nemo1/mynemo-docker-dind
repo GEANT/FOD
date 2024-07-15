@@ -64,13 +64,22 @@ fi
 #xarg ./mynemo-docker-dind --freertr-host2-ping-host1 # enter host2 container and run ping host1
 #xarg ./mynemo-docker-dind --freertr-tshark-netconf # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
 #xarg ./mynemo-docker-dind --nemo-tshark-netconf # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
-#xarg ./mynemo-docker-dind --nemo-get-filename-of-cerfile # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+#xarg ./mynemo-docker-dind --nemo-get-filename-of-certfile # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+#xarg ./mynemo-docker-dind --nemo-get-dirname-onhost # show dirname of inside container dir /nemo-all/ as seen from outside on the host
 
 ##
 
-docker_outer__docker_file_name="Dockerfile-nemo-all"
 docker_outer__image_name="nemo-all1"
 docker_outer__container_name="nemo-all1"
+docker_outer_volume_forinnerdockerdir="dind1"
+
+outer_https_port="8000"
+
+docker_log_postfix="_1" # has to be consistent with docker_outer__container_name?
+
+#
+
+docker_outer__docker_file_name="Dockerfile-nemo-all"
 
 docker_outer_hostname="localhost"
 
@@ -164,18 +173,18 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ##
 
   #echo "# starting new debian-docker-in-docker container:" 1>&2
-  #docker_outer__container_name="$(set -x; docker run --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name" sh -c "ls -l /nemo-all; tree -d /nemo-all/")"
+  #docker_outer__container_name="$(set -x; docker run --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name" sh -c "ls -l /nemo-all; tree -d /nemo-all/")"
   #echo "docker_outer__image_name=$docker_outer__image_name" 1>&2
   #echo 1>&2
 
   #exit 
 
-  #echo "# pruning outer volume dind1:" 1>&2
-  #(set -x; docker volume rm dind1)
+  #echo "# pruning outer volume $docker_outer_volume_forinnerdockerdir:" 1>&2
+  #(set -x; docker volume rm "$docker_outer_volume_forinnerdockerdir")
   outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
   echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
   #(set -x; rm -rf /var/lib/docker/volumes/dind1/_data/containers/*)
-  (set -x; rm -rf "$outer_docker_space_dir/volumes/dind1/_data/containers/"*) || true
+  (set -x; rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
   echo 1>&2
 
   ##
@@ -196,9 +205,9 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ## 
 
   echo "# starting new debian-docker-in-docker container:" 1>&2
-  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
-  #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
-  #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume dind1:/var/lib/docker/ --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
+  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "$docker_outer__image_name")
+  #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
+  #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   docker network connect "$network1_name" "$docker_outer__container_name"
   echo 1>&2
     
@@ -308,7 +317,8 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh --verbose "$@"' -- "$@")
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
   echo 1>&2
 
   #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
@@ -405,17 +415,17 @@ elif [ "$1" = "--docker.containerids" ]; then #arg
 elif [ "$1" = "--logs0" -o "$1" = "--get-nemo-logs0" ]; then #arg # get nemo_fishtank-nginx_1 logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank-nginx_1 :" 1>&2
+  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank-nginx$docker_log_postfix :" 1>&2
   #(set -x; docker exec -ti "$docker_outer__container_name" docker logs nemo_fishtank-nginx_1)
-  (set -x; docker exec "$docker_outer__container_name" docker logs nemo_fishtank-nginx_1)
+  (set -x; docker exec "$docker_outer__container_name" docker logs "nemo_fishtank-nginx$docker_log_postfix")
   echo 1>&2
 
 elif [ "$1" = "--logs1" -o "$1" = "--get-nemo-logs1" ]; then #arg # get nemo_fishtank_1 logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank_1 :" 1>&2
-  #(set -x; docker exec -ti "$docker_outer__container_name" docker logs nemo_fishtank_1)
-  (set -x; docker exec "$docker_outer__container_name" docker logs nemo_fishtank_1)
+  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank$docker_log_postfix :" 1>&2
+  #(set -x; docker exec -ti "$docker_outer__container_name" docker logs "nemo_fishtank$docker_log_postfix")
+  (set -x; docker exec "$docker_outer__container_name" docker logs "nemo_fishtank$docker_log_postfix")
   echo 1>&2
 
 elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all nemo_*logs
@@ -425,10 +435,15 @@ elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all 
   (set -x; docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
   echo 1>&2
 
+elif [ "$1" = "--logsall2" ]; then #arg # determine all active log files in nemo container
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$(docker inspect "$docker_outer__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')/root")
+
 elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log files in nemo container
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\.log$/ && /w\\s+REG/ { print \$(NF); }' | sort -u)")
+  (set -x; docker exec "$docker_outer__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
 #
 
@@ -505,25 +520,78 @@ elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container 
 
   exec docker exec -ti host1 ping 10.2.10.12
 
+elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 container and run ping host2
+  shift 1
+
+  docker exec host1 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
+  docker exec host1 screen -S ping2 -d -m ping 10.2.10.12
+
 elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container and run ping host1
   shift 1
 
   exec docker exec -ti host2 ping 10.1.10.11
 
+elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 container and run ping host1
+  shift 1
+
+  docker exec host2 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
+  docker exec host2 screen -S ping1 -d -m ping 10.1.10.11
+
 elif [ "$1" = "--freertr-tshark-netconf" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
   shift 1
 
-  exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3
+  exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3 "$@"
 
 elif [ "$1" = "--nemo-tshark-netconf" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
 
-  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1
+  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
 
-elif [ "$1" = "--nemo-get-filename-of-cerfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+elif [ "$1" = "--nemo-get-filename-of-certfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
   shift 1
 
   echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/secrets/CA/admin.p12"
+
+elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside container dir /nemo-all/ as seen from outside on the host
+  shift 1
+
+  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
+
+#arg
+
+elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
+   shift 1
+
+   set -e 
+   set -x
+
+   "$0" --all1
+
+   "$0" --freertr-testnet-prep-and-run
+   "$0" --freertr-host2-ping-host1.bg
+   "$0" --freertr-host1-ping-host2.bg
+
+   # test tshark
+   "$0" --nemo-tshark-netconf -a duration:20
+
+   "$0" --exec ./install_and_run_vsmd --install_only
+
+   # TODO: install certs for vsmd communication (client side)
+   "$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
+   "$0" --exec cp -vf secrets/nemo-analyse.pem etc/nemo-erkennung/mitigated/cert.pem
+   "$0" --exec cp -vf secrets/nemo-analyse-cachain.pem etc/nemo-erkennung/mitigated/chain.pem
+
+   echo
+   echo "# logfiles in outer nemo container:" 
+   "$0" --logsall2
+
+   echo
+   echo "# nemo installation dir in outer nemo container:" 
+   "$0" --nemo-get-dirname-onhost
+
+   echo
+   echo "# client cert file:" 
+   "$0" --nemo-get-filename-of-certfile 
 
 #arg
 

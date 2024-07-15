@@ -214,6 +214,13 @@ class Route(models.Model):
         else:
             return None
 
+    def then_action1_string(self):
+        ret=""
+        for then_action in self.then.all():
+            ret=str(then_action)
+            return ret
+        return ret
+
     def ip_version(self):
             
         route_obj = self
@@ -332,6 +339,31 @@ class Route(models.Model):
         route_original = kwargs['route_original']
         logger.info("models::commit_edit(): self="+str(self)+" route_original="+str(route_original)+" kwargs="+str(kwargs))
 
+        try:
+          last_then_str = kwargs['last__then_action__string']
+        except:
+          last_then_str = ""
+        logger.info('last_then_str=%s' % last_then_str)
+
+        new_then_str = self.then_action1_string()
+        logger.info('new_then_str=%s' % new_then_str)
+
+        ##
+    
+        str_prefix="rate-limit:"
+
+        last__rate_limit=""
+        if last_then_str[0:len(str_prefix)]==str_prefix:
+            last__rate_limit=last_then_str[len(str_prefix):]
+        logger.info('last__rate_limit=%s' % last__rate_limit)
+
+        new__rate_limit=""
+        if new_then_str[0:len(str_prefix)]==str_prefix:
+            new__rate_limit=new_then_str[len(str_prefix):]
+        logger.info('new__rate_limit=%s' % new__rate_limit)
+
+        rate_limit_changed = last__rate_limit != new__rate_limit
+
         #username = None
         #for peer in peers:
         #    if username:
@@ -349,8 +381,9 @@ class Route(models.Model):
             peer = None
 
         send_message('[%s] Editing rule %s. Please wait...' % (self.applier_username_nice, self.name_visible), peer, self)
-        response = edit.delay(self.pk, route_original)
+        response = edit.delay(self.pk, route_original, rate_limit_changed=rate_limit_changed)
         logger.info('Got edit job id: %s' % response)
+
         if not settings.DISABLE_EMAIL_NOTIFICATION:
             fqdn = Site.objects.get_current().domain
             admin_url = 'https://%s%s' % (

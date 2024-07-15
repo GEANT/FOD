@@ -503,6 +503,9 @@ def edit_route(request, route_slug):
 
     add_error_msg=''
     add_error_msg__overlapping_rule_already_existing_with_unchanged_flowspec = '(either solve the conflict by ensuring differing FlowSpec parameters for both rules, or as the rule already exists commit without changing any FlowSpec parameters)'
+                
+    last__then_action__string = route_original.then_action1_string()
+    logger.info("views::edit(): debug: pre pre route.then1="+last__then_action__string)
 
     if request.POST:
         request_data = request.POST.copy()
@@ -620,7 +623,8 @@ def edit_route(request, route_slug):
 
                 route_original__serializer = RouteSerializer(route_original)
                 logger.info("views::edit(): route_original="+str(route_original))
-                route.commit_edit(route_original=route_original__serializer.data)
+                logger.info("views::edit(): debug: pre pre route.then1="+last__then_action__string)
+                route.commit_edit(route_original=route_original__serializer.data, last__then_action__string=last__then_action__string)
 
             return HttpResponseRedirect(reverse("group-routes"))
         else:
