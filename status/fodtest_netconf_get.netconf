@@ -206,10 +206,14 @@ if $old_version:
        #xmlconfig = m.get('<filter> <netconf-state xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring"/> </filter>')
        #xmlconfig = m.get('<filter type="subtree"> <netconf-state /> </filter>')
        test_rpc = """
-         <nc:get xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" >
-         </nc:get>
+         <nc:get-data xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" >
+         </nc:get-data>
         """ % (
         )
+       test_rpc = '<ncm:get-schema xmlns:ncm="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring"><ncm:identifier>nokia-types-filter</ncm:identifier></ncm:get-schema>'
+       test_rpc = '<ncm:get xmlns:ncm="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring"><ncm:identifier>nokia-types-filter</ncm:identifier></ncm:get>'
+       # https://documentation.nokia.com/sr/22-10/books/system-management/netconf-system-management-1.html
+       test_rpc = '<get-data xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-nmda" xmlns:ds="urn:ietf:params:xml:ns:yang:ietf-datastores"> <datastore>ds:operational</datastore> <with-origin/> </get-data>'
        rpcreply = m.dispatch(to_ele(test_rpc))
        print(rpcreply)
 else:
