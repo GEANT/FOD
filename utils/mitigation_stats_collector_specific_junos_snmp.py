@@ -320,6 +320,9 @@ def helper_get_countertype_of_rule(ruleobj):
 
 #
 
+def poll_mitigation_statistics():
+    return poll_snmp_statistics()
+
 def poll_snmp_statistics():
     logger.debug("poll_snmp_statistics(): polling SNMP statistics.")
 

@@ -399,11 +399,11 @@ def mitigation_stats_lock_create(wait=0):
         time.sleep(1)
     return success;
 
-def snmp_lock_remove():
+def mitigation_stats_lock_remove():
     try:
       os.rmdir(settings.SNMP_POLL_LOCK)
     except Exception as e:
-      logger.error("snmp_lock_remove(): failed "+str(e))
+      logger.error("mitigation_stats_lock_remove(): failed "+str(e))
 
 def exit_process():
     #import sys
@@ -428,7 +428,7 @@ def poll_snmp_statistics():
 #@shared_task(ignore_result=True, time_limit=580, soft_time_limit=550)
 @shared_task(ignore_result=True, max_retries=0)
 def mitigation_stats_poll_statistics():
-    from utils import junossnmpstats
+    from utils.mitigation_stats_collector import mitigation_stats_collector_specific 
 
     if not mitigation_stats_lock_create(0):
       return
@@ -447,10 +447,10 @@ def mitigation_stats_poll_statistics():
       pid = os.getpid()
       logger.info("mitigation_stats_poll_statistics(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
       try:
-        junossnmpstats.poll_snmp_statistics()        
+        mitigation_stats_collector_specific.poll_snmp_statistics()        
       except Exception as e:
         logger.error("mitigation_stats_poll_statistics(): exception occured in snmp poll (pid="+str(pid)+", ppid="+str(ppid)+"): "+str(e))
-      snmp_lock_remove()
+      mitigation_stats_lock_remove()
       #exit_process()
 
       # not used anymore: will lead to exit of parent process
@@ -468,20 +468,20 @@ def mitigation_stats_poll_statistics():
 
 ##
 
-def mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
+def mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, mitigation_stats_collector_specific, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
 
         logger.info("mitigation_stats_add_initial_zero_value_inner(): called: routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
 
         if add_initial_value:
           try:
-            snmpstats.add_initial_zero_value(route_id, route, zero_or_null)
+            mitigation_stats_collector_specific.add_initial_zero_value(route_id, route, zero_or_null)
             logger.debug("mitigation_stats_add_initial_zero_value_inner(): (1) routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value sucesss")
           except Exception as e:
             logger.error("mitigation_stats_add_initial_zero_value_inner(): (1) routepk="+str(routepk)+","+str(zero_or_null)+" add_initial_zero_value failed: "+str(e))
 
         if reset_remember_last_value:
           try:
-            snmpstats.clean_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
+            mitigation_stats_collector_specific.clean_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
             logger.debug("mitigation_stats_add_initial_zero_value_inner(): (2) routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
           except Exception as e:
             logger.error("mitigation_stats_add_initial_zero_value_inner(): (2) routepk="+str(routepk)+","+str(zero_or_null)+" clean_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
@@ -489,7 +489,7 @@ def mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, snmp
         elif update_remember_last_value:
           try:
             logger.info("mitigation_stats_add_initial_zero_value_inner(): (3a) routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
-            snmpstats.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
+            mitigation_stats_collector_specific.remember_oldmatched__for_changed_ratelimitrules_whileactive(route_id, route)
             logger.info("mitigation_stats_add_initial_zero_value_inner(): (3b) routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive sucesss")
           except Exception as e:
             logger.error("mitigation_stats_add_initial_zero_value_inner(): (4) routepk="+str(routepk)+","+str(zero_or_null)+" remember_oldmatched__for_changed_ratelimitrules_whileactive failed: "+str(e))
@@ -497,7 +497,7 @@ def mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, snmp
 
 @shared_task(ignore_result=True, max_retries=0)
 def mitigation_stats_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
-    from utils import junossnmpstats
+    from utils.mitigation_stats_collector import mitigation_stats_collector_specific 
     logger.info("mitigation_stats_add_initial_zero_value(): routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
    
     route = None
@@ -513,7 +513,7 @@ def mitigation_stats_add_initial_zero_value(routepk, route_id, add_initial_value
 
     if not use_fork:
     
-       mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, junossnmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
+       mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, mitigation_stats_collector_specific, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
 
     else:
       signal.signal(signal.SIGCHLD, handleSIGCHLD)
@@ -530,7 +530,7 @@ def mitigation_stats_add_initial_zero_value(routepk, route_id, add_initial_value
         pid = os.getpid()
         logger.info("mitigation_stats_add_initial_zero_value(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
        
-        mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, junossnmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
+        mitigation_stats_add_initial_zero_value_inner(routepk, route_id, route, mitigation_stats_collector_specific, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
 
         #exit_process()
 
