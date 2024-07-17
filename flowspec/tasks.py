@@ -422,7 +422,7 @@ def exit_process():
 #@shared_task(ignore_result=True, time_limit=580, soft_time_limit=550)
 @shared_task(ignore_result=True, max_retries=0)
 def poll_snmp_statistics():
-    from flowspec import snmpstats
+    from utils import junossnmpstats
 
     if not snmp_lock_create(0):
       return
@@ -441,7 +441,7 @@ def poll_snmp_statistics():
       pid = os.getpid()
       logger.info("poll_snmp_statistics(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
       try:
-        snmpstats.poll_snmp_statistics()        
+        junossnmpstats.poll_snmp_statistics()        
       except Exception as e:
         logger.error("poll_snmp_statistics(): exception occured in snmp poll (pid="+str(pid)+", ppid="+str(ppid)+"): "+str(e))
       snmp_lock_remove()
@@ -491,7 +491,7 @@ def snmp_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_i
 
 @shared_task(ignore_result=True, max_retries=0)
 def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_or_null=True, reset_remember_last_value=True, update_remember_last_value=False):
-    from flowspec import snmpstats
+    from utils import junossnmpstats
     logger.info("snmp_add_initial_zero_value(): routepk="+str(routepk)+" route_id="+str(route_id)+" add_initial_value="+str(add_initial_value)+" zero_or_null="+str(zero_or_null)+" reset_remember_last_value="+str(reset_remember_last_value)+" update_remember_last_value="+str(update_remember_last_value))
    
     route = None
@@ -507,7 +507,7 @@ def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_
 
     if not use_fork:
     
-       snmp_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
+       snmp_add_initial_zero_value_inner(routepk, route_id, route, junossnmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
 
     else:
       signal.signal(signal.SIGCHLD, handleSIGCHLD)
@@ -524,7 +524,7 @@ def snmp_add_initial_zero_value(routepk, route_id, add_initial_value=True, zero_
         pid = os.getpid()
         logger.info("snmp_add_initial_zero_value(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
        
-        snmp_add_initial_zero_value_inner(routepk, route_id, route, snmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
+        snmp_add_initial_zero_value_inner(routepk, route_id, route, junossnmpstats, add_initial_value=add_initial_value, zero_or_null=zero_or_null, reset_remember_last_value=reset_remember_last_value, update_remember_last_value=update_remember_last_value)
 
         #exit_process()
 

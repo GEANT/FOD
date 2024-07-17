@@ -331,7 +331,7 @@ def poll_snmp_statistics():
 
     # get new data
     try:
-      logger.debug("poll_snmp_statistics(): snmpstats: nowstr="+str(nowstr))
+      logger.debug("poll_snmp_statistics(): junossnmpstats: nowstr="+str(nowstr))
       newdata = get_snmp_stats()
     except Exception as e:
       logger.error("poll_snmp_statistics(): get_snmp_stats failed: "+str(e))
@@ -359,7 +359,7 @@ def poll_snmp_statistics():
     except Exception as e:
       logger.error("poll_snmp_statistics(): got exception while trying to access history[_last_poll_time]: "+str(e))
       last_poll_no_time=None
-    logger.debug("poll_snmp_statistics(): snmpstats: last_poll_no_time="+str(last_poll_no_time))
+    logger.debug("poll_snmp_statistics(): junossnmpstats: last_poll_no_time="+str(last_poll_no_time))
     history['_last_poll_no_time']=nowstr
 
     try:
@@ -369,7 +369,7 @@ def poll_snmp_statistics():
      
     # do actual update 
     try:
-        logger.debug("poll_snmp_statistics(): before store: snmpstats: nowstr="+str(nowstr)+", last_poll_no_time="+str(last_poll_no_time))
+        logger.debug("poll_snmp_statistics(): before store: junossnmpstats: nowstr="+str(nowstr)+", last_poll_no_time="+str(last_poll_no_time))
         #newdata = get_snmp_stats()
 
         # proper update history
@@ -433,7 +433,7 @@ def poll_snmp_statistics():
             #        xtype=str(limit_rate)
             xtype = helper_get_countertype_of_rule(ruleobj)
                         
-            logger.debug("snmpstats: STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" xtype="+str(xtype))
+            logger.debug("poll_snmp_statistics(): STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" xtype="+str(xtype))
             #rule_last_updated = str(ruleobj.last_updated) # e.g. 2018-06-21 08:03:21+00:00
             #rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
             rule_last_updated = helper_rule_ts_parse(str(ruleobj.last_updated))
@@ -445,12 +445,12 @@ def poll_snmp_statistics():
               counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_matched": null_measurement }
               counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_matched": zero_measurement }
 
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.status="+rule_status)
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj="+str(ruleobj))
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.status="+rule_status)
             flowspec_params_str=create_junos_name(ruleobj)
-            logger.debug("snmpstats: STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))
+            logger.debug("poll_snmp_statistics(): STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))
 
             if rule_status=="ACTIVE":
               try:
@@ -565,7 +565,7 @@ def poll_snmp_statistics():
 
                   history_per_rule[rule_id] = rec[:samplecount]
             except Exception as e:
-                logger.error("snmpstats: 2 STATISTICS_PER_RULE: exception: "+str(e))
+                logger.error("poll_snmp_statistics(): 2 STATISTICS_PER_RULE: exception: "+str(e))
 
           history['_per_rule'] = history_per_rule
 
