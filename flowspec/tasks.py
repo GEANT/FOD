@@ -447,7 +447,7 @@ def mitigation_stats_poll_statistics():
       pid = os.getpid()
       logger.info("mitigation_stats_poll_statistics(): in child process (pid="+str(pid)+", ppid="+str(ppid)+")")
       try:
-        mitigation_stats_collector_specific.poll_snmp_statistics()        
+        mitigation_stats_collector_specific.poll_mitigation_statistics()        
       except Exception as e:
         logger.error("mitigation_stats_poll_statistics(): exception occured in snmp poll (pid="+str(pid)+", ppid="+str(ppid)+"): "+str(e))
       mitigation_stats_lock_remove()
