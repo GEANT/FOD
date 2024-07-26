@@ -320,6 +320,9 @@ def helper_get_countertype_of_rule(ruleobj):
 
 #
 
+def poll_mitigation_statistics():
+    return poll_snmp_statistics()
+
 def poll_snmp_statistics():
     logger.debug("poll_snmp_statistics(): polling SNMP statistics.")
 
@@ -331,7 +334,7 @@ def poll_snmp_statistics():
 
     # get new data
     try:
-      logger.debug("poll_snmp_statistics(): snmpstats: nowstr="+str(nowstr))
+      logger.debug("poll_snmp_statistics(): junossnmpstats: nowstr="+str(nowstr))
       newdata = get_snmp_stats()
     except Exception as e:
       logger.error("poll_snmp_statistics(): get_snmp_stats failed: "+str(e))
@@ -359,7 +362,7 @@ def poll_snmp_statistics():
     except Exception as e:
       logger.error("poll_snmp_statistics(): got exception while trying to access history[_last_poll_time]: "+str(e))
       last_poll_no_time=None
-    logger.debug("poll_snmp_statistics(): snmpstats: last_poll_no_time="+str(last_poll_no_time))
+    logger.debug("poll_snmp_statistics(): junossnmpstats: last_poll_no_time="+str(last_poll_no_time))
     history['_last_poll_no_time']=nowstr
 
     try:
@@ -369,7 +372,7 @@ def poll_snmp_statistics():
      
     # do actual update 
     try:
-        logger.debug("poll_snmp_statistics(): before store: snmpstats: nowstr="+str(nowstr)+", last_poll_no_time="+str(last_poll_no_time))
+        logger.debug("poll_snmp_statistics(): before store: junossnmpstats: nowstr="+str(nowstr)+", last_poll_no_time="+str(last_poll_no_time))
         #newdata = get_snmp_stats()
 
         # proper update history
@@ -433,7 +436,7 @@ def poll_snmp_statistics():
             #        xtype=str(limit_rate)
             xtype = helper_get_countertype_of_rule(ruleobj)
                         
-            logger.debug("snmpstats: STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" xtype="+str(xtype))
+            logger.debug("poll_snmp_statistics(): STATISTICS_PER_RULE rule_id="+str(rule_id)+" rule_status="+str(rule_status)+" xtype="+str(xtype))
             #rule_last_updated = str(ruleobj.last_updated) # e.g. 2018-06-21 08:03:21+00:00
             #rule_last_updated = datetime.strptime(str(ruleobj.last_updated), '%Y-%m-%d %H:%M:%S+00:00') # TODO TZ offset assumed to be 00:00
             rule_last_updated = helper_rule_ts_parse(str(ruleobj.last_updated))
@@ -445,12 +448,12 @@ def poll_snmp_statistics():
               counter_null = {"ts": rule_last_updated.isoformat(), "value": null_measurement, "value_matched": null_measurement }
               counter_zero = {"ts": rule_last_updated.isoformat(), "value": zero_measurement, "value_matched": zero_measurement }
 
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj="+str(ruleobj))
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
-            #logger.info("snmpstats: STATISTICS_PER_RULE ruleobj.status="+rule_status)
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj="+str(ruleobj))
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
+            #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.status="+rule_status)
             flowspec_params_str=create_junos_name(ruleobj)
-            logger.debug("snmpstats: STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))
+            logger.debug("poll_snmp_statistics(): STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))
 
             if rule_status=="ACTIVE":
               try:
@@ -460,14 +463,48 @@ def poll_snmp_statistics():
                   counter = {"ts": nowstr, "value": val_dropped}
                 else:
                   logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id))
+
                   try:
                     val_dropped = newdata[flowspec_params_str][xtype_default]
                   except Exception:
                     val_dropped = 1
+
                   try:
                     val_matched = newdata[flowspec_params_str][xtype]
+
+                    logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id)+" before last_matched__remember_offset_value fix: val_matched="+str(val_matched))
+
+                    ##
+
+                    val_matched__pkts = newdata[flowspec_params_str][xtype]["packets"]
+                    val_matched__bytes = newdata[flowspec_params_str][xtype]["bytes"]
+
+                    key_remember_oldmatched = str(rule_id)+".remember_oldmatched_offset"
+                    try:
+                      last_matched__remember_offset_value = history_per_rule[key_remember_oldmatched]["value_matched"]
+                      logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id)+" before last_matched__remember_offset_value fix: last_matched__remember_offset_value="+str(last_matched__remember_offset_value))
+
+                      last_matched__remember_offset_value__pkts = last_matched__remember_offset_value["packets"]
+                      last_matched__remember_offset_value__bytes = last_matched__remember_offset_value["bytes"]
+                    except:
+                      last_matched__remember_offset_value__pkts = 0
+                      last_matched__remember_offset_value__bytes = 0
+
+                    val_matched__pkts = val_matched__pkts + last_matched__remember_offset_value__pkts
+                    val_matched__bytes = val_matched__bytes + last_matched__remember_offset_value__bytes
+
+                    newdata[flowspec_params_str][xtype]["packets"] = val_matched__pkts
+                    newdata[flowspec_params_str][xtype]["bytes"] = val_matched__bytes
+                  
+                    logger.info("poll_snmp_statistics(): 1b STATISTICS_PER_RULE rule_id="+str(rule_id)+" after last_matched__remember_offset_value fix: val_matched="+str(val_matched))
+
+                    ##
+
                   except Exception:
                     val_matched = 1
+
+                  ##
+
                   counter = { "ts": nowstr, "value": val_dropped, "value_matched": val_matched }
 
                 counter_is_null = False
@@ -531,7 +568,7 @@ def poll_snmp_statistics():
 
                   history_per_rule[rule_id] = rec[:samplecount]
             except Exception as e:
-                logger.error("snmpstats: 2 STATISTICS_PER_RULE: exception: "+str(e))
+                logger.error("poll_snmp_statistics(): 2 STATISTICS_PER_RULE: exception: "+str(e))
 
           history['_per_rule'] = history_per_rule
 
@@ -647,8 +684,8 @@ def remember_oldmatched__for_changed_ratelimitrules_whileactive(rule_id, route_o
 
     try:
       last_matched__measurement_value = history_per_rule[key_last_measurement]["value_matched"]
-      last_matched__measurement_value__pkts = last_matched__measurement_value__pkts["packets"]
-      last_matched__measurement_value__bytes = last_matched__measurement_value__pkts["bytes"]
+      last_matched__measurement_value__pkts = last_matched__measurement_value["packets"]
+      last_matched__measurement_value__bytes = last_matched__measurement_value["bytes"]
     except:
       last_matched__measurement_value__pkts = 0
       last_matched__measurement_value__bytes = 0

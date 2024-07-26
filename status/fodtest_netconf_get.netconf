@@ -1,0 +1,237 @@
+#!/bin/bash
+
+use_netconf_settings=1
+old_version=1
+parsed=0
+arg1=""
+
+while [ $# -gt 0 ]; do
+
+  if [ "$1" = "--raw_netconf__get_all" ]; then 
+    shift 1
+    parsed=-1
+  elif [ "$1" = "--raw_netconf__get_specific" ]; then 
+    shift 1
+    parsed=-1.1
+    arg1="$1"
+    shift 1 
+  elif [ "$1" = "--raw_netconf__get_config_all" ]; then 
+    shift 1
+    parsed=-1.5
+  elif [ "$1" = "--raw_netconf__get_state_all" ]; then 
+    shift 1
+    parsed=-1.6
+  elif [ "$1" = "--raw_netconf__client_capabilities" ]; then 
+    shift 1
+    parsed=-2
+  elif [ "$1" = "--raw_netconf__server_capabilities" ]; then 
+    shift 1
+    parsed=-3
+  elif [ "$1" = "--raw_netconf__schema" ]; then 
+    shift 1
+    parsed=-4
+    arg1="$1"
+    shift 1 
+  elif [ "$1" = "--raw_netconf__test1" ]; then 
+    shift 1
+    parsed=-5
+  elif [ "$1" = "--raw" ]; then 
+    shift 1
+    parsed=0
+  elif [ "$1" = "--parsed" ]; then 
+    shift 1
+    parsed=1
+  elif [ "$1" = "--parsed_json" -o "$1" = "--json" ]; then 
+    shift 1
+    parsed=2
+  elif [ "$1" = "--use_exabgp" -o "$1" = "--new_version" ]; then 
+    shift 1
+    old_version=0
+  elif [ "$1" = "--real_netconf" -o "$1" = "--old_version" ]; then 
+    shift 1
+    old_version=1
+  elif [ "$1" = "--use_netconf_settings" ]; then 
+    shift 1
+    use_netconf_settings=1
+  else
+    break
+  fi
+
+done 
+
+#
+
+NETCONF_DEVICE="$1" 
+shift 1
+NETCONF_PORT="$1"
+shift 1
+NETCONF_USER="$1" 
+shift 1
+NETCONF_PASS="$1"
+shift 1
+
+##
+
+[ -n "$NETCONF_DEVICE" ] || NETCONF_DEVICE="127.0.0.1"
+[ -n "$NETCONF_PORT" ] || NETCONF_PORT="830"
+[ -n "$NETCONF_USER" ] || NETCONF_USER="admin"
+[ -n "$NETCONF_PASS" ] || NETCONF_PASS="admin"
+
+echo "$0: using parsed=$parsed : NETCONF_DEVICE='$NETCONF_DEVICE' NETCONF_PORT='$NETCONF_PORT' NETCONF_USER='$NETCONF_USER' NETCONF_PASS='$NETCONF_PASS'" 1>&2
+
+##
+
+unset SSH_AUTH_SOCK
+
+##
+
+#. ./venv/bin/activate
+mydir="$(dirname "$0")"
+echo "$0: mydir=$mydir/../" 1>&2
+
+cd -P "$mydir/../"
+
+. "./venv/bin/activate"
+
+##
+
+#exec env DJANGO_SETTINGS_MODULE="flowspy.settings" python -c $'\nfrom utils.proxy import *; \nproxy = Applier(); import logging; logger = logging.getLogger("ncclient.transport.ssh").setLevel(logging.DEBUG); logger = logging.getLogger("ncclient.operations.rpc").setLevel(logging.DEBUG); \nxml = proxy.get_existing_config_xml();\nprint(xml);\n'
+
+##
+
+export DJANGO_SETTINGS_MODULE="flowspy.settings" 
+
+exec python <<EOF
+
+# enable debugging in ncclient library
+import logging; 
+logger = logging.getLogger("ncclient.transport.ssh").setLevel(logging.DEBUG); 
+logger = logging.getLogger("ncclient.operations.rpc").setLevel(logging.DEBUG); 
+
+###
+
+from django.conf import settings; 
+
+# override flowspy settings to enable debugging 
+settings.LEVEL = logging.DEBUG; # override flowspy/settings.py
+settings.LOG_FILE_LOCATION = "." #
+
+# override flowspy NETCONF parameters with local values
+# check further NETCONF_* variables in flowspec/settings.py, if needed
+
+if not $use_netconf_settings:
+  settings.NETCONF_DEVICE = '$NETCONF_DEVICE'; # override flowspy/settings.py
+  settings.NETCONF_PORT = '$NETCONF_PORT';     # override flowspy/settings.py
+  settings.NETCONF_USER = '$NETCONF_USER';     # override flowspy/settings.py
+  settings.NETCONF_PASS = '$NETCONF_PASS';     # override flowspy/settings.py
+
+# for testing with freertr for now
+settings.NETCONF__TESTWISE_TRY_TO_FETCH_WITHOUT_FILTER = 1; # override flowspy/settings.py
+
+###
+
+# actually perform NETCONF get-config query and print result
+from utils.proxy import *;
+#from utils.proxy_netconf_junos import Retriever as Retriever_netconf;
+#from utils.proxy_netconf_junos import Applier as Applier_netconf;
+
+#
+
+if $old_version:
+  if $parsed==1:
+    retriever = Retriever();
+    device = retriever.fetch_device();
+    result = [route.__dict__ for r in device.routing_options for route in r.routes];
+    from pprint import pprint
+    pprint(result);
+  elif $parsed==2:
+    retriever = Retriever();
+    device = retriever.fetch_device();
+    result = [route.__dict__ for r in device.routing_options for route in r.routes];
+    import json
+    print(json.dumps(result, indent=4));
+  elif $parsed==0:
+    applier = Applier();
+    result = applier.get_existing_config_xml();
+    print(result);
+  elif $parsed==-1:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       xmlconfig = m.get().data_xml
+       print(xmlconfig);
+  elif $parsed==-1.1:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       xmlconfig = m.get(filter=('subtree', '$arg1')).data_xml
+       print(xmlconfig);
+  elif $parsed==-1.5:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       #xmlconfig = m.get_config(source='running', filter=('subtree', '<configurationx/>')).data_xml
+       xmlconfig = m.get_config(source='running').data_xml
+       print(xmlconfig);
+  elif $parsed==-1.6:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       xmlconfig = m.get_state(source='running').data_xml
+       print(xmlconfig);
+  elif $parsed==-2:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       for item in m.client_capabilities:
+          print(item)
+  elif $parsed==-3:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       for item in m.server_capabilities:
+          print(item)
+  elif $parsed==-4:
+    from ncclient import manager
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       #xmlconfig = m.get_schema(identifier="nokia-conf")
+       #xmlconfig = m.get_schema(identifier="nokia-types-filter")
+       xmlconfig = m.get_schema(identifier="$arg1")
+       print(xmlconfig);
+  elif $parsed==-5:
+    from ncclient import manager
+    from ncclient.xml_ import to_ele
+    with manager.connect(host=settings.NETCONF_DEVICE, port=settings.NETCONF_PORT, username=settings.NETCONF_USER, password=settings.NETCONF_PASS, hostkey_verify=False) as m:
+       print("\n\nstart:")
+       #xmlconfig = m.get_data(datastore='xxx').data_xml
+       #xmlconfig = m.get_schema(identifier="nokia-conf", version="2023-05-19")
+       #xmlconfig = m.get_schema(identifier="nokia-conf")
+       #xmlconfig = m.get(filter=('subtree', '<top/>'))
+       #xmlconfig = m.get_data(xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-nmda", datastore='ds:operational').data_xml
+       #xmlconfig = m.get_data(xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring").data_xml
+       #xmlconfig = m.get('<filter> <netconf-state xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring"/> </filter>')
+       #xmlconfig = m.get('<filter type="subtree"> <netconf-state /> </filter>')
+       test_rpc = """
+         <nc:get-data xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0" >
+         </nc:get-data>
+        """ % (
+        )
+       test_rpc = '<ncm:get-schema xmlns:ncm="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring"><ncm:identifier>nokia-types-filter</ncm:identifier></ncm:get-schema>'
+       test_rpc = '<ncm:get xmlns:ncm="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring"><ncm:identifier>nokia-types-filter</ncm:identifier></ncm:get>'
+       # https://documentation.nokia.com/sr/22-10/books/system-management/netconf-system-management-1.html
+       test_rpc = '<get-data xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-nmda" xmlns:ds="urn:ietf:params:xml:ns:yang:ietf-datastores"> <datastore>ds:operational</datastore> <with-origin/> </get-data>'
+       rpcreply = m.dispatch(to_ele(test_rpc))
+       print(rpcreply)
+else:
+  retriever = PR0.Retriever(); 
+  if $parsed==1:
+    result = retriever.retrieve_current_routes();
+    from pprint import pprint
+    #pprint(result);
+    #result = [route.__dict__ for route in result];
+    pprint(result);
+  elif $parsed==2:
+    result = retriever.retrieve_current_routes();
+    #result = [route.__dict__ for route in result];
+    import json
+    print(json.dumps(result, indent=4));
+  else:
+    result = retriever.fetch_raw();
+    print(result);
+
+EOF
+

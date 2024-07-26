@@ -564,6 +564,12 @@ NETCONF_PORT = 830
 
 ##############################################################################
 ##############################################################################
+# generic mitigation statistics support
+
+MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS="mitigation_stats_collector_specific_junos_snmp"
+
+##############################################################################
+##############################################################################
 # SNMP statistic fetching
 
 # Statistics polled via SNMP:
