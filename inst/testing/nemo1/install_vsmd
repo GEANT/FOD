@@ -1,0 +1,206 @@
+#!/bin/bash
+
+#############################################################################
+# vsmd deps0 (taks long time to run, not depending on python)
+
+/nemo-all/install_vsmd_deps0
+
+if [ "$1" = "--stage1" ]; then
+  exit
+fi
+
+##############################################################################
+# 
+
+apt-get -yyy install python3
+if python3 --version | grep -q 3.9; then
+  apt-get -yyy install python3-daemon
+fi
+
+#(
+#  set -x
+#  set -e
+#  cd /nemo-all/nemo-vsmd/
+#  if [ ! -d venv ]; then
+#     virtualenv venv/
+#  fi
+#  . venv/bin/activate
+#  pip
+#)
+#exit
+
+##############################################################################
+# setup mitigated-vsmd certs
+
+if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+  /nemo-all/install_vsmd_certs
+fi
+
+##############################################################################
+# setup local ssh cli jump host (in ~freerouter) and setup freertr stats functionality there
+
+apt-get -yyy install openssh-server
+
+sed -i 's/^PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_config
+
+systemctl enable ssh
+systemctl start ssh
+
+useradd -m freerouter
+
+mkdir -p /home/freerouter/bin
+chown freerouter: /home/freerouter/bin
+
+if [ ! -f /home/freerouter/bin/test1 ]; then
+  cat > /home/freerouter/bin/test1 <<EOF
+#!/bin/sh
+echo "Hello" 
+EOF
+  chmod +x /home/freerouter/bin/test1
+fi
+
+if [ ! -f /home/freerouter/bin/rare ]; then
+  cat > /home/freerouter/bin/rare <<EOF
+#!/bin/sh
+echo "Hello" # TODO: use freertr stats script instead
+
+#exec python3 ~freerouter/stats.py
+
+{ echo "show policy-map flowspec CORE ipv4"; echo exit; } | \
+        netcat 10.197.36.3 23 | \
+        awk '/^seq / { start=1; } /^311ba8eb5ac2/ { start=0; } start { print $0; }' RS="[\n\r]+" |  \
+        python3 ~freerouter/stats.py
+
+EOF
+  chmod +x /home/freerouter/bin/rare
+fi
+
+cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/bin/rare /home/freerouter/bin/
+cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/stats.py /home/freerouter/
+cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/template_result.txt /home/freerouter/
+
+mkdir -p /home/freerouter/templates/
+cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/templates/template.txt /home/freerouter/templates/
+
+#!/bin/sh
+
+#echo "Hello" # TODO: use freertr stats script instead
+
+mkdir -p /home/freerouter/.ssh/
+chown freerouter: /home/freerouter/.ssh/
+chmod og-rx /home/freerouter/.ssh/
+
+if [ ! -f /root/.ssh/id_rsa ]; then
+  ssh-keygen -t rsa -b 2048
+fi
+
+#cat /root/.ssh/id_rsa.pub >>/home/freerouter/.ssh/authorized_keys
+cat /root/.ssh/id_rsa.pub >/home/freerouter/.ssh/authorized_keys
+
+# needs PermitUserEnvironment in /etc/ssh/sshd_config :
+echo "PATH=/home/freerouter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" > /home/freerouter/.ssh/environment
+chown freerouter: /home/freerouter/.ssh/environment
+
+#ssh -y freerouter@172.18.0.1 ./test1
+ssh -y freerouter@172.18.0.1 test1
+
+
+
+
+##############################################################################
+# init vsmd virtualenv for python deps
+
+cd /nemo-all/nemo-vsmd/
+
+if [ ! -d venv ]; then
+   echo "no venv found, initing new one" 1>&2
+   virtualenv venv
+else
+  ( 
+    echo "checking existing venv" 1>&2
+    # check for broken venv or venv inconsistent with OS python installation
+    . venv/bin/activate
+    if ! pip --version; then # is venv pip broken?
+      echo "existing venv is broken, removing it" 1>&2
+      rm -rf venv/
+      echo "initing new venv" 1>&2
+      virtualenv venv
+    fi
+  )
+fi
+
+##############################################################################
+# offrampctl virtualenv for python deps (use shared venv with vsmd for now)
+
+(
+  . /nemo-all/nemo-vsmd/venv/bin/activate
+  pip install -r /nemo-all/nemo-offrampctl/requirements.txt
+)
+
+mkdir -p /opt/offrampctl/
+cp -av /nemo-all/vsmd-rootfs/opt/offrampctl/offrampctl /opt/offrampctl/
+
+##############################################################################
+# countermeasurecontrol virtualenv for python deps (use shared venv with vsmd for now)
+
+(
+  . /nemo-all/nemo-vsmd/venv/bin/activate
+  pip install -r /nemo-all/nemo-countermeasurectl/requirements.txt
+)
+
+mkdir -p /opt/countermeasure/
+cp -av /nemo-all/vsmd-rootfs/opt/countermeasure/countermeasure /opt/countermeasure/
+
+##############################################################################
+# vsmd python deps
+
+. venv/bin/activate
+
+#if python3 --version | grep -q 3.9 && ! pip --version; then # is venv pip broken?
+#  rm -f venv/bin/pip 
+#  hash -r
+#  type -p pip
+#fi
+#type -p pip
+
+pip install -r requirements.txt 
+
+export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
+
+##############################################################################
+# vsmd conf setup
+
+mkdir -p /services/etc/nemo/
+
+if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
+
+  if [ -f /nemo-all/nemo.conf.vsmd.use ]; then
+    echo "using existing /nemo-all/nemo.conf.vsmd.use for /services/etc/nemo/nemo.conf; so also assuming vsmd cerst already inited" 1>&2
+    cp -vf ../nemo.conf.vsmd.use /services/etc/nemo/nemo.conf
+  else
+    #touch /services/etc/nemo/nemo.conf
+    #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
+    #
+    #cp -vf ./doc/nemo.conf.example /services/etc/nemo/nemo.conf
+    #
+    # ./nemo.conf.vsmd
+    echo "using default /nemo-all/nemo.conf.vsmd for /services/etc/nemo/nemo.conf" 1>&2
+    cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
+
+    if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+      echo "initing vsmd certs and related conf" 1>&2
+      /nemo-all/install_vsmd_certs
+    fi
+
+  fi
+fi
+
+##############################################################################
+# vsmd db
+
+if [ ! -f /services/data/vsmd/vsmd.sqlite ]; then
+  mkdir -p /services/data/vsmd/
+  touch /services/data/vsmd/vsmd.sqlite
+fi
+
+##############################################################################

@@ -1,6 +1,10 @@
 [vsmd]
-countermeasurectl: /opt/countermeasure/countermeasure.py
-offrampctl: /bin/echo
+
+countermeasurectl: /opt/countermeasure/countermeasure
+
+#offrampctl: /bin/echo
+offrampctl: /opt/offrampctl/offrampctl
+
 flowspec_redirect: 65023:172
 
 #rpc_host: localhost
@@ -42,7 +46,8 @@ rpc_port: 3237
 [offrampctl]
 router: rare
 ssh_username: freerouter
-ssh_keyfile: /services/etc/nemo/id_rsa
+#ssh_keyfile: /services/etc/nemo/id_rsa
+ssh_keyfile: /root/.ssh/id_rsa
 ssh_proxies: 172.18.0.1
 
 

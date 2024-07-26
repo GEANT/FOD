@@ -1,0 +1,29 @@
+#!/bin/bash
+
+. /nemo-all/env.sh
+
+cd /nemo-all/nemo-vsmd/ || exit 3
+
+if [ ! -f /services/data/vsmd/vsmd.sqlite ]; then
+  mkdir -p /services/data/vsmd/
+  touch /services/data/vsmd/vsmd.sqlite
+fi
+
+echo "vsmd params to configure (in https://localhost:8000/admin/mitigate/vsmd/):"
+echo "name:     vsmd1"
+echo "url:      https://vmsd1:3236/RPC2"
+echo "cafile:   /services/etc/nemo/vmsd1.ca.crt.pem"
+echo "keyfile:  /services/etc/nemo/vmsd1.site.key.pem"
+echo "certfile: /services/etc/nemo/vmsd1.site.crt.pem"
+
+echo TODO: configure /services/etc/nemo/nemo.conf
+echo use ./bin/adm.py OR ./bin/nemo-vsmd
+
+if [ "$1" = "--install_only" ]; then
+  echo "use ./bin/nemo-vsmd to run inside outer container"
+else	
+  exec ./bin/nemo-vsmd --debug "$@"
+fi
+
+
+
