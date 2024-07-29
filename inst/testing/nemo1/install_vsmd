@@ -166,6 +166,9 @@ systemctl enable exabgp
 systemctl restart exabgp
 systemctl status exabgp < /dev/null
 
+tail -30 /run/exabgplog/exabgp.log
+echo
+
 ##############################################################################
 # init vsmd virtualenv for python deps
 
