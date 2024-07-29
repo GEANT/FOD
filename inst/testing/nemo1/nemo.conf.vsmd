@@ -30,9 +30,9 @@ stats_interval: 60
 
 # TODO: replace by actual fingerprint? of cert:
 F13A90C5F2637C6AECF744126D6BE46A27BDACCE: Nemo Testinstanz
-__FINGERPRINT__ : Nemo Testinstanz vmsd1
+__FINGERPRINT__ : NemoTestinstanzVsmd1
 
-[Nemo Testinstanz vsmd1]
+[NemoTestinstanzVsmd1]
 #cidr_ro: 10.0.1.0/24
 #cidr_rw: 127.0.0.0/8
 cidr_ro: 0.0.0.0/0
