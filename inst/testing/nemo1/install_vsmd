@@ -120,6 +120,9 @@ echo
 
 mkdir -p /services/etc/nemo/
 
+(
+cd /nemo-all/nemo-vsmd/
+
 if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
 
   if [ -f /nemo-all/nemo.conf.vsmd.use ]; then
@@ -142,8 +145,7 @@ if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/ne
 
   fi
 fi
-
-
+)
 
 ##############################################################################
 # exabgp install and conf
