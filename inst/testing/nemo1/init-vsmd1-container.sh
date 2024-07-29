@@ -1,6 +1,12 @@
 #!/bin/sh
 #
 
+##
+
+./fix_nemo_detection_containers
+
+##
+
 if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
   /nemo-all/install_vsmd_certs
 fi
@@ -20,3 +26,4 @@ docker run -d \
 	vsmd1
 
 docker exec -ti vsmd1 ./install_and_run_vsmd
+
