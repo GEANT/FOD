@@ -41,7 +41,8 @@ fi
 
 apt-get -yyy install openssh-server
 
-sed -i 's/^#? *PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_config
+#sed -i 's/^#? *PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_config
+sed -i 's/^.*PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_config
 
 systemctl enable ssh
 systemctl start ssh
