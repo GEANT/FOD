@@ -179,6 +179,7 @@ EOF
 
 mkdir -p /services/inst/offrampctl/bin/
 { echo '#!/usr/bin/python3'; cat /nemo-all/nemo-vsmd/doc/example_controller/bin/exabgp_plugin.py; } > /services/inst/offrampctl/bin/exabgp_plugin.py
+patch -R /services/inst/offrampctl/bin/exabgp_plugin.py < /nemo-all/exabgp_plugin.py.patch
 chmod +x /services/inst/offrampctl/bin/exabgp_plugin.py
 
 mkdir -p /run/exabgplog
