@@ -46,6 +46,7 @@ sed -i 's/^.*PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_
 
 systemctl enable ssh
 systemctl restart ssh
+systemctl status ssh < /dev/null
 
 useradd -m freerouter
 
@@ -148,17 +149,22 @@ mkdir -p /services/inst/offrampctl/bin/
 { echo '#!/usr/bin/python3'; cat /nemo-all/nemo-vsmd/doc/example_controller/bin/exabgp_plugin.py; } > /services/inst/offrampctl/bin/exabgp_plugin.py
 chmod +x /services/inst/offrampctl/bin/exabgp_plugin.py
 
-mkdir -p /run/exabgp
-chown exabgp: /run/exabgp
-mkfifo /run/exabgp/exabgp.{in,out}
-chown exabgp: /run/exabgp/exabgp.{in,out}
-chmod 600 /run/exabgp/exabgp.{in,out}
+mkdir -p /run/exabgplog
+chown exabgp: /run/exabgplog
 
-sed -i -e 's#^.*destination *=.*#destination = "/run/exabgp/exabgp.log"#' -e 's#^.*level *=.*#level = DEBUG#' /etc/exabgp/exabgp.env
+sed -i -e 's#^.*destination *=.*#destination = "/run/exabgplog/exabgp.log"#' -e 's#^.*level *=.*#level = DEBUG#' /etc/exabgp/exabgp.env
+
+#mkdir -p /run/exabgp
+#chown exabgp: /run/exabgp
+#mkfifo /run/exabgp/exabgp.{in,out}
+#chown exabgp: /run/exabgp/exabgp.{in,out}
+#chmod 600 /run/exabgp/exabgp.{in,out}
+
 
 # to run exabgp directly: (cd /etc/exabgp/ && exabgp --debug /etc/exabgp/exabgp.conf)
 systemctl enable exabgp
 systemctl restart exabgp
+systemctl status exabgp < /dev/null
 
 ##############################################################################
 # init vsmd virtualenv for python deps
@@ -266,7 +272,7 @@ echo
 /opt/offrampctl/offrampctl start '"flow route source 1.1.1.1/32 destination 10.1.1.1/32 protocol 6 source-port 1 destination-port 1"'
 echo
 
-tail -30 /run/exabgp/exabgp.log
+tail -30 /run/exabgplog/exabgp.log
 echo
 
 ##
