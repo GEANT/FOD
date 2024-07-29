@@ -46,7 +46,7 @@ sed -i 's/^.*PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_
 
 systemctl enable ssh
 systemctl restart ssh
-systemctl status ssh < /dev/null
+systemctl status --no-pager ssh 
 
 useradd -m freerouter
 
@@ -196,7 +196,7 @@ sed -i -e 's#^.*destination *=.*#destination = "/run/exabgplog/exabgp.log"#' -e 
 # to run exabgp directly: (cd /etc/exabgp/ && exabgp --debug /etc/exabgp/exabgp.conf)
 systemctl enable exabgp
 systemctl restart exabgp
-systemctl status exabgp < /dev/null
+systemctl status --no-pager exabgp 
 
 tail -30 /run/exabgplog/exabgp.log
 echo

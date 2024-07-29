@@ -7,6 +7,13 @@
 
 ##
 
+if [ -e /.dockerenv ]; then # sanity check!
+  systemctl disable ssh
+  systemctl stop ssh
+fi
+
+##
+
 if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
   /nemo-all/install_vsmd_certs
 fi
