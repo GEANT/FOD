@@ -115,6 +115,36 @@ ssh -o "StrictHostKeyChecking=no" freerouter@172.18.0.1 true
 ssh -y freerouter@172.18.0.1 test1
 echo
 
+#################################################################################################
+# vsmd conf setup ; conf also needed for offrampctl and countermeasurecontrol and exabgp_plugin
+
+mkdir -p /services/etc/nemo/
+
+if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
+
+  if [ -f /nemo-all/nemo.conf.vsmd.use ]; then
+    echo "using existing /nemo-all/nemo.conf.vsmd.use for /services/etc/nemo/nemo.conf; so also assuming vsmd cerst already inited" 1>&2
+    cp -vf ../nemo.conf.vsmd.use /services/etc/nemo/nemo.conf
+  else
+    #touch /services/etc/nemo/nemo.conf
+    #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
+    #
+    #cp -vf ./doc/nemo.conf.example /services/etc/nemo/nemo.conf
+    #
+    # ./nemo.conf.vsmd
+    echo "using default /nemo-all/nemo.conf.vsmd for /services/etc/nemo/nemo.conf" 1>&2
+    cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
+
+    if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+      echo "initing vsmd certs and related conf" 1>&2
+      /nemo-all/install_vsmd_certs
+    fi
+
+  fi
+fi
+
+
+
 ##############################################################################
 # exabgp install and conf
 
@@ -238,34 +268,6 @@ cp -av /nemo-all/vsmd-rootfs/opt/countermeasure/countermeasure /opt/countermeasu
 pip install -r requirements.txt 
 
 export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
-
-##############################################################################
-# vsmd conf setup ; conf also needed for offrampctl and countermeasurecontrol
-
-mkdir -p /services/etc/nemo/
-
-if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
-
-  if [ -f /nemo-all/nemo.conf.vsmd.use ]; then
-    echo "using existing /nemo-all/nemo.conf.vsmd.use for /services/etc/nemo/nemo.conf; so also assuming vsmd cerst already inited" 1>&2
-    cp -vf ../nemo.conf.vsmd.use /services/etc/nemo/nemo.conf
-  else
-    #touch /services/etc/nemo/nemo.conf
-    #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
-    #
-    #cp -vf ./doc/nemo.conf.example /services/etc/nemo/nemo.conf
-    #
-    # ./nemo.conf.vsmd
-    echo "using default /nemo-all/nemo.conf.vsmd for /services/etc/nemo/nemo.conf" 1>&2
-    cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
-
-    if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-      echo "initing vsmd certs and related conf" 1>&2
-      /nemo-all/install_vsmd_certs
-    fi
-
-  fi
-fi
 
 ##############################################################################
 ##############################################################################
