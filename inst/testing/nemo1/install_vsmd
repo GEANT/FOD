@@ -45,7 +45,7 @@ apt-get -yyy install openssh-server
 sed -i 's/^.*PermitUserEnvironment.*$/PermitUserEnvironment yes/' /etc/ssh/sshd_config
 
 systemctl enable ssh
-systemctl start ssh
+systemctl restart ssh
 
 useradd -m freerouter
 
@@ -96,7 +96,8 @@ chown freerouter: /home/freerouter/.ssh/
 chmod og-rx /home/freerouter/.ssh/
 
 if [ ! -f /root/.ssh/id_rsa ]; then
-  ssh-keygen -t rsa -b 2048
+  #ssh-keygen -t rsa -b 2048
+  ssh-keygen -t rsa -b 2048 -f /root/.ssh/id_rsa -N "" -C "test key" 
 fi
 
 #cat /root/.ssh/id_rsa.pub >>/home/freerouter/.ssh/authorized_keys
@@ -106,6 +107,8 @@ cat /root/.ssh/id_rsa.pub >/home/freerouter/.ssh/authorized_keys
 echo "PATH=/home/freerouter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" > /home/freerouter/.ssh/environment
 chown freerouter: /home/freerouter/.ssh/environment
 
+# import ssh host key
+ssh -o "StrictHostKeyChecking=no" freerouter@172.18.0.1 true
 
 #ssh -y freerouter@172.18.0.1 ./test1
 ssh -y freerouter@172.18.0.1 test1
@@ -212,22 +215,6 @@ mkdir -p /opt/countermeasure/
 cp -av /nemo-all/vsmd-rootfs/opt/countermeasure/countermeasure /opt/countermeasure/
 
 ##############################################################################
-##############################################################################
-
-# when exabgp runs: add example rule: 
-echo
-/opt/offrampctl/offrampctl start '"flow route source 1.1.1.1/32 destination 10.1.1.1/32 protocol 6 source-port 1 destination-port 1"'
-echo
-
-tail -30 /run/exabgp/exabgp.log
-echo
-
-##
-
-ssh -y freerouter@172.18.0.1 rare
-echo
-
-##############################################################################
 # vsmd python deps
 
 . venv/bin/activate
@@ -244,7 +231,7 @@ pip install -r requirements.txt
 export PYTHONPATH="$PYTHONPATH:$PWD/lib/python3/"
 
 ##############################################################################
-# vsmd conf setup
+# vsmd conf setup ; conf also needed for offrampctl and countermeasurecontrol
 
 mkdir -p /services/etc/nemo/
 
@@ -271,6 +258,23 @@ if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/ne
   fi
 fi
 
+##############################################################################
+##############################################################################
+
+# when exabgp runs: add example rule: 
+echo
+/opt/offrampctl/offrampctl start '"flow route source 1.1.1.1/32 destination 10.1.1.1/32 protocol 6 source-port 1 destination-port 1"'
+echo
+
+tail -30 /run/exabgp/exabgp.log
+echo
+
+##
+
+ssh -y freerouter@172.18.0.1 rare
+echo
+
+##############################################################################
 ##############################################################################
 # vsmd db
 
