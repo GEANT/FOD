@@ -41,15 +41,16 @@ def get_nokia_stats():
     """
     global logger
     logger.info("get_nokia_stats(): started")
-    logger.info("get_nokia_stats(): started0")
 
     global option_debug, option_oneshot, option_raw, option_silent
+
     option_debug, \
         option_oneshot, \
         option_raw, \
         option_silent, \
         listen_host, \
-        config_file_path = parse_arguments()
+        config_file_path = True, True, False, False, ("localhost", 12345), 'utils/dfncert/config1.py'
+        #config_file_path = parse_arguments()
     
     logger.info("get_nokia_stats(): started1")
 
@@ -66,7 +67,8 @@ def get_nokia_stats():
         option_silent = option_silent or config_read.get('silent', False)
         listen_host = listen_host or (config_read.get('host', 'localhost'),
                                       config_read.get('port', 12345))
-        config_file_path = parse_arguments()
+        #config_file_path = parse_arguments()
+        config_file_path = 'utils/dfncert/config1.py'
 
     else:
         print(f"Error: Cannot read configuration from {config_file_path}. "
@@ -118,8 +120,9 @@ def get_nokia_stats():
             # Add a NullHandler to suppress output
             logger.addHandler(logging.NullHandler())
     else:
-        if not option_silent:
-            _listloggers()
+        #if not option_silent:
+        #    _listloggers()
+        pass
 
     logger.info("get_nokia_stats(): before creating manager")
     manager = multiprocessing.Manager()
