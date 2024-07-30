@@ -88,7 +88,8 @@ chown freerouter: /home/freerouter/template_result.txt
 mkdir -p /home/freerouter/templates/
 cp -f -v ./nemo-outer/nemo-mitigation/vsmd-rootfs/home/freerouter/templates/template.txt /home/freerouter/templates/
 
-apt-get install -yyq netcat python3-paramiko python3-jinja2
+apt-get install -yyq netcat-traditional
+apt-get install -yyq python3-paramiko python3-jinja2
 
 #!/bin/sh
 
