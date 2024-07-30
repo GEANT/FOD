@@ -126,6 +126,7 @@ def get_nokia_stats():
 
     logger.info("get_nokia_stats(): before creating manager")
     manager = multiprocessing.Manager()
+    logger.info("get_nokia_stats(): after creating manager")
 
     # Create a dictionary of queues for inter-process communication
     message_queues = {router['name']: manager.Queue() for router in ROUTERS}
