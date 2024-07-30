@@ -75,7 +75,10 @@ def get_nokia_stats():
               f"Exiting.")
         #sys.exit()
         return False
-    
+   
+    utils.dfncert.daemon_sum_router.option_oneshot = option_oneshot
+    utils.dfncert.daemon_sum_router.option_raw = option_raw
+ 
     logger.info("get_nokia_stats(): test1")
 
     if not option_silent:
@@ -125,7 +128,13 @@ def get_nokia_stats():
         pass
 
     logger.info("get_nokia_stats(): before creating manager")
-    manager = multiprocessing.Manager()
+    #multiprocessing.set_start_method('spawn')
+    #manager = multiprocessing.Manager()
+
+    import queue
+    #q = queue.Queue()
+    manager = queue
+
     logger.info("get_nokia_stats(): after creating manager")
 
     # Create a dictionary of queues for inter-process communication
@@ -138,12 +147,18 @@ def get_nokia_stats():
         logger.info("get_nokia_stats(): option_oneshot")
 
         router_data = {router['name']: query_router_once(router) for router in ROUTERS}
+
+        logger.info("get_nokia_stats(): option_oneshot: step 2")
         update_timestamps = {router['name']: time.time() for router in ROUTERS}
+
+        logger.info("get_nokia_stats(): option_oneshot: step 3")
         result = make_nokia_output2(ROUTERS,
                                 None,
                                 router_data=router_data,
                                 update_timestamps=update_timestamps,
                                 dont_update=True)
+        logger.info("get_nokia_stats(): option_oneshot: step 4")
+
     else:
     
         logger.info("get_nokia_stats(): !option_oneshot")
@@ -188,27 +203,42 @@ def make_nokia_output2(router_configs, data_queues, router_data=None,
         update_timestamps as provided. Otherwise will update from data_queues.
 
     """
+
+    logger.info("make_nokia_output2(): called")
+
+    global option_oneshot, option_raw
+        
     # Initialize router data storage
     if router_data is None:
         router_data = {router['name']: {} for router in router_configs}
     if update_timestamps is None:
         update_timestamps = {router['name']: 0 for router in router_configs}
+    
+    logger.info("make_nokia_output2(): step 2")
 
     # Process data from each router's queue and update the router data dict
     if not dont_update:
         update_router_data(router_data, update_timestamps, data_queues)
+    
+    logger.info("make_nokia_output2(): step 3")
 
     # Aggregate data from routers into a single dictionary
     aggregated_data = aggregate_data(router_data)
+    
+    logger.info("make_nokia_output2(): step 4")
 
     formatted_data = ""
     if not option_oneshot and not option_raw:
         formatted_data = f"Last Updates: (Timestamp: {time.time()})\n"
         for rname, ts in update_timestamps.items():
             formatted_data += f"    {rname}: {ts}\n"
+    
+    logger.info("make_nokia_output2(): step 5")
 
     # Convert data to the desired output format and send it to the client
     formatted_data += dicts_to_nokia_output(aggregated_data.values())
+    
+    logger.info("make_nokia_output2(): ret")
 
     return formatted_data
 
