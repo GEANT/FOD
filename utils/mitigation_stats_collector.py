@@ -5,7 +5,10 @@
 # ../flowspy/settings.py
 from django.conf import settings
 
-if hasattr(settings, "MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS") and settings.MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS == "mitigation_stats_collector_specific_junos_snmp":
+if hasattr(settings, "MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS") and settings.MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS == "mitigation_stats_collector_specific_nokia":
+  from utils import mitigation_stats_collector_specific_nokia as mitigation_stats_collector_specific_class
+  mitigation_stats_collector_specific = mitigation_stats_collector_specific_class.MitigationStatisticCollectorSpecific_Nokia()
+elif hasattr(settings, "MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS") and settings.MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS == "mitigation_stats_collector_specific_junos_snmp":
   from utils import mitigation_stats_collector_specific_junos_snmp as mitigation_stats_collector_specific_class
   mitigation_stats_collector_specific = mitigation_stats_collector_specific_class.MitigationStatisticCollectorSpecific_JunosSnmp()
 else: # default is junos_snmp for compatibility
