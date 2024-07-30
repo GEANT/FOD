@@ -1,6 +1,0 @@
-#!/bin/bash
-
-./install_vsmd
-
-exec ./run_vsmd "$@"
-

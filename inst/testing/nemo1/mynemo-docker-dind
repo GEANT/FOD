@@ -62,8 +62,8 @@ fi
 #xarg ./mynemo-docker-dind --freertr-console # enter freertr container and open telnet to freertr console
 #xarg ./mynemo-docker-dind --freertr-host1-ping-host2 # enter host1 container and run ping host2
 #xarg ./mynemo-docker-dind --freertr-host2-ping-host1 # enter host2 container and run ping host1
-#xarg ./mynemo-docker-dind --freertr-tshark-netconf # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
-#xarg ./mynemo-docker-dind --nemo-tshark-netconf # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+#xarg ./mynemo-docker-dind --freertr-tshark-netflow # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
+#xarg ./mynemo-docker-dind --nemo-tshark-netflow # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
 #xarg ./mynemo-docker-dind --nemo-get-filename-of-certfile # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
 #xarg ./mynemo-docker-dind --nemo-get-dirname-onhost # show dirname of inside container dir /nemo-all/ as seen from outside on the host
 
@@ -502,13 +502,13 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   set -e
 
-  docker-compose -f docker-compose-freertr-ddos.yml build
+  docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml build
 
-  docker-compose -f docker-compose-freertr-ddos.yml down || true
+  docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml down || true
 
-  docker-compose -f docker-compose-freertr-ddos.yml up -d
+  docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml up -d
 
-  ./docker-compose/freertr_disable_offload.sh
+  ./frnet/docker-compose/freertr_disable_offload.sh
 
 elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open telnet to freertr console
   shift 1
@@ -537,12 +537,12 @@ elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 contain
   docker exec host2 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
   docker exec host2 screen -S ping1 -d -m ping 10.1.10.11
 
-elif [ "$1" = "--freertr-tshark-netconf" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
+elif [ "$1" = "--freertr-tshark-netflow" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
   shift 1
 
   exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3 "$@"
 
-elif [ "$1" = "--nemo-tshark-netconf" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
 
   exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
@@ -565,21 +565,24 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    set -e 
    set -x
 
-   "$0" --all1
+   # build and init nemo-outer container and build and init and run all detection container inside
+   "$0" --all1 
 
+   # init frnet comprising freertr router and host1/host2 test network
    "$0" --freertr-testnet-prep-and-run
    "$0" --freertr-host2-ping-host1.bg
    "$0" --freertr-host1-ping-host2.bg
 
    # test tshark
-   "$0" --nemo-tshark-netconf -a duration:20
+   "$0" --nemo-tshark-netflow -a duration:20
 
-   "$0" --exec ./install_and_run_vsmd --install_only
+   # build and init and "wire" vsmd inner container within nemo outer container
+   "$0" --exec ./mynemo-mitigation-vsmd-install 
 
-   # TODO: install certs for vsmd communication (client side)
-   "$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
-   "$0" --exec cp -vf secrets/nemo-analyse.pem etc/nemo-erkennung/mitigated/cert.pem
-   "$0" --exec cp -vf secrets/nemo-analyse-cachain.pem etc/nemo-erkennung/mitigated/chain.pem
+   ## TODO: install certs for vsmd communication (client side)
+   #"$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
+   #"$0" --exec cp -vf secrets/nemo-analyse.pem etc/nemo-erkennung/mitigated/cert.pem
+   #"$0" --exec cp -vf secrets/nemo-analyse-cachain.pem etc/nemo-erkennung/mitigated/chain.pem
 
    echo
    echo "# logfiles in outer nemo container:" 

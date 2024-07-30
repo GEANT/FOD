@@ -1,0 +1,9 @@
+AFI: {{ afi }}
+Flow :Dest:{{ dest_net }}/{{ dest_mask }},Source:{{ source_net }}/{{ source_mask }},Proto:={{ proto }},DPort:={{ dport }},SPort:={{ sport }}
+  Actions                : discard
+  Synced:                 TRUE
+  Last Error:             0:No error
+  Match Unsupported:      None
+  Statistics                     (packets/bytes)
+   Matched           :      {{ match_left }}/{{ match_right }}
+  Dropped           :      {{ drop_left }}/{{ drop_right }}

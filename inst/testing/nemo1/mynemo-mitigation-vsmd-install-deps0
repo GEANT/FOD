@@ -5,6 +5,7 @@ if [ ! -f /.nemo_vsmd-deps0_setuped ]; then
   set -x
   set -e	
   
+  apt-get update -yyy  
   apt-get -yyy install xtables-addons-dkms xtables-addons-common exabgp linux-headers-amd64
   
   export PERL_MM_USE_DEFAULT=1
@@ -18,7 +19,8 @@ if [ ! -f /.nemo_vsmd-deps0_setuped ]; then
     /usr/libexec/xtables-addons/xt_geoip_dl
     /usr/libexec/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip
   )
-  
+
+  apt-get update -yyy  
   apt-get -yyy install virtualenv
   
   touch /.nemo_vsmd-deps0_setuped

@@ -1,0 +1,13 @@
+#FROM debian:latest
+FROM debian:stable
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y docker.io docker-compose jq pwgen gawk
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
+
+#COPY . /nemo-all
+COPY . /nemo-all
+
+WORKDIR /nemo-all
+CMD [ "/sbin/init" ]
+

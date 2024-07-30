@@ -3,7 +3,7 @@
 #############################################################################
 # vsmd deps0 (taks long time to run, not depending on python)
 
-/nemo-all/install_vsmd_deps0
+./mynemo-mitigation-vsmd-install-deps0
 
 if [ "$1" = "--stage1" ]; then
   exit
@@ -11,6 +11,8 @@ fi
 
 ##############################################################################
 # 
+
+apt-get update -yyy
 
 apt-get -yyy install python3
 if python3 --version | grep -q 3.9; then
@@ -33,7 +35,7 @@ fi
 # setup mitigated-vsmd certs
 
 if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-  /nemo-all/install_vsmd_certs
+  ./mynemo-mitigation-init-vsmd-certs.sh
 fi
 
 ##############################################################################
@@ -77,14 +79,14 @@ EOF
   chmod +x /home/freerouter/bin/rare
 fi
 
-cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/bin/rare /home/freerouter/bin/
-cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/stats.py /home/freerouter/
-cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/template_result.txt /home/freerouter/
+cp -f -v ./nemo-outer/nemo-mitigation/vsmd-rootfs/home/freerouter/bin/rare /home/freerouter/bin/
+cp -f -v ./nemo-outer/nemo-mitigation/vsmd-rootfs/home/freerouter/stats.py /home/freerouter/
+cp -f -v ./nemo-outer/nemo-mitigation/vsmd-rootfs/home/freerouter/template_result.txt /home/freerouter/
 
 chown freerouter: /home/freerouter/template_result.txt
 
 mkdir -p /home/freerouter/templates/
-cp -f -v /nemo-all/vsmd-rootfs/home/freerouter/templates/template.txt /home/freerouter/templates/
+cp -f -v ./nemo-outer/nemo-mitigation/vsmd-rootfs/home/freerouter/templates/template.txt /home/freerouter/templates/
 
 apt-get install -yyq netcat python3-paramiko python3-jinja2
 
@@ -121,13 +123,14 @@ echo
 mkdir -p /services/etc/nemo/
 
 (
-cd /nemo-all/nemo-vsmd/
+#cd /nemo-all/nemo-vsmd/
 
-if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
+if [ ! -f /services/etc/nemo/nemo.conf -o /nemo-all/nemo.conf.vsmd -nt /services/etc/nemo/nemo.conf ]; then
 
-  if [ -f /nemo-all/nemo.conf.vsmd.use ]; then
+  # ./nemo-outer/nemo-mitigation/nemo.conf.vsmd
+  if [ -f ./nemo-outer/nemo-mitigation/nemo.conf.vsmd.use ]; then
     echo "using existing /nemo-all/nemo.conf.vsmd.use for /services/etc/nemo/nemo.conf; so also assuming vsmd cerst already inited" 1>&2
-    cp -vf ../nemo.conf.vsmd.use /services/etc/nemo/nemo.conf
+    cp -vf ./nemo-outer/nemo-mitigation/nemo.conf.vsmd.use /services/etc/nemo/nemo.conf
   else
     #touch /services/etc/nemo/nemo.conf
     #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
@@ -136,11 +139,11 @@ if [ ! -f /services/etc/nemo/nemo.conf -o ../nemo.conf.vsmd -nt /services/etc/ne
     #
     # ./nemo.conf.vsmd
     echo "using default /nemo-all/nemo.conf.vsmd for /services/etc/nemo/nemo.conf" 1>&2
-    cp -vf ../nemo.conf.vsmd /services/etc/nemo/nemo.conf
+    cp -vf ./nemo-outer/nemo-mitigation/nemo.conf.vsmd /services/etc/nemo/nemo.conf
 
     if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
       echo "initing vsmd certs and related conf" 1>&2
-      /nemo-all/install_vsmd_certs
+      ./mynemo-mitigation-init-vsmd-certs.sh
     fi
 
   fi
@@ -179,7 +182,7 @@ EOF
 
 mkdir -p /services/inst/offrampctl/bin/
 { echo '#!/usr/bin/python3'; cat /nemo-all/nemo-vsmd/doc/example_controller/bin/exabgp_plugin.py; } > /services/inst/offrampctl/bin/exabgp_plugin.py
-patch -R /services/inst/offrampctl/bin/exabgp_plugin.py < /nemo-all/exabgp_plugin.py.patch
+patch -R /services/inst/offrampctl/bin/exabgp_plugin.py < ./nemo-outer/nemo-mitigation/exabgp_plugin.py.patch
 chmod +x /services/inst/offrampctl/bin/exabgp_plugin.py
 
 mkdir -p /run/exabgplog
@@ -243,7 +246,7 @@ fi
 )
 
 mkdir -p /opt/offrampctl/
-cp -av /nemo-all/vsmd-rootfs/opt/offrampctl/offrampctl /opt/offrampctl/
+cp -av /nemo-all/nemo-outer/nemo-mitigation/vsmd-rootfs/opt/offrampctl/offrampctl /opt/offrampctl/
 
 ##############################################################################
 # countermeasurecontrol virtualenv for python deps (use shared venv with vsmd for now)
@@ -254,7 +257,7 @@ cp -av /nemo-all/vsmd-rootfs/opt/offrampctl/offrampctl /opt/offrampctl/
 )
 
 mkdir -p /opt/countermeasure/
-cp -av /nemo-all/vsmd-rootfs/opt/countermeasure/countermeasure /opt/countermeasure/
+cp -av /nemo-all/nemo-outer/nemo-mitigation/vsmd-rootfs/opt/countermeasure/countermeasure /opt/countermeasure/
 
 ##############################################################################
 # vsmd python deps

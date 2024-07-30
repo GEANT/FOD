@@ -1,0 +1,6 @@
+#!/bin/sh
+
+#echo "Hello" # TODO: use freertr stats script instead
+
+python3 ~freerouter/stats.py
+

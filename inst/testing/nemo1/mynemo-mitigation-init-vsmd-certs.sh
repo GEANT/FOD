@@ -7,7 +7,7 @@ if docker info; then
   (
     cd /nemo-all/secrets/ || exit 1
     rm vmsd1.*
-    CERT_HOSTNAME_FULL=vmsd1 make -f /nemo-all/Makefile.cert vmsd1.site.crt.pem
+    CERT_HOSTNAME_FULL=vmsd1 make -f /nemo-all/nemo-outer/Makefile.vsmdcert vmsd1.site.crt.pem
   )
   
   chmod ugo+r /nemo-all/secrets/vmsd1.*
@@ -33,8 +33,8 @@ if docker info; then
   # ./nemo.conf.vsmd
   sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /services/etc/nemo/nemo.conf
   
-  cp /nemo-all/nemo.conf.vsmd /nemo-all/nemo.conf.vsmd.use
-  sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /nemo-all/nemo.conf.vsmd.use
+  cp /nemo-all/nemo-outer/nemo-mitigation/nemo.conf.vsmd /nemo-all/nemo-outer/nemo-mitigation/nemo.conf.vsmd.use
+  sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /nemo-all/nemo-outer/nemo-mitigation/nemo.conf.vsmd.use
 
 else
 

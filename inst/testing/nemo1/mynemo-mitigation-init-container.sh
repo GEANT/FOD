@@ -3,7 +3,7 @@
 
 ##
 
-./fix_nemo_detection_containers
+./mynemo-mitigation-fix-detection-containers.sh
 
 ##
 
@@ -15,7 +15,7 @@ fi
 ##
 
 if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-  /nemo-all/install_vsmd_certs
+  ./mynemo-mitigation-init-vsmd-certs.sh
 fi
 
 ##
@@ -27,7 +27,7 @@ shift 1
 
 ##
 
-docker build -f Dockerfile-vsmd1 -t "$container_name" . 
+docker build -f ./Dockerfile-vsmd1 -t "$container_name" . 
 
 docker stop "$container_name"
 docker rm "$container_name"
@@ -39,5 +39,5 @@ docker run -d \
 	--mount type=bind,source=/nemo-all/secrets/,target=/nemo-all/secrets/ \
 	"$container_name"
 
-docker exec -ti "$container_name" ./install_and_run_vsmd
+docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
 
