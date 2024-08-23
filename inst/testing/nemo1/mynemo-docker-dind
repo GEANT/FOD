@@ -462,6 +462,8 @@ elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--a
   done #arg loop
   #arg
 
+  set -e
+
   "$0" --docker-build "${pass_args1[@]}"
   "$0" --run-setup-inside "$@" #arg rest
 
@@ -477,6 +479,8 @@ elif [ "$1" = "--build-and-bash" ]; then #arg #
      fi
   done #arg loop
   #arg
+  
+  set -e
 
   "$0" --docker-build "${pass_args1[@]}"
   "$0" --bash "$@" #arg rest
@@ -577,7 +581,8 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    "$0" --nemo-tshark-netflow -a duration:20
 
    # build and init and "wire" vsmd inner container within nemo outer container
-   "$0" --exec ./mynemo-mitigation-vsmd-install 
+   #"$0" --exec ./mynemo-mitigation-vsmd-install 
+   "$0" --exec ./mynemo-mitigation-init-container.sh
 
    ## TODO: install certs for vsmd communication (client side)
    #"$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
