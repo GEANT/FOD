@@ -171,13 +171,13 @@ class MitigationStatisticCollectorSpecific_Base():
   
   def poll_mitigation_statistics(self):
     try:
-      logger.debug("poll_mitigation_statistics(): polling SNMP statistics.")
+      logger.debug("poll_mitigation_statistics(): polling mitigation statistics.")
   
       # first, determine current ts, before calling get_snmp_stats
       now = datetime.now()
       nowstr = now.isoformat()
       
-      logger.info("poll_mitigation_statistics(): polling SNMP statistics nowstr="+str(nowstr))
+      logger.info("poll_mitigation_statistics(): polling mitigation statistics nowstr="+str(nowstr))
   
       # get new data
       try:
@@ -209,7 +209,7 @@ class MitigationStatisticCollectorSpecific_Base():
       except Exception as e:
         logger.error("poll_mitigation_statistics(): got exception while trying to access history[_last_poll_time]: "+str(e))
         last_poll_no_time=None
-      logger.debug("poll_mitigation_statistics(): junossnmpstats: last_poll_no_time="+str(last_poll_no_time))
+      logger.debug("poll_mitigation_statistics(): last_poll_no_time="+str(last_poll_no_time))
       history['_last_poll_no_time']=nowstr
   
       try:
