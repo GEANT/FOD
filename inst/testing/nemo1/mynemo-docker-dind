@@ -400,6 +400,17 @@ elif [ "$1" = "--bash" ]; then #arg
   
   (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; exec bash "$@"' -- "$@")
 
+elif [ "$1" = "--bash-vsmd1" ]; then #arg
+  shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
+
+  if docker ps | grep -q vsmd1; then 
+    exec docker exec -ti vsmd1 "$@"
+  else
+    exec "$0" --exec docker exec -ti vsmd1 "$@"
+  fi
+
 elif [ "$1" = "--docker" ]; then #arg
   shift 1
 
