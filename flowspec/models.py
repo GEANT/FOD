@@ -33,7 +33,7 @@ import datetime
 import json
 from peers.models import PeerRange, Peer
 
-from utils.route_spec_utils import create_junos_name
+from utils.route_spec_utils import get_rulename_by_ruleparams__generic
 from utils.flowspec_utils import map__ip_proto__for__ip_version__from_flowspec
 
 #import flowspec.iprange_match
@@ -814,8 +814,9 @@ class Route(models.Model):
             return False
 
     @property
-    def junos_name(self):
-        return create_junos_name(self)
+    #def junos_name(self):
+    def get_rulename_by_ruleparams__generic(self):
+        return get_rulename_by_ruleparams__generic(self)
 
     def get_absolute_url(self):
         return reverse('route-details', kwargs={'route_slug': self.name})

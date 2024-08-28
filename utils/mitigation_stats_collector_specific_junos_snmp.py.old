@@ -26,7 +26,7 @@ import time
 import re
 
 from flowspec.models import Route
-from utils.route_spec_utils import create_junos_name
+from utils.route_spec_utils import get_rulename_by_ruleparams__generic
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_snmpstats.log", False)
@@ -452,7 +452,7 @@ def poll_snmp_statistics():
             #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
             #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
             #logger.info("poll_snmp_statistics(): STATISTICS_PER_RULE ruleobj.status="+rule_status)
-            flowspec_params_str=create_junos_name(ruleobj)
+            flowspec_params_str=get_rulename_by_ruleparams__generic(ruleobj)
             logger.debug("poll_snmp_statistics(): STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))
 
             if rule_status=="ACTIVE":

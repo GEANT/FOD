@@ -258,7 +258,13 @@ def get_frag(rule):
         result = 'frag'+tmp+','
     return result
 
-def create_junos_name(rule):
+
+def get_rulename_by_ruleparams__generic(rule):
+    # for now, keep junossnmp style ruleparams strings
+    return get_rulename_by_ruleparams__junossnmp(rule)
+
+#def create_junos_name(rule):
+def get_rulename_by_ruleparams__junossnmp(rule):
 
     ip_version = rule.ip_version()
 
@@ -273,7 +279,7 @@ def create_junos_name(rule):
     # protocols
     protocol_spec = rule.protocol.all()
     protocol_num = get_protocols_numbers(protocol_spec, ip_version)
-    logger.debug("junos::create_junos_name(): protocol_spec="+str(protocol_spec)+" protocol_num="+str(protocol_num))
+    logger.debug("get_rulename_by_ruleparams__junossnmp(): protocol_spec="+str(protocol_spec)+" protocol_num="+str(protocol_num))
 
     name += protocol_num
 
