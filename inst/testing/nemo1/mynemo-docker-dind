@@ -20,7 +20,10 @@ fi
 
 ##
 
-#xarg usage: ./mynemo-docker-dind ... :
+#xarg usag-: ./mynemo-docker-dind ... :
+#xarg 
+#xarg 0: all-in-one build-and run (combines --all1, --freertr-testnet-prep-and-run, --setup-and-run-vsmd-container):
+#xarg ./mynemo-docker-dind --allx # all-in-one mode
 #xarg 
 #xarg 1: build+start outer container in general + run setup inside:
 #xarg ./mynemo-docker-dind --build-and-setup [ --build-without-data ] [ --prune ] [ --pre-setup-shcode " SHELL_CODE " ] [ --curl | --w3m | --wget | --notest ] [ --log1 | --log0 | --logall | --nologcheck ] [ --verbose ... { arguments to setup.sh } ]
@@ -55,6 +58,8 @@ fi
 #xarg ./mynemo-docker-dind --exec ... # run command in outer container
 #xarg ./mynemo-docker-dind --docker ... # run docker command in outer container # e.g. --docker ps
 #xarg ./mynemo-docker-dind --docker.containerids # get inside container ids
+#xarg 
+#xarg  ./mynemo-docker-dind --setup-and-run-vsmd-container # setup and run vsmd inner container; finally run vsmd in foreground
 #xarg 
 #xarg 3. related to freertr+host1+host2 docker-compose:
 #xarg 
@@ -512,6 +517,15 @@ elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
 
 #arg
 
+elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner docker container, setup everything for and in it, run vsmd in foreground; requieres setup and running outer container
+  shift 1
+
+  # build and init and "wire" vsmd inner container within nemo outer container
+   #"$0" --exec ./mynemo-mitigation-vsmd-install 
+   "$0" --exec ./mynemo-mitigation-init-container.sh
+
+#arg
+
 elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docker-compose for freertr+host1+host2 (started in back-ground)
   shift 1
 
@@ -593,7 +607,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    # build and init and "wire" vsmd inner container within nemo outer container
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
-   "$0" --exec ./mynemo-mitigation-init-container.sh
+   #"$0" --exec ./mynemo-mitigation-init-container.sh
+   "$0" --setup-and-run-vsmd-container
+
+   # currently: not reached, as precedingly called mode "--setup-and-run-vsmd-container" will continue to run in foreground (actually vsmd component is running so for now)
 
    ## TODO: install certs for vsmd communication (client side)
    #"$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
