@@ -299,7 +299,7 @@ class MitigationStatisticCollectorSpecific_Base():
               #logger.info("poll_mitigation_statistics(): STATISTICS_PER_RULE ruleobj.type="+str(type(ruleobj)))
               #logger.info("poll_mitigation_statistics(): STATISTICS_PER_RULE ruleobj.id="+str(rule_id))
               #logger.info("poll_mitigation_statistics(): STATISTICS_PER_RULE ruleobj.status="+rule_status)
-              #flowspec_params_str=create_junos_name(ruleobj)
+              #flowspec_params_str=get_rulename_by_ruleparams__generic(ruleobj)
               flowspec_params_str=self.get_statistic_data_rule_key(ruleobj)
   
               logger.debug("poll_mitigation_statistics(): STATISTICS_PER_RULE flowspec_params_str="+str(flowspec_params_str))

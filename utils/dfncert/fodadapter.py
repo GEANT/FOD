@@ -182,7 +182,7 @@ def get_nokia_stats():
         for process in router_processes:
             process.join()
 
-        return result
+    return result
 
 def make_nokia_output2(router_configs, data_queues, router_data=None,
                       update_timestamps=None, dont_update=False):

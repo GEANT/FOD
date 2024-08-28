@@ -10,7 +10,7 @@ import time
 import re
 
 from flowspec.models import Route
-from utils.route_spec_utils import create_junos_name
+from utils.route_spec_utils import get_rulename_by_ruleparams__generic
 
 from utils.mitigation_stats_collector_specific_base import MitigationStatisticCollectorSpecific_Base
 
@@ -41,5 +41,5 @@ class MitigationStatisticCollectorSpecific_Nokia(MitigationStatisticCollectorSpe
   
   # to be overriden in sub classes
   #def get_statistic_data_rule_key(self, ruleobj):
-  #   return create_junos_name(ruleobj)
+  #   return get_rulename_by_ruleparams__generic(ruleobj)
  

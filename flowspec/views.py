@@ -1309,7 +1309,7 @@ def routestats(request, route_slug):
         with open(settings.SNMP_TEMP_FILE, "r") as f:
             res = json.load(f)
         f.close()
-        routename = create_junos_name(route)
+        routename = get_rulename_by_ruleparams__generic(route)
         route_id = str(route.id)
         if not res:
             raise Exception("No data stored in the existing file.")
