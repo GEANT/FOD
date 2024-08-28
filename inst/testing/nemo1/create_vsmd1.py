@@ -27,11 +27,25 @@ django.setup()
 from nemolib.mitigate import models
 #from nemoerkennung.mitigated import main
 
-models.VSMD.objects.create(
+certfile1="/services/etc/nemo/vmsd1.site.crt.pem"
+keyfile1="/services/etc/nemo/vmsd1.site.key.pem"
+cafile1="/services/etc/nemo/vmsd1.ca.crt.pem"
+
+vsmd1 = models.VSMD.objects.create(
             name="vsmd1",
             url="https://vmsd1:3236/RPC2",
-            certfile="/services/etc/nemo/vmsd1.site.crt.pem",
-            keyfile="/services/etc/nemo/vmsd1.site.key.pem",
-            cafile="/services/etc/nemo/vmsd1.ca.crt.pem"
+            certfile=certfile1,
+            keyfile=keyfile1,
+            cafile=cafile1
         )
+
+vsmd1.active_certfile = certfile1
+vsmd1.active_keyfile = keyfile1
+vsmd1.cafile = cafile1
+vsmd1.passive_certfile = certfile1
+vsmd1.passive_keyfile = keyfile1
+vsmd1.use_active = True
+vsmd1.save()
+
+
 
