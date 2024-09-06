@@ -547,7 +547,7 @@ elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open
 elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container and run ping host2
   shift 1
 
-  exec docker exec -ti host1 ping 10.2.10.12
+  exec docker exec -ti host1 ping "$@" 10.2.10.12
 
 elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 container and run ping host2
   shift 1
@@ -558,7 +558,7 @@ elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 contain
 elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container and run ping host1
   shift 1
 
-  exec docker exec -ti host2 ping 10.1.10.11
+  exec docker exec -ti host2 ping "$@" 10.1.10.11 
 
 elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 container and run ping host1
   shift 1
@@ -570,6 +570,38 @@ elif [ "$1" = "--freertr-tshark-netflow" ]; then #arg # enter freertr container 
   shift 1
 
   exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3 "$@"
+
+elif [ "$1" = "--nemo-ping-freertr" ]; then #arg # enter nemo all container and run ping freertr
+  shift 1
+
+  exec "$0" --exec ping "$@" 10.197.36.3
+
+elif [ "$1" = "--freertr-ping-nemo" ]; then #arg # enter freertri console and run ping nemo all container
+  shift 1
+
+  exec docker exec -ti freertr bash -c '{ echo -e "ping 10.197.36.2 vrf CORE"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323'
+
+elif [ "$1" = "--network-connections-test" ]; then #arg # enter freertri console and run ping nemo all container
+  shift 1
+
+  echo "# host1=10.1.10.11 (via freertr router) to host2=10.2.10.12:" 
+  "$0" --freertr-host1-ping-host2 -c 5
+  echo
+  echo
+
+  echo "# host2=10.2.10.12 (via freertr router) to host1=10.1.10.11:" 
+  "$0" --freertr-host2-ping-host1 -c 5
+  echo
+  echo
+
+  echo "# nemo-all=10.197.36.2 (direct) to freertr=10.197.36.3:" 
+  "$0" --nemo-ping-freertr -c 5
+  echo
+  echo
+
+  echo "# freertr=10.197.36.3 (direct) to nemo-all=10.197.36.2 (freertr-specific output):" 
+  "$0" --freertr-ping-nemo
+  echo
 
 elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
