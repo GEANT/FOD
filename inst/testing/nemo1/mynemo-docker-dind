@@ -694,6 +694,10 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
   echo
 
+  echo "# freertr container: freertr interface to nemo-all (arp):"
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' #| awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
+  echo
+
   echo "# nemo-all container: OS interface to freertr (arp):"
   "$0" --exec arp -a -n -i eth1
   echo
