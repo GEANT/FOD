@@ -654,6 +654,10 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet1"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
   echo
 
+  echo "# freertr container: freertr interface to host1 (arp):"
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet1"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^mac/ { start=1; } /^\s*$/ { start=0; } start { print; }'
+  echo
+
   echo "# host1 container: OS interface to freertr (arp):"
   "$0" --exec-host1 arp -a -n -i eth1
   echo
@@ -670,8 +674,12 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   "$0" --exec-freertr ifconfig | grep -E '(^eth[2])|(ether)' | tail -n 2
   echo
 
-  echo "# freertr container: freertr interface to nemo:"
+  echo "# freertr container: freertr interface to host2:"
   docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet2"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
+  echo
+
+  echo "# freertr container: freertr interface to host2 (arp):"
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet2"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^mac/ { start=1; } /^\s*$/ { start=0; } start { print; }'  
   echo
 
   echo "# host2 container: OS interface to freertr (arp):"
@@ -695,7 +703,7 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   echo
 
   echo "# freertr container: freertr interface to nemo-all (arp):"
-  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' #| awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^mac/ { start=1; } /^\s*$/ { start=0; } start { print; }'
   echo
 
   echo "# nemo-all container: OS interface to freertr (arp):"
