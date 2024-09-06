@@ -643,37 +643,38 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
 
   ##
 
-  echo "#host1:"
+  echo "# host1:"
   echo
 
-  echo "#freertr-container: OS interface to host1 (ether):"
+  echo "# freertr container: OS interface to host1 (ether):"
   "$0" --exec-freertr ifconfig | grep -E '(^eth[1])|(ether)' | tail -n 2
   echo
 
-  echo "#freertr-container: freertr interface to host1:"
+  echo "# freertr container: freertr interface to host1:"
   docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet1"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
   echo
 
-  echo "#host1 container: OS interface to freertr (arp):"
+  echo "# host1 container: OS interface to freertr (arp):"
   "$0" --exec-host1 arp -a -n -i eth1
   echo
 
   echo "-----------------------------------------"
+  echo
 
   ##
 
-  echo "#host2:"
+  echo "# host2:"
   echo
 
-  echo "#freertr-container: OS interface to host2 (ether):"
+  echo "# freertr container: OS interface to host2 (ether):"
   "$0" --exec-freertr ifconfig | grep -E '(^eth[2])|(ether)' | tail -n 2
   echo
 
-  echo "#freertr-container: freertr interface to nemo:"
+  echo "# freertr container: freertr interface to nemo:"
   docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet2"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
   echo
 
-  echo "#host2 container: OS interface to freertr (arp):"
+  echo "# host2 container: OS interface to freertr (arp):"
   "$0" --exec-host2 arp -a -n -i eth1
   echo
 
@@ -682,18 +683,18 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
 
   ##
 
-  echo "#nemo-all:"
+  echo "# nemo-all:"
   echo
 
-  echo "#freertr-container: OS interface to nemo-all(ether):"
+  echo "# freertr container: OS interface to nemo-all(ether):"
   "$0" --exec-freertr ifconfig | grep -E '(^eth[3])|(ether)' | tail -n 2
   echo
 
-  echo "#freertr-container: freertr interface to nemo:"
+  echo "# freertr container: freertr interface to nemo-all:"
   docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
   echo
 
-  echo "#nemo-all container: OS interface to freertr (arp):"
+  echo "# nemo-all container: OS interface to freertr (arp):"
   "$0" --exec arp -a -n -i eth1
   echo
 
