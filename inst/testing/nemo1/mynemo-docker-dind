@@ -647,7 +647,7 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   echo
 
   echo "# freertr container: OS interface to host1 (ether):"
-  "$0" --exec-freertr ifconfig | grep -E '(^eth[1])|(ether)' | tail -n 2
+  "$0" --exec-freertr ifconfig | grep -E '(^eth[1-3])|(ether)' | awk '/^[a-z]/ { start=0; } /^eth1/ { start=1; } start { print; }'
   echo
 
   echo "# freertr container: freertr interface to host1:"
@@ -671,7 +671,7 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   echo
 
   echo "# freertr container: OS interface to host2 (ether):"
-  "$0" --exec-freertr ifconfig | grep -E '(^eth[2])|(ether)' | tail -n 2
+  "$0" --exec-freertr ifconfig | grep -E '(^eth[1-3])|(ether)' | awk '/^[a-z]/ { start=0; } /^eth2/ { start=1; } start { print; }'
   echo
 
   echo "# freertr container: freertr interface to host2:"
@@ -695,7 +695,7 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   echo
 
   echo "# freertr container: OS interface to nemo-all(ether):"
-  "$0" --exec-freertr ifconfig | grep -E '(^eth[3])|(ether)' | tail -n 2
+  "$0" --exec-freertr ifconfig | grep -E '(^eth[1-3])|(ether)' | awk '/^[a-z]/ { start=0; } /^eth3/ { start=1; } start { print; }'
   echo
 
   echo "# freertr container: freertr interface to nemo-all:"
