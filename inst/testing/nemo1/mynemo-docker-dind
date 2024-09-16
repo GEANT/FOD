@@ -539,7 +539,8 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml up -d
 
-  ./frnet/docker-compose/freertr_disable_offload.sh
+  #./frnet/docker-compose/freertr_disable_offload.sh
+  ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
 
 elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open telnet to freertr console
   shift 1
