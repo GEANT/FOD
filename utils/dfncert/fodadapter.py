@@ -4,7 +4,7 @@ import utils.dfncert.daemon_sum_router
 from utils.dfncert.daemon_sum_router import parse_arguments, load_config
 from utils.dfncert.daemon_sum_router import handle_client_connections, query_router, query_router_once
 from utils.dfncert.daemon_sum_router import aggregate_data, dicts_to_nokia_output, nokia_action_to_dict_action
-from utils.route_spec_utils import translate_cisco_flow_id__to__generic_rulespec_by_params
+from utils.route_spec_utils import translate_cisco_flow_id__to__generic_rulespec_by_params, unify_ratelimit_value
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_nokiastats_dfncert.log", False)
@@ -284,9 +284,12 @@ def dicts_to_nokia_output2(routes, results):
         if 'cisco-flow' not in route:
             continue
 
+        dict_action = nokia_action_to_dict_action(route['action'])
+
         # TODO: ipv4
         output += f"AFI: {'IPv4' if route['ip_version'] == 4 else 'IPv6'}\n"
         output += f"xFlow                     : {route['cisco-flow']}\n"
+        output += f"OrigActions                : {route['action']}\n"
         output += f"Actions                : {nokia_action_to_dict_action(route['action'])}\n"
         output += "Synced:                 TRUE\n"  # always synced
         output += "Last Error:             0:No error\n"
@@ -309,12 +312,31 @@ def dicts_to_nokia_output2(routes, results):
             'packets' : route.get('dropped_packets', 0),
             'bytes' : route.get('dropped_bytes', 0),
           },
-          '10M' : { # TODO key is still depending on rate limit value; for non rate-limit rules this entry is not necessary (matched==dropped)
+          #'10M' : { # test rate limit value
+          #  'packets' : route.get('matched_packets', 0),
+          #  'bytes' : route.get('matched_bytes', 0)
+          #}
+        }
+
+        # rate-limit 800kbps
+        prefix__ratelimit1="rate-limit "
+        if dict_action.startswith(prefix__ratelimit1):
+          rate_limit__cisco_format=dict_action[len(prefix__ratelimit1):]
+
+          postfix__bps="bps"
+          if dict_action.endswith(postfix__bps):
+            rate_limit__cisco_format=rate_limit__cisco_format[0:(len(rate_limit__cisco_format)-len(postfix__bps))]
+
+          # TODO: interprete k/M unit scale ...
+          xtype=unify_ratelimit_value(rate_limit__cisco_format, base=8) 
+          logger.info("dicts_to_nokia_output2(): rate_limit__cisco_format="+str(rate_limit__cisco_format)+" => xtype="+str(xtype))
+
+          results[rulespec_by_params][xtype] = {
             'packets' : route.get('matched_packets', 0),
             'bytes' : route.get('matched_bytes', 0)
           }
-        }
 
+    logger.info("dicts_to_nokia_output2(): output="+str(output))
     logger.info("dicts_to_nokia_output2(): ret="+str(results))
 
     return output

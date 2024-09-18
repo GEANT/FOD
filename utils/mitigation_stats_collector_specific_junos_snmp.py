@@ -10,7 +10,7 @@ import time
 import re
 
 from flowspec.models import Route
-from utils.route_spec_utils import get_rulename_by_ruleparams__generic
+from utils.route_spec_utils import get_rulename_by_ruleparams__generic, unify_ratelimit_value
 
 from utils.mitigation_stats_collector_specific_base import MitigationStatisticCollectorSpecific_Base
 
@@ -90,7 +90,7 @@ class MitigationStatisticCollectorSpecific_JunosSnmp(MitigationStatisticCollecto
                   xtype='counter'
                   if re.match(r'^[0-9]+[MmKkGgTtPpEeZzYy]_', routename):
                       ary=re.split(r'_', routename, maxsplit=1)
-                      xtype=self.unify_ratelimit_value(ary[0])
+                      xtype=unify_ratelimit_value(ary[0], base=1)
                       routename=ary[1]
                   #logger.info("=> routename="+str(routename)+" xtype="+str(xtype))
   

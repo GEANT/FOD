@@ -2,6 +2,7 @@
 #
 
 import os
+import re
 
 from django.conf import settings
 from ipaddress import *
@@ -480,5 +481,49 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
     #else:
     #    return None
 
+##
 
+unify_ratelimit_value__unit_map = {
+             "k" : 1000,
+             "m" : 1000**2,
+             "g" : 1000**3,
+             "t" : 1000**4,
+             "p" : 1000**5,
+             "e" : 1000**6,
+             "z" : 1000**7,
+             "y" : 1000**8,
+             }
+  
+def unify_ratelimit_value(rate_limit_value, base=1):
+  
+     result1 = re.match(r'^([0-9]+)([MmKkGgTtPpEeZzYy])', rate_limit_value)
+     if result1:
+        #print(dir(result1), file=sys.stderr)
+        number_part = result1.group(1)
+        unit_part = result1.group(2)
+  
+        num = (int(number_part) / base) * unify_ratelimit_value__unit_map[unit_part.lower()]
+  
+        if num >= 1000**8 and num % 1000**8 == 0:
+            ret = str(int(num / 1000**8)) + "Y"
+        elif num >= 1000**7 and num % 1000**7 == 0:
+            ret = str(int(num / 1000**7)) + "Z"
+        elif num >= 1000**6 and num % 1000**6 == 0:
+            ret = str(int(num / 1000**6)) + "E"
+        elif num >= 1000**5 and num % 1000**5 == 0:
+            ret = str(int(num / 1000**5)) + "P"
+        elif num >= 1000**4 and num % 1000**4 == 0:
+            ret = str(int(num / 1000**4)) + "T"
+        elif num >= 1000**3 and num % 1000**3 == 0:
+            ret = str(int(num / 1000**3)) + "G"
+        elif num >= 1000**2 and num % 1000**2 == 0:
+            ret = str(int(num / 1000**2)) + "M"
+        elif num >= 1000 and num % 1000 == 0:
+            ret = str(int(num / 1000)) + "K"
+  
+     else: # TODO: maybe warn if unknown format
+       ret = rate_limit_value
+  
+     return ret
+  
 

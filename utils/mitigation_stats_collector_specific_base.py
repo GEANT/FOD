@@ -9,7 +9,7 @@ import time
 import re
 
 from flowspec.models import Route
-from utils.route_spec_utils import get_rulename_by_ruleparams__generic
+from utils.route_spec_utils import get_rulename_by_ruleparams__generic, unify_ratelimit_value
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_mitigation_statistic.log", False)
@@ -114,50 +114,6 @@ class MitigationStatisticCollectorSpecific_Base():
   
   #
   
-  unify_ratelimit_value__unit_map = {
-             "k" : 1000,
-             "m" : 1000**2,
-             "g" : 1000**3,
-             "t" : 1000**4,
-             "p" : 1000**5,
-             "e" : 1000**6,
-             "z" : 1000**7,
-             "y" : 1000**8,
-             }
-  
-  def unify_ratelimit_value(self, rate_limit_value):
-  
-     result1 = re.match(r'^([0-9]+)([MmKkGgTtPpEeZzYy])', rate_limit_value)
-     if result1:
-        #print(dir(result1), file=sys.stderr)
-        number_part = result1.group(1)
-        unit_part = result1.group(2)
-  
-        num = int(number_part) * self.unify_ratelimit_value__unit_map[unit_part.lower()]
-  
-        if num >= 1000**8 and num % 1000**8 == 0:
-            ret = str(int(num / 1000**8)) + "Y"
-        elif num >= 1000**7 and num % 1000**7 == 0:
-            ret = str(int(num / 1000**7)) + "Z"
-        elif num >= 1000**6 and num % 1000**6 == 0:
-            ret = str(int(num / 1000**6)) + "E"
-        elif num >= 1000**5 and num % 1000**5 == 0:
-            ret = str(int(num / 1000**5)) + "P"
-        elif num >= 1000**4 and num % 1000**4 == 0:
-            ret = str(int(num / 1000**4)) + "T"
-        elif num >= 1000**3 and num % 1000**3 == 0:
-            ret = str(int(num / 1000**3)) + "G"
-        elif num >= 1000**2 and num % 1000**2 == 0:
-            ret = str(int(num / 1000**2)) + "M"
-        elif num >= 1000 and num % 1000 == 0:
-            ret = str(int(num / 1000)) + "K"
-  
-     else: # TODO: maybe warn if unknown format
-       ret = rate_limit_value
-  
-     return ret
-  
-  
   xtype_default='counter'
   
   def helper_get_countertype_of_rule(self, ruleobj):
@@ -167,7 +123,7 @@ class MitigationStatisticCollectorSpecific_Base():
          if thenaction.action and thenaction.action=='rate-limit':
              limit_rate=thenaction.action_value
              xtype=str(limit_rate).upper()
-     return self.unify_ratelimit_value(xtype)
+     return unify_ratelimit_value(xtype, base=1)
   
   #
   
