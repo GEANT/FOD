@@ -305,10 +305,14 @@ def dicts_to_nokia_output2(routes, results):
           rulespec_by_params="?"
 
         results[rulespec_by_params] = {
-          'packets' : route.get('dropped_packets', 0),
-          'bytes' : route.get('dropped_bytes', 0),
-          'matched_packets' : route.get('matched_packets', 0),
-          'matched_bytes' : route.get('matched_bytes', 0)
+          'counter' : {
+            'packets' : route.get('dropped_packets', 0),
+            'bytes' : route.get('dropped_bytes', 0),
+          },
+          '10M' : { # TODO key is still depending on rate limit value; for non rate-limit rules this entry is not necessary (matched==dropped)
+            'packets' : route.get('matched_packets', 0),
+            'bytes' : route.get('matched_bytes', 0)
+          }
         }
 
     logger.info("dicts_to_nokia_output2(): ret="+str(results))
