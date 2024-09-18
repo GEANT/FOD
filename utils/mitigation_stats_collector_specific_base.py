@@ -9,6 +9,7 @@ import time
 import re
 
 from flowspec.models import Route
+from utils.route_spec_utils import get_rulename_by_ruleparams__generic
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_mitigation_statistic.log", False)
@@ -23,7 +24,8 @@ class MitigationStatisticCollectorSpecific_Base():
   
   # to be overriden in sub classes
   def get_statistic_data_rule_key(self, ruleobj):
-     return ruleobj.name
+     #return ruleobj.name
+     return get_rulename_by_ruleparams__generic(ruleobj)
   
   ##
   
@@ -307,7 +309,7 @@ class MitigationStatisticCollectorSpecific_Base():
               if rule_status=="ACTIVE":
                 try:
                   if xtype==self.xtype_default:
-                    logger.info("poll_mitigation_statistics(): 1a STATISTICS_PER_RULE rule_id="+str(rule_id))
+                    logger.info("poll_mitigation_statistics(): 1a STATISTICS_PER_RULE rule_id="+str(rule_id)+" => flowspec_params_str="+str(flowspec_params_str))
                     val_dropped = newdata[flowspec_params_str][self.xtype_default]
                     counter = {"ts": nowstr, "value": val_dropped}
                   else:

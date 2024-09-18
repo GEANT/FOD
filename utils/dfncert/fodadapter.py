@@ -158,7 +158,8 @@ def get_nokia_stats():
                                 router_data=router_data,
                                 update_timestamps=update_timestamps,
                                 dont_update=True)
-        logger.info("get_nokia_stats(): option_oneshot: step 4")
+
+        logger.info("get_nokia_stats(): option_oneshot: step 4 => result="+str(result))
 
     else:
     
@@ -254,8 +255,8 @@ def make_nokia_output2(router_configs, data_queues, router_data=None,
     
     logger.info("make_nokia_output2(): ret")
 
-    return formatted_data
-    #return results
+    #return formatted_data
+    return results
 
 ##
 
@@ -296,8 +297,9 @@ def dicts_to_nokia_output2(routes, results):
         output += f"    Dropped           :      {route.get('dropped_packets', 0)}/{route.get('dropped_bytes', 0)}\n"
 
         try:
-          logger.info("dicts_to_nokia_output2(): before call to translate_cisco_flow_id__to__generic_rulespec_by_params")
+          logger.info("dicts_to_nokia_output2(): before call to translate_cisco_flow_id__to__generic_rulespec_by_params for cisco-flow="+str(route['cisco-flow']))
           rulespec_by_params = translate_cisco_flow_id__to__generic_rulespec_by_params(route['cisco-flow'])
+          logger.info("dicts_to_nokia_output2(): before call to translate_cisco_flow_id__to__generic_rulespec_by_params for cisco-flow="+str(route['cisco-flow']+" => "+str(rulespec_by_params)))
         except Exception as e:
           logger.error("dicts_to_nokia_output2(): got exception: "+str(e))
           rulespec_by_params="?"
@@ -308,6 +310,8 @@ def dicts_to_nokia_output2(routes, results):
           'matched_packets' : route.get('matched_packets', 0),
           'matched_bytes' : route.get('matched_bytes', 0)
         }
+
+    logger.info("dicts_to_nokia_output2(): ret="+str(results))
 
     return output
 

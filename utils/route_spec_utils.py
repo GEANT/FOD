@@ -349,7 +349,7 @@ def get_rulename_by_ruleparams__junossnmp(rule):
     else:
       fragmenttype_list = []
 
-    return get_rulename_by_ruleparams__generic_by_rule_attribs(rule.ip_version(), rule.ip_destination, rule.source, rule.protocol.all(), rule.port, rule.destinationport, rule.sourceport, fragmenttype_list)
+    return get_rulename_by_ruleparams__generic_by_rule_attribs(rule.ip_version(), rule.destination, rule.source, rule.protocol.all(), rule.port, rule.destinationport, rule.sourceport, fragmenttype_list)
 
 
 # for now, keep junossnmp style ruleparams string format
@@ -437,8 +437,8 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
       logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => destination_prefix="+str(destination_prefix))
       logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => source_prefix="+str(source_prefix))
 
-      #destination_prefix_obj = ip_network(destination_prefix, strict=False)
-      #source_prefix_obj = ip_network(source_prefix, strict=False)
+      destination_prefix_obj = ip_network(destination_prefix, strict=False)
+      source_prefix_obj = ip_network(source_prefix, strict=False)
 
       #destination_prefix2 = str(destination_prefix_obj)
       #source_prefix2 = str(source_prefix_obj)
@@ -447,7 +447,13 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
       #logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => destination_prefix2="+str(destination_prefix2))
       #logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => source_prefix2="+str(source_prefix2))
 
-      ip_version = destination_prefix_obj.version 
+      if destination_prefix!="":
+        ip_version = destination_prefix_obj.version 
+      elif source_prefix!="":
+        ip_version = source_prefix_obj.version 
+      else:
+        ip_version = 4; # default
+      
       logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => ip_version="+str(ip_version))
 
       ret = get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, destination_prefix, source_prefix, ip_proto_spec, "", destination_port_spec, source_port_spec, frag_spec) # TODO

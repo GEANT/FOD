@@ -40,6 +40,7 @@ class MitigationStatisticCollectorSpecific_Nokia(MitigationStatisticCollectorSpe
     return {}
   
   # to be overriden in sub classes
-  #def get_statistic_data_rule_key(self, ruleobj):
-  #   return get_rulename_by_ruleparams__generic(ruleobj)
+  def get_statistic_data_rule_key(self, ruleobj):
+     logger.info("MitigationStatisticCollectorSpecific_Nokia::get_statistic_data_rule_key(): called ruleobj="+str(ruleobj))
+     return get_rulename_by_ruleparams__generic(ruleobj)
  
