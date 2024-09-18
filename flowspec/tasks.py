@@ -83,6 +83,8 @@ def edit(routepk, route_original__data, rate_limit_changed=False, callback=None)
     logger.info("tasks::edit(): route_original__data_type="+str(type(route_original__data))+" route_original__data="+str(route_original__data))
 
     from flowspec.serializers import RouteSerializer
+    
+    logger.info("tasks::edit(): PR="+str(PR))
 
     #applier = PR.Applier(route_object=route)
     applier = PR.Applier(route_object=route, route_objects_all=Route.objects.all(), route_object_original=route_original__data)

@@ -73,9 +73,9 @@ class MitigationStatisticCollectorSpecific_JunosSnmp(MitigationStatisticCollecto
                   logger.debug('snmpCallback(): Finished {}.'.format(transportTarget))
                   return 0
   
-              last_snmp_var_got__from__transportTarget__hash[str(transportTarget)]=name
+              self.last_snmp_var_got__from__transportTarget__hash[str(transportTarget)]=name
   
-              ident = name[identoffset:]
+              ident = name[self.identoffset:]
               ordvals = [int(i) for i in ident.split(".")]
               # the first byte is length of table name string
               len1 = ordvals[0] + 1
@@ -90,7 +90,7 @@ class MitigationStatisticCollectorSpecific_JunosSnmp(MitigationStatisticCollecto
                   xtype='counter'
                   if re.match(r'^[0-9]+[MmKkGgTtPpEeZzYy]_', routename):
                       ary=re.split(r'_', routename, maxsplit=1)
-                      xtype=unify_ratelimit_value(ary[0])
+                      xtype=self.unify_ratelimit_value(ary[0])
                       routename=ary[1]
                   #logger.info("=> routename="+str(routename)+" xtype="+str(xtype))
   
@@ -167,7 +167,7 @@ class MitigationStatisticCollectorSpecific_JunosSnmp(MitigationStatisticCollecto
       except Exception as e:
         snmp_bulk_get__max_repetitions = 10
   
-      last_snmp_var_got__from__transportTarget__hash = {} # reset history of snmp vars seen from a router
+      self.last_snmp_var_got__from__transportTarget__hash = {} # reset history of snmp vars seen from a router
   
       # Submit initial GETNEXT requests and wait for responses
       for authData, transportTarget, varBinds in targets:
