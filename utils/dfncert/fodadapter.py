@@ -3,7 +3,8 @@
 import utils.dfncert.daemon_sum_router
 from utils.dfncert.daemon_sum_router import parse_arguments, load_config
 from utils.dfncert.daemon_sum_router import handle_client_connections, query_router, query_router_once
-from utils.dfncert.daemon_sum_router import aggregate_data, dicts_to_nokia_output
+from utils.dfncert.daemon_sum_router import aggregate_data, dicts_to_nokia_output, nokia_action_to_dict_action
+from utils.route_spec_utils import translate_cisco_flow_id__to__generic_rulespec_by_params
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_nokiastats_dfncert.log", False)
@@ -225,7 +226,14 @@ def make_nokia_output2(router_configs, data_queues, router_data=None,
     # Aggregate data from routers into a single dictionary
     aggregated_data = aggregate_data(router_data)
     
-    logger.info("make_nokia_output2(): step 4")
+    logger.info("make_nokia_output2(): step 4 => router_data="+str(router_data))
+
+    results = {}
+
+    #"""Return dict() of the sum of counters (bytes, packets) from all selected routes, where
+    #route identifier is the key in dict.  The sum is counted over all routers.
+    #
+    #Example output with one rule: {'77.72.72.1,0/0,proto=1': {'bytes': 13892216, 'packets': 165387}}
 
     formatted_data = ""
     if not option_oneshot and not option_raw:
@@ -236,10 +244,73 @@ def make_nokia_output2(router_configs, data_queues, router_data=None,
     logger.info("make_nokia_output2(): step 5")
 
     # Convert data to the desired output format and send it to the client
-    formatted_data += dicts_to_nokia_output(aggregated_data.values())
+    try:
+      #formatted_data += dicts_to_nokia_output(aggregated_data.values(), results)
+
+      formatted_data += dicts_to_nokia_output2(aggregated_data.values(), results)
+    except Exception as e:
+      logger.error("make_nokia_output2(): got exception: "+str(e))
+
     
     logger.info("make_nokia_output2(): ret")
 
     return formatted_data
+    #return results
+
+##
+
+def dicts_to_nokia_output2(routes, results):
+    """
+    Formats a list of network flow dictionaries into a string representation
+    suitable for Nokia devices.
+
+    Args:
+    routes (list of dicts): Each dictionary represents a network flow with keys
+        like 'cisco-flow', 'action', etc.
+
+    Returns:
+    str: A formatted string representing the network flows.
+    """
+
+    global option_raw
+
+    if option_raw:
+        return json.dumps(list(routes))
+
+    output = ""
+    for route in routes:
+        logging.debug(route)
+        if 'cisco-flow' not in route:
+            continue
+
+        # TODO: ipv4
+        output += f"AFI: {'IPv4' if route['ip_version'] == 4 else 'IPv6'}\n"
+        output += f"xFlow                     : {route['cisco-flow']}\n"
+        output += f"Actions                : {nokia_action_to_dict_action(route['action'])}\n"
+        output += "Synced:                 TRUE\n"  # always synced
+        output += "Last Error:             0:No error\n"
+        output += "Match Unsupported:      None\n"
+
+        output += "  Statistics                     (packets/bytes)\n"
+        output += f"    Matched           :      {route.get('matched_packets', 0)}/{route.get('matched_bytes', 0)}\n"
+        output += f"    Dropped           :      {route.get('dropped_packets', 0)}/{route.get('dropped_bytes', 0)}\n"
+
+        try:
+          logger.info("dicts_to_nokia_output2(): before call to translate_cisco_flow_id__to__generic_rulespec_by_params")
+          rulespec_by_params = translate_cisco_flow_id__to__generic_rulespec_by_params(route['cisco-flow'])
+        except Exception as e:
+          logger.error("dicts_to_nokia_output2(): got exception: "+str(e))
+          rulespec_by_params="?"
+
+        results[rulespec_by_params] = {
+          'packets' : route.get('dropped_packets', 0),
+          'bytes' : route.get('dropped_bytes', 0),
+          'matched_packets' : route.get('matched_packets', 0),
+          'matched_bytes' : route.get('matched_bytes', 0)
+        }
+
+    return output
+
+
 
 
