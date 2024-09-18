@@ -17,6 +17,19 @@ RUN wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/mai
 
 RUN ./install-deps.sh
 RUN ./install-rtr.sh
+
+##
+
+# current workaround for missing http://www.freertr.org/rtr.tar
+RUN apt-get update -y && apt-get -yy install make gcc
+RUN (mkdir src; cd src && wget http://www.freertr.org/rtr.zip)
+RUN (cd src && unzip -x rtr.zip)
+RUN (cd src/misc/native && gcc -c -o pcapInt.o pcapInt.c)
+RUN (cd src/misc/native && gcc -o pcapInt -lc -lpcap pcapInt.o -lpcap)
+RUN (cp src/misc/native/pcapInt /rtr/pcapInt.bin)
+
+##
+
 RUN ./install-clean.sh
 
 RUN mkdir -p /rtr && \

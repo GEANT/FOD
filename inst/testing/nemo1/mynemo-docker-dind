@@ -20,7 +20,10 @@ fi
 
 ##
 
-#xarg usage: ./mynemo-docker-dind ... :
+#xarg usag-: ./mynemo-docker-dind ... :
+#xarg 
+#xarg 0: all-in-one build-and run (combines --all1, --freertr-testnet-prep-and-run, --setup-and-run-vsmd-container):
+#xarg ./mynemo-docker-dind --allx # all-in-one mode
 #xarg 
 #xarg 1: build+start outer container in general + run setup inside:
 #xarg ./mynemo-docker-dind --build-and-setup [ --build-without-data ] [ --prune ] [ --pre-setup-shcode " SHELL_CODE " ] [ --curl | --w3m | --wget | --notest ] [ --log1 | --log0 | --logall | --nologcheck ] [ --verbose ... { arguments to setup.sh } ]
@@ -55,6 +58,8 @@ fi
 #xarg ./mynemo-docker-dind --exec ... # run command in outer container
 #xarg ./mynemo-docker-dind --docker ... # run docker command in outer container # e.g. --docker ps
 #xarg ./mynemo-docker-dind --docker.containerids # get inside container ids
+#xarg 
+#xarg  ./mynemo-docker-dind --setup-and-run-vsmd-container # setup and run vsmd inner container; finally run vsmd in foreground
 #xarg 
 #xarg 3. related to freertr+host1+host2 docker-compose:
 #xarg 
@@ -390,6 +395,8 @@ elif [ "$1" = "--w3m" -o "$1" = "--inside-run-w3m" ]; then #arg # test access to
 
 elif [ "$1" = "--exec" ]; then #arg
   shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
 
   (set -x; docker exec -ti "$docker_outer__container_name" "$@")
   
@@ -512,6 +519,15 @@ elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
 
 #arg
 
+elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner docker container, setup everything for and in it, run vsmd in foreground; requieres setup and running outer container
+  shift 1
+
+  # build and init and "wire" vsmd inner container within nemo outer container
+   #"$0" --exec ./mynemo-mitigation-vsmd-install 
+   "$0" --exec ./mynemo-mitigation-init-container.sh
+
+#arg
+
 elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docker-compose for freertr+host1+host2 (started in back-ground)
   shift 1
 
@@ -523,17 +539,39 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml up -d
 
-  ./frnet/docker-compose/freertr_disable_offload.sh
+  #./frnet/docker-compose/freertr_disable_offload.sh
+  ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
 
 elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open telnet to freertr console
   shift 1
 
   exec docker exec -ti freertr telnet 127.1 2323
 
+elif [ "$1" = "--exec-freertr" ]; then #arg
+  shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
+
+  (set -x; exec docker exec -ti freertr "$@")
+
+ elif [ "$1" = "--exec-host1" ]; then #arg
+  shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
+
+  (set -x; exec docker exec -ti host1 "$@")
+ 
+elif [ "$1" = "--exec-host2" ]; then #arg
+  shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
+
+  (set -x; exec docker exec -ti host2 "$@")
+ 
 elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container and run ping host2
   shift 1
 
-  exec docker exec -ti host1 ping 10.2.10.12
+  exec docker exec -ti host1 ping "$@" 10.2.10.12
 
 elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 container and run ping host2
   shift 1
@@ -544,7 +582,7 @@ elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 contain
 elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container and run ping host1
   shift 1
 
-  exec docker exec -ti host2 ping 10.1.10.11
+  exec docker exec -ti host2 ping "$@" 10.1.10.11 
 
 elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 container and run ping host1
   shift 1
@@ -556,6 +594,144 @@ elif [ "$1" = "--freertr-tshark-netflow" ]; then #arg # enter freertr container 
   shift 1
 
   exec docker exec -ti freertr tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth3 "$@"
+
+elif [ "$1" = "--nemo-ping-freertr" ]; then #arg # enter nemo all container and run ping freertr
+  shift 1
+
+  exec "$0" --exec ping "$@" 10.197.36.3
+
+elif [ "$1" = "--freertr-ping-nemo" ]; then #arg # enter freertr console and run ping nemo all container
+  shift 1
+
+  exec docker exec -ti freertr bash -c '{ echo -e "ping 10.197.36.2 vrf CORE"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323'
+
+elif [ "$1" = "--network-mgmt-connections-check" ]; then #arg # enter freertr console and run ping nemo all container
+  shift 1
+
+  "$0" --exec-freertr ifconfig eth0 | grep -E '(^[a-z])|(ether)'
+  echo
+
+  docker network inspect nemo1_mgmt | grep -E '("Id")|(com.docker.network.bridge.name)|(IPv4Address)'
+  id1="$(docker network inspect nemo1_mgmt | grep -E '("Id")' | grep -Eo '"[a-f0-9]{12}' | tr -d '"')"
+  echo "debug id1=$id1" 1>&2
+  (set -x; arp -a -i br-"$id1")
+  echo
+
+  "$0" --exec-host1 arp -a -n -i eth0
+  echo
+
+  "$0" --exec-host2 arp -a -n -i eth0
+  echo
+
+  docker network inspect bridge | grep -E '("Id")|(com.docker.network.bridge.name)|(IPv4Address)'
+  (set -x; arp -a -n -i docker0)
+  echo
+
+  "$0" --exec arp -a -n -i eth0
+  echo
+
+
+elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr console and run ping nemo all container
+  shift 1
+
+  #echo "freertr-container: OS interfaces (ether):"
+  #"$0" --exec-freertr ifconfig | grep -E '(^eth[1-9])|(ether)' | tail -n +2
+  #echo
+
+  #echo "freertr-container: freertr interfaces:"
+  #docker exec -ti freertr bash -c '{ echo -e "show interfaces"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323'
+  #echo
+
+  ##
+
+  echo "# host1:"
+  echo
+
+  echo "# freertr container: OS interface to host1 (ether):"
+  "$0" --exec-freertr ifconfig | grep -E '(^eth[1-3])|(ether)' | awk '/^[a-z]/ { start=0; } /^eth1/ { start=1; } start { print; }'
+  echo
+
+  echo "# freertr container: freertr interface to host1:"
+  docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet1"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
+  echo
+
+  echo "# freertr container: freertr interface to host1 (arp):"
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet1"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^mac/ { start=1; } /^\s*$/ { start=0; } start { print; }'
+  echo
+
+  echo "# host1 container: OS interface to freertr (arp):"
+  "$0" --exec-host1 arp -a -n -i eth1
+  echo
+
+  echo "-----------------------------------------"
+  echo
+
+  ##
+
+  echo "# host2:"
+  echo
+
+  echo "# freertr container: OS interface to host2 (ether):"
+  "$0" --exec-freertr ifconfig | grep -E '(^eth[1-3])|(ether)' | awk '/^[a-z]/ { start=0; } /^eth2/ { start=1; } start { print; }'
+  echo
+
+  echo "# freertr container: freertr interface to host2:"
+  docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet2"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
+  echo
+
+  echo "# freertr container: freertr interface to host2 (arp):"
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet2"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^mac/ { start=1; } /^\s*$/ { start=0; } start { print; }'  
+  echo
+
+  echo "# host2 container: OS interface to freertr (arp):"
+  "$0" --exec-host2 arp -a -n -i eth1
+  echo
+
+  echo "-----------------------------------------"
+  echo
+
+  ##
+
+  echo "# nemo-all:"
+  echo
+
+  echo "# freertr container: OS interface to nemo-all(ether):"
+  "$0" --exec-freertr ifconfig | grep -E '(^eth[1-3])|(ether)' | awk '/^[a-z]/ { start=0; } /^eth3/ { start=1; } start { print; }'
+  echo
+
+  echo "# freertr container: freertr interface to nemo-all:"
+  docker exec -ti freertr bash -c '{ echo -e "show interfaces ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^ethernet/ { start=1; } start { print; } / transmitted/ { start=0; }'
+  echo
+
+  echo "# freertr container: freertr interface to nemo-all (arp):"
+  docker exec -ti freertr bash -c '{ echo -e "show ipv4 arp ethernet3"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323' | awk '/^mac/ { start=1; } /^\s*$/ { start=0; } start { print; }'
+  echo
+
+  echo "# nemo-all container: OS interface to freertr (arp):"
+  "$0" --exec arp -a -n -i eth1
+  echo
+
+elif [ "$1" = "--network-inner-connections-test" ]; then #arg # enter freertr console and run ping nemo all container
+  shift 1
+
+  echo "# host1=10.1.10.11 (via freertr router) to host2=10.2.10.12:" 
+  "$0" --freertr-host1-ping-host2 -c 5
+  echo
+  echo
+
+  echo "# host2=10.2.10.12 (via freertr router) to host1=10.1.10.11:" 
+  "$0" --freertr-host2-ping-host1 -c 5
+  echo
+  echo
+
+  echo "# nemo-all=10.197.36.2 (direct) to freertr=10.197.36.3:" 
+  "$0" --nemo-ping-freertr -c 5
+  echo
+  echo
+
+  echo "# freertr=10.197.36.3 (direct) to nemo-all=10.197.36.2 (freertr-specific output):" 
+  "$0" --freertr-ping-nemo
+  echo
 
 elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
@@ -593,7 +769,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    # build and init and "wire" vsmd inner container within nemo outer container
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
-   "$0" --exec ./mynemo-mitigation-init-container.sh
+   #"$0" --exec ./mynemo-mitigation-init-container.sh
+   "$0" --setup-and-run-vsmd-container
+
+   # currently: not reached, as precedingly called mode "--setup-and-run-vsmd-container" will continue to run in foreground (actually vsmd component is running so for now)
 
    ## TODO: install certs for vsmd communication (client side)
    #"$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
