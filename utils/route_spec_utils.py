@@ -244,26 +244,35 @@ def get_ports(rule):
     #return result
     return get_ports__by_attribs(rule.port, rule.destinationport, rule,sourceport)
 
-def get_ports__by_attribs(port, destinationport, sourceport):
+def get_ports__by_attribs(port, destinationport, sourceport, transform_portspecs=True):
     #os.write(2, "rule.port="+str(rule.port))
     #os.write(2, str(type(rule.port)))
     #if rule.port:
     if port:
-        #result = 'port'+translate_ports(rule.port.all())
-        #result = 'port'+translate_ports(rule.port)
-        result = 'port'+translate_ports(port)
+        if transform_portspecs:
+          #result = 'port' + translate_ports(rule.port.all())
+          #result = 'port' + translate_ports(rule.port)
+          result = 'port' + translate_ports(port)
+        else:
+          result = 'port' + port
     else:
         result = ''
         #if rule.destinationport:
         if destinationport:
-            #result += 'dstport' + translate_ports(rule.destinationport)
-            result += 'dstport' + translate_ports(destinationport)
+            if transform_portspecs:
+              #result += 'dstport' + translate_ports(rule.destinationport)
+              result += 'dstport' + translate_ports(destinationport)
+            else:
+              result += 'dstport' + destinationport
         #if rule.sourceport:
         if sourceport:
             if result != '':
               result += ','
-            #result += 'srcport' + translate_ports(rule.sourceport)
-            result += 'srcport' + translate_ports(sourceport)
+            if transform_portspecs:
+              #result += 'srcport' + translate_ports(rule.sourceport)
+              result += 'srcport' + translate_ports(sourceport)
+            else:
+              result += 'srcport' + sourceport
     if result != '':
        result += ','
     return result
@@ -350,11 +359,11 @@ def get_rulename_by_ruleparams__junossnmp(rule):
     else:
       fragmenttype_list = []
 
-    return get_rulename_by_ruleparams__generic_by_rule_attribs(rule.ip_version(), rule.destination, rule.source, rule.protocol.all(), rule.port, rule.destinationport, rule.sourceport, fragmenttype_list)
+    return get_rulename_by_ruleparams__generic_by_rule_attribs(rule.ip_version(), rule.destination, rule.source, rule.protocol.all(), rule.port, rule.destinationport, rule.sourceport, fragmenttype_list, transform_portspecs=True)
 
 
 # for now, keep junossnmp style ruleparams string format
-def get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, ip_destination, ip_source, protocols_spec, ports_spec, destinationports_spec, sourceports_spec, fragmenttype_list):
+def get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, ip_destination, ip_source, protocols_spec, ports_spec, destinationports_spec, sourceports_spec, fragmenttype_list, transform_portspecs=True):
 
     name = ''
 
@@ -371,7 +380,7 @@ def get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, ip_destinati
     name += protocol_num
 
     # ports
-    name += get_ports__by_attribs(ports_spec, destinationports_spec, sourceports_spec)
+    name += get_ports__by_attribs(ports_spec, destinationports_spec, sourceports_spec, transform_portspecs=transform_portspecs)
 
     #frag = ''
     name += get_frag__by_attribs(fragmenttype_list)
@@ -389,6 +398,7 @@ def get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, ip_destinati
 # Flow :Dest:{{ dest_net }}/{{ dest_mask }},Source:{{ source_net }}/{{ source_mask }},Proto:={{ proto }},DPort:={{ dport }},SPort:={{ sport }}
 #  Actions                : discard
 #
+# currently generic_rulespec_by_params is still same as junos snmp rule specs for junos firewall mib
 def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
     logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): called cisco_rule_spec="+str(cisco_rule_spec))
 
@@ -422,15 +432,21 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
           rest_spec = spec_part[len("Proto:="):]
           logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): cisco_rule_spec="+str(cisco_rule_spec)+" => proto rest_spec="+str(rest_spec))
           ip_proto_spec=rest_spec
-        elif spec_part.startswith("DPort:="):
+        elif spec_part.startswith("DPort:"):
           logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): case4")
-          rest_spec = spec_part[len("DPort:="):]
+          rest_spec = spec_part[len("DPort:"):]
           logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): cisco_rule_spec="+str(cisco_rule_spec)+" => dport rest_spec="+str(rest_spec))
+          rest_spec = translate_cisco_flow_id_portspec__to__generic_rulespec_by_params_portspec(rest_spec)
+          logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => rest_spec="+str(rest_spec))
+
           destination_port_spec = rest_spec
-        elif spec_part.startswith("SPort:="):
+        elif spec_part.startswith("SPort:"):
           logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): case5")
-          rest_spec = spec_part[len("SPort:="):]
+          rest_spec = spec_part[len("SPort:"):]
           logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): cisco_rule_spec="+str(cisco_rule_spec)+" => sport rest_spec="+str(rest_spec))
+          rest_spec = translate_cisco_flow_id_portspec__to__generic_rulespec_by_params_portspec(rest_spec)
+          logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => rest_spec="+str(rest_spec))
+
           source_port_spec = rest_spec
 
       ##
@@ -457,7 +473,7 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
       
       logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => ip_version="+str(ip_version))
 
-      ret = get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, destination_prefix, source_prefix, ip_proto_spec, "", destination_port_spec, source_port_spec, frag_spec) # TODO
+      ret = get_rulename_by_ruleparams__generic_by_rule_attribs(ip_version, destination_prefix, source_prefix, ip_proto_spec, "", destination_port_spec, source_port_spec, frag_spec, transform_portspecs=False) # TODO
    
     except Exception as e:
       logger.error("translate_cisco_flow_id__to__generic_rulespec_by_params(): got exception: "+str(e))
@@ -480,6 +496,25 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
     ##    return res
     #else:
     #    return None
+
+def translate_cisco_flow_id_portspec__to__generic_rulespec_by_params_portspec(rest_spec):
+          rest_spec = rest_spec.replace("|", ",")
+
+          result1 = re.match(r'^(.*)([\<\>])([0-9]+)(.*$)', rest_spec)
+          while result1:
+            pre_str1 = result1.group(1)
+            cmp_type1 = result1.group(2)
+            number_part = result1.group(3)
+            post_str1 = result1.group(4)
+            if cmp_type1=="<":
+              rest_spec = pre_str1 + "<=" + str(int(number_part)-1) + post_str1
+            else:
+              rest_spec = pre_str1 + ">=" + str(int(number_part)+1) + post_str1
+
+            result1 = re.match(r'^(.*)([\<\>])([0-9]+)(.*$)', rest_spec)
+
+          return rest_spec
+
 
 ##
 
