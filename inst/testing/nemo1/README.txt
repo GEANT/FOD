@@ -1,4 +1,16 @@
 
+= all-in-one-build of NeMo-detection+mitigation container and Freertr router + test hosts
+
+1.) clone all nemo-repos as subdirs here (including ./nemo-docker)
+
+2.) run ./mynemo-docker-dind --allx 
+
+3.) run ./mynemo-docker-dind --nemo-get-filename-of-certfile # get location of HTTPS cert file (accessible as root)
+
+...
+
+========
+
 = build+run nemo docker-in-docker container together with freertr+attack/victim-hosts docker-compose
 
 0)
