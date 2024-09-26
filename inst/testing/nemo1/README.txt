@@ -1,6 +1,8 @@
 
 = all-in-one-build of NeMo-detection+mitigation container and Freertr router + test hosts
 
+pre-requisites: docker, ethtool
+
 1.) clone all nemo-repos as subdirs here (including ./nemo-docker)
 
 2.) run ./mynemo-docker-dind --allx 
