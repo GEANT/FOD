@@ -6,8 +6,15 @@ pre-requisites: docker, ethtool
 1.) clone all nemo-repos as subdirs here (including ./nemo-docker)
 
 2.) run ./mynemo-docker-dind --allx 
+(will build and start everything;
+finally will run vsmd process in foreground (in vsmd1 inner container); Please keep it running! 
+(TODO: run vsmd in background as a daemon controlled by systemd in vsmd1 inner container) )
 
-3.) run ./mynemo-docker-dind --nemo-get-filename-of-certfile # get location of HTTPS cert file (accessible as root)
+3.) (in other terminal:) run ./mynemo-docker-dind --nemo-get-filename-of-certfile # get location of HTTPS cert file (accessible as root, to be imported into your web browser)
+
+4.) access localhost port 443 via your web browser, with the HTTPS certfile from 3. installed
+(if you need to re-install a new version of this HTTPS certificate, do not forget to retract the previous version)
+
 
 ...
 
