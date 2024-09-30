@@ -60,6 +60,7 @@ fi
 #xarg ./mynemo-docker-dind --docker.containerids # get inside container ids
 #xarg 
 #xarg  ./mynemo-docker-dind --setup-and-run-vsmd-container # setup and run vsmd inner container; finally run vsmd in foreground
+#xarg  ./mynemo-docker-dind --run-vsmd-in-vsmd-container # re-run vsmd in foreground in vsmd inner container
 #xarg 
 #xarg 3. related to freertr+host1+host2 docker-compose:
 #xarg 
@@ -529,6 +530,11 @@ elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner do
   # build and init and "wire" vsmd inner container within nemo outer container
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
    "$0" --exec ./mynemo-mitigation-init-container.sh
+
+elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd continer in foreground
+  shift 1
+
+   "$0" --exec ./mynemo-mitigation-vsmd-run-in-container
 
 #arg
 

@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+
+##
+
+container_name="$1"
+shift 1
+
+[ -n "$container_name" ] || container_name="vsmd1"
+
+##
+
+# assumes an initialized and running inner container, having been setup by ./mynemo-mitigation-init-container.sh before
+# just re-runs last action of ./mynemo-mitigation-init-container.sh, which is to run vsmd process in foreground
+
+#docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
+docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-run
+
