@@ -91,9 +91,31 @@ for item in fileinput.input():
             afi = "IPv4"
             dest_net = line[14]
             source_net = line[11]
+
+            add_opts_str=""
+
             proto = line[10].split("-")[0]
-            sport = line[13].split("-")[0]
+            proto = proto.rstrip()
+            if proto=="all":
+              proto=""
+            if proto!="":
+                add_opts_str=add_opts_str+",Proto:="+str(proto)
+
             dport = line[16].split("-")[0]
+            dport = dport.rstrip()
+            if dport=="all":
+                dport=""
+            if dport!="":
+                print("using dport="+str(dport)+".")
+                add_opts_str=add_opts_str+",DPort:="+str(dport)
+
+            sport = line[13].split("-")[0]
+            sport = sport.rstrip()
+            if sport=="all":
+                sport=""
+            if sport!="":
+                add_opts_str=add_opts_str+",SPort:="+str(sport)
+
             match = line[7].split("=")[1].replace(")", "")
             match_left = match.split("(")[0]
             match_right = match.split("(")[1]
@@ -117,7 +139,8 @@ for item in fileinput.input():
                     match_left = match_left,
                     match_right = match_right,
                     drop_left = drop_left,
-                    drop_right = drop_right
+                    drop_right = drop_right,
+                    add_opts_str = add_opts_str
                     )
             #print("content="+str(content))
 
