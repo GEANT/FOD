@@ -332,7 +332,7 @@ while [ $# -gt 0 ]; do
     install_basesw_os=1
     #install_basesw_python=0
     #install_fodproper=0
-  elif [ $# -ge 1 -a "$1" = "--basesw_python" ]; then 
+  elif [ $# -ge 1 -a \( "$1" = "--basesw_python" -o "$1" = "--python-update-only" \) ]; then 
     shift 1
     install_default_used=0
 
