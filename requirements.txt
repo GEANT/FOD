@@ -27,7 +27,7 @@ PyYAML
 #wsgiref
 six
 requests
-pysnmp
+pysnmp<=5.1.0
 ply
 ipaddress
 idna
