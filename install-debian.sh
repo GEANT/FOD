@@ -48,6 +48,8 @@ fi
 #############################################################################
 #############################################################################
 
+show_env_for_debugging=0
+
 fod_dir="/srv/flowspy"
 venv_dir="/srv/venv"
 
@@ -147,6 +149,11 @@ ifc_setup__wait_for_ifc__in_runfod=0
 #
 
 findfix_file_permissions=1
+
+#
+
+requirements_txt__file__basename__default="requirements.txt"
+requirements_txt__file__basename="$requirements_txt__file__basename__default"
 
 ##############################################################################
 ##############################################################################
@@ -353,6 +360,13 @@ while [ $# -gt 0 ]; do
     #install_basesw_os=0
     #install_basesw_python=0
     install_fodproper=1
+  elif [ $# -ge 1 -a \( "$1" = "--pyrequirements" \) ]; then
+    shift 1
+    requirements_txt__file__basename="$1"
+    shift 1
+  elif [ "$1" = "--show-env" ]; then 
+    shift 1
+    show_env_for_debugging=1
   elif [ $# -ge 1 -a \( "$1" = "--supervisor" -o "$1" = "--supervisord" \) ]; then
     shift 1
     install_with_supervisord=1
@@ -685,11 +699,16 @@ python_version="$(python3 --version | cut -d ' ' -f 2,2)"
 #if [ "$assume__sqlite_version__to_old" = 1 ]; then
 #  echo "$0: assume__sqlite_version__to_old=$assume__sqlite_version__to_old => using requirements-centos.txt" 1>&2
 #  cp "$fod_dir/requirements-centos.txt" "$fod_dir/requirements.txt"
-if [ -e "$fod_dir/requirements.txt.python$python_version" ]; then
-  echo "$0: using python version specific $fod_dir/requirements.txt.python$python_version" 1>&2
-  cp "$fod_dir/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
+if [ "$requirements_txt__file__basename" != "$requirements_txt__file__basename__default" ]; then
+  echo "python reqs: using $fod_dir/$requirements_txt__file__basename" 1>&2
+  cp -f "$fod_dir/$requirements_txt__file__basename" "$fod_dir/requirements.txt"
 else
-  echo "$0: using $fod_dir/requirements.txt" 1>&2
+  if [ -e "$fod_dir/requirements.txt.python$python_version" ]; then
+    echo "python reqs: using python version specific $fod_dir/requirements.txt.python$python_version" 1>&2
+    cp -f "$fod_dir/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
+  else
+    echo "python reqs: using default $fod_dir/$requirements_txt__file__basename__default" 1>&2
+  fi
 fi
 
 #############################################################################
@@ -800,7 +819,9 @@ if [ "$install_fodproper" = 1 ]; then
   source "$venv_dir/bin/activate"
 
 
-  export 1>&2
+  if [ "$show_env_for_debugging" = 1 ]; then
+    export 1>&2
+  fi
 
   ##
 
