@@ -152,8 +152,8 @@ findfix_file_permissions=1
 
 #
 
-requirements_txt__file__basename__default="requirements.txt"
-requirements_txt__file__basename="$requirements_txt__file__basename__default"
+requirements_txt__filename_relative__default="requirements.txt"
+requirements_txt__filename_relative="$requirements_txt__filename_relative__default"
 
 ##############################################################################
 ##############################################################################
@@ -362,7 +362,7 @@ while [ $# -gt 0 ]; do
     install_fodproper=1
   elif [ $# -ge 1 -a \( "$1" = "--pyrequirements" \) ]; then
     shift 1
-    requirements_txt__file__basename="$1"
+    requirements_txt__filename_relative="$1"
     shift 1
   elif [ "$1" = "--show-env" ]; then 
     shift 1
@@ -699,15 +699,15 @@ python_version="$(python3 --version | cut -d ' ' -f 2,2)"
 #if [ "$assume__sqlite_version__to_old" = 1 ]; then
 #  echo "$0: assume__sqlite_version__to_old=$assume__sqlite_version__to_old => using requirements-centos.txt" 1>&2
 #  cp "$fod_dir/requirements-centos.txt" "$fod_dir/requirements.txt"
-if [ "$requirements_txt__file__basename" != "$requirements_txt__file__basename__default" ]; then
-  echo "python reqs: using $fod_dir/$requirements_txt__file__basename" 1>&2
-  cp -f "$fod_dir/$requirements_txt__file__basename" "$fod_dir/requirements.txt"
+if [ "$requirements_txt__filename_relative" != "$requirements_txt__filename_relative__default" ]; then
+  echo "python reqs: using $fod_dir/$requirements_txt__filename_relative" 1>&2
+  cp -f "$fod_dir/$requirements_txt__filename_relative" "$fod_dir/requirements.txt"
 else
   if [ -e "$fod_dir/requirements.txt.python$python_version" ]; then
     echo "python reqs: using python version specific $fod_dir/requirements.txt.python$python_version" 1>&2
-    cp -f "$fod_dir/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
+    cp -f "$fod_dir/requirements.txt.d/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
   else
-    echo "python reqs: using default $fod_dir/$requirements_txt__file__basename__default" 1>&2
+    echo "python reqs: using default $fod_dir/$requirements_txt__filename_relative__default" 1>&2
   fi
 fi
 

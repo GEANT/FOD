@@ -502,10 +502,12 @@ fi
 python_version="$(python3 --version | cut -d ' ' -f 2,2)"
 if [ "$assume__sqlite_version__to_old" = 1 ]; then
   echo "$0: assume__sqlite_version__to_old=$assume__sqlite_version__to_old => using requirements-centos.txt" 1>&2
-  cp "$fod_dir/requirements-centos.txt" "$fod_dir/requirements.txt"
+  #cp "$fod_dir/requirements-centos.txt" "$fod_dir/requirements.txt"
+  cp "$fod_dir/requirements.txt.d/requirements-centos.txt" "$fod_dir/requirements.txt"
 elif [ -e "$fod_dir/requirements.txt.python$python_version" ]; then
   echo "$0: using python version specific $fod_dir/requirements.txt.python$python_version" 1>&2
-  cp "$fod_dir/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
+  #cp "$fod_dir/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
+  cp "$fod_dir/requirements.txt.d/requirements.txt.python$python_version" "$fod_dir/requirements.txt"
 else
   echo "$0: using $fod_dir/requirements.txt" 1>&2
 fi
