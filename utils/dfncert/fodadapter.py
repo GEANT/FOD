@@ -130,10 +130,13 @@ def get_nokia_stats():
 
     logger.info("get_nokia_stats(): before creating manager")
     #multiprocessing.set_start_method('spawn')
+
+    ## hack to make current celery worker process non-daemonic, so it can reuse multiprocessing:
+    #del (multiprocessing.current_process()._config)['daemon']
     #manager = multiprocessing.Manager()
 
     import queue
-    #q = queue.Queue()
+    ##q = queue.Queue()
     manager = queue
 
     logger.info("get_nokia_stats(): after creating manager")
@@ -145,7 +148,7 @@ def get_nokia_stats():
 
     if option_oneshot:
 
-        logger.info("get_nokia_stats(): option_oneshot")
+        logger.info("get_nokia_stats(): option_oneshotx ROUTERS="+str(ROUTERS))
 
         router_data = {router['name']: query_router_once(router) for router in ROUTERS}
 

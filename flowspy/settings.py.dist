@@ -567,6 +567,8 @@ NETCONF_PORT = 830
 # generic mitigation statistics support
 
 MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS="mitigation_stats_collector_specific_junos_snmp"
+#MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS="mitigation_stats_collector_specific_nokia"
+#MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS="mitigation_stats_collector_specific_multi"
 
 ##############################################################################
 ##############################################################################

@@ -11,6 +11,9 @@ if hasattr(settings, "MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS") and settin
 elif hasattr(settings, "MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS") and settings.MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS == "mitigation_stats_collector_specific_junos_snmp":
   from utils import mitigation_stats_collector_specific_junos_snmp as mitigation_stats_collector_specific_class
   mitigation_stats_collector_specific = mitigation_stats_collector_specific_class.MitigationStatisticCollectorSpecific_JunosSnmp()
+elif hasattr(settings, "MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS") and settings.MITIGATION_STATISTIC_COLLECTOR_SPECIFIC_CLASS == "mitigation_stats_collector_specific_multi":
+  from utils import mitigation_stats_collector_specific_multi as mitigation_stats_collector_specific_class
+  mitigation_stats_collector_specific = mitigation_stats_collector_specific_class.MitigationStatisticCollectorSpecific_Multi()
 else: # default is junos_snmp for compatibility
   from utils import mitigation_stats_collector_specific_junos_snmp as mitigation_stats_collector_specific_class
   mitigation_stats_collector_specific = mitigation_stats_collector_specific_class.MitigationStatisticCollectorSpecific_JunosSnmp()
