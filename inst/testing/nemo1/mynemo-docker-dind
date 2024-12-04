@@ -60,6 +60,7 @@ fi
 #xarg ./mynemo-docker-dind --docker.containerids # get inside container ids
 #xarg 
 #xarg  ./mynemo-docker-dind --setup-and-run-vsmd-container # setup and run vsmd inner container; finally run vsmd in foreground
+#xarg  ./mynemo-docker-dind --run-vsmd-in-vsmd-container # re-run vsmd in foreground in vsmd inner container
 #xarg 
 #xarg 3. related to freertr+host1+host2 docker-compose:
 #xarg 
@@ -79,6 +80,8 @@ docker_outer__container_name="nemo-all1"
 docker_outer_volume_forinnerdockerdir="dind1"
 
 outer_https_port="8000"
+
+extra_port_redirection_args=(-p "8025:8025")
 
 docker_log_postfix="_1" # has to be consistent with docker_outer__container_name?
 
@@ -210,7 +213,7 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ## 
 
   echo "# starting new debian-docker-in-docker container:" 1>&2
-  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "$docker_outer__image_name")
+  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
   #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   docker network connect "$network1_name" "$docker_outer__container_name"
@@ -509,13 +512,15 @@ elif [ "$1" = "--all1" ]; then #arg # --all --prune --verbose
   shift 1
 
   #exec "$0" --all --prune --verbose "$@" #arg rest
-  exec "$0" --build-and-setup --prune --verbose "$@" #arg rest
+  #exec "$0" --build-and-setup --prune --verbose "$@" #arg rest
+  exec "$0" --build-and-setup --prune --verbose --dev "$@" #arg rest
 
 elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
   shift 1
 
   #exec "$0" --build-and-bash --build-without-data -c './mygit_clone_nemo0 && cd nemo-docker && ./setup.sh "$@"' -- "$@" #arg rest
-  exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose
+  #exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose
+  exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose --dev
 
 #arg
 
@@ -525,6 +530,11 @@ elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner do
   # build and init and "wire" vsmd inner container within nemo outer container
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
    "$0" --exec ./mynemo-mitigation-init-container.sh
+
+elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd continer in foreground
+  shift 1
+
+   "$0" --exec ./mynemo-mitigation-vsmd-run-in-container
 
 #arg
 
@@ -757,7 +767,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    set -x
 
    # build and init nemo-outer container and build and init and run all detection container inside
-   "$0" --all1 
+   "$0" --all1 "$@"
 
    # init frnet comprising freertr router and host1/host2 test network
    "$0" --freertr-testnet-prep-and-run

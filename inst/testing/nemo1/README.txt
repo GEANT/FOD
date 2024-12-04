@@ -1,4 +1,29 @@
 
+= all-in-one-build of NeMo-detection+mitigation container and Freertr router + test hosts
+
+pre-requisites: docker, ethtool
+
+1.) clone all nemo-repos as subdirs here (including ./nemo-docker)
+
+2.) run ./mynemo-docker-dind --allx 
+(will build and start everything;
+finally will run vsmd process in foreground (in vsmd1 inner container); Please keep it running! 
+(TODO: run vsmd in background as a daemon controlled by systemd in vsmd1 inner container) )
+
+3.) (in other terminal:) run ./mynemo-docker-dind --nemo-get-filename-of-certfile # get location of HTTPS cert file (accessible as root, to be imported into your web browser)
+
+4.) access localhost port 443 via your web browser, with the HTTPS certfile from 3. installed
+(if you need to re-install a new version of this HTTPS certificate, do not forget to retract the previous version)
+
+If the terminal where vsmd runs in foreground is closed for any reason, or vsmd therein is stopped or so,
+you can restart vsmd in foreground again by:
+./mynemo-docker-dind --run-vsmd-in-vsmd-container
+
+
+...
+
+========
+
 = build+run nemo docker-in-docker container together with freertr+attack/victim-hosts docker-compose
 
 0)
