@@ -460,6 +460,8 @@ def edit_route(request, route_slug):
     applier = request.user.pk
     route_edit = get_object_or_404(Route, name=route_slug)
 
+    FoDExtraPermissionsModel.test_can_use_netmask(request)
+
     applier_peer_networks = []
     if request.user.is_superuser:
         applier_peer_networks = PeerRange.objects.all()
