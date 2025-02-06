@@ -24,6 +24,7 @@ from django.contrib.sites.models import Site
 from django.utils.translation import ugettext_lazy as _
 from django.urls import reverse
 from flowspec.tasks import *
+from django.contrib.auth.models import Permission
 
 from flowspec.helpers import send_new_mail, get_peer_techc_mails
 from utils.proxy import PR0 as PR
@@ -820,6 +821,59 @@ class Route(models.Model):
 
     def get_absolute_url(self):
         return reverse('route-details', kwargs={'route_slug': self.name})
+
+##
+
+class FoDExtraPermissionsModel(models.Model):
+   # Model fields go here
+    class Meta:
+        # TODO: like this, only useful for IPV4:
+        permissions = (
+                        ( "can_use_netmask31_in_rules", "Can use net mask 31 and higher in rules"), 
+                        ( "can_use_netmask30_in_rules", "Can use net mask 30 and higher in rules"), 
+                        ( "can_use_netmask29_in_rules", "Can use net mask 29 and higher in rules"), 
+                        ( "can_use_netmask28_in_rules", "Can use net mask 28 and higher in rules"), 
+                        ( "can_use_netmask27_in_rules", "Can use net mask 27 and higher in rules"), 
+                        ( "can_use_netmask26_in_rules", "Can use net mask 26 and higher in rules"), 
+                        ( "can_use_netmask25_in_rules", "Can use net mask 25 and higher in rules"), 
+                        ( "can_use_netmask24_in_rules", "Can use net mask 24 and higher in rules"), 
+                        ( "can_use_netmask23_in_rules", "Can use net mask 23 and higher in rules"), 
+                        ( "can_use_netmask22_in_rules", "Can use net mask 22 and higher in rules"), 
+                        ( "can_use_netmask21_in_rules", "Can use net mask 21 and higher in rules"), 
+                        ( "can_use_netmask20_in_rules", "Can use net mask 20 and higher in rules"), 
+                      )
+
+    @classmethod
+    def test_can_use_netmask__inner(classhandle, permissions, min_netmasksize):
+      string1="can_use_netmask"
+      string2="_in_rules"
+      permissions = permissions.filter(codename__startswith=string1).filter(codename__endswith=string2)
+
+      for perm in permissions:
+        codename=perm.codename
+        logger.info("test_can_use_netmask(): codename="+str(codename))
+        netmask=codename[len(string1):]
+        netmask=netmask[0:len(netmask)-len(string2)]
+        logger.info("test_can_use_netmask(): => netmask="+str(netmask))
+        netmask=int(netmask)
+        if netmask < min_netmasksize:
+          min_netmasksize = netmask
+
+      return min_netmasksize
+
+    @classmethod
+    def test_can_use_netmask(classhandle, request):
+        # Individual permissions
+        permissions = Permission.objects.filter(user=request.user)
+        logger.info("test_can_use_netmask(): permissions1="+str(permissions))
+        min_netmasksize = classhandle.test_can_use_netmask__inner(permissions, 32)
+
+        # Permissions that the user has via a group
+        group_permissions = Permission.objects.filter(group__user=request.user)
+        logger.info("test_can_use_netmask(): permissions2="+str(group_permissions))
+        min_netmasksize = classhandle.test_can_use_netmask__inner(group_permissions, min_netmasksize)
+
+        logger.info("test_can_use_netmask(): => min_netmasksize="+str(min_netmasksize))
 
 ##
 
