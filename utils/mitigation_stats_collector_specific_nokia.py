@@ -36,7 +36,7 @@ class MitigationStatisticCollectorSpecific_Nokia(MitigationStatisticCollectorSpe
       logger.info("MitigationStatisticCollectorSpecific_Nokia::get_new_mitigation_statistic_data(): after calling get_nokia_stats(): => ret1="+str(ret1))
       return ret1
     except Exception as e:
-      logger.error("MitigationStatisticCollectorSpecific_Nokia::get_new_mitigation_statistic_data(): got exception e="+str(e))
+      logger.error("MitigationStatisticCollectorSpecific_Nokia::get_new_mitigation_statistic_data(): got exception e="+str(e), exc_info=True)
     return {}
   
   # to be overriden in sub classes

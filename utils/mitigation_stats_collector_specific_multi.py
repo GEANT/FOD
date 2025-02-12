@@ -38,12 +38,20 @@ class MitigationStatisticCollectorSpecific_Multi(MitigationStatisticCollectorSpe
 
     # TODO: run all parallel:
 
-    mitigation_stats_collector_specific1 = MitigationStatisticCollectorSpecific_Nokia()
-    stats_data1 = mitigation_stats_collector_specific1.get_new_mitigation_statistic_data()
+    try:
+      mitigation_stats_collector_specific1 = MitigationStatisticCollectorSpecific_Nokia()
+      stats_data1 = mitigation_stats_collector_specific1.get_new_mitigation_statistic_data()
+    except Exception as e:
+      logger.info("get_new_mitigation_statistic_data(): fetching stats_data1: got exception e="+str(e), exc_info=True)
+    logger.info("stats_data1="+str(stats_data1))
 
 
-    mitigation_stats_collector_specific2 = MitigationStatisticCollectorSpecific_JunosSnmp()
-    stats_data2 = mitigation_stats_collector_specific2.get_new_mitigation_statistic_data()
+    try:
+      mitigation_stats_collector_specific2 = MitigationStatisticCollectorSpecific_JunosSnmp()
+      stats_data2 = mitigation_stats_collector_specific2.get_new_mitigation_statistic_data()
+    except Exception as e:
+      logger.info("get_new_mitigation_statistic_data(): fetching stats_data2: got exception e="+str(e), exc_info=True)
+    logger.info("stats_data2="+str(stats_data2))
 
     # TODO: merge data 
 
