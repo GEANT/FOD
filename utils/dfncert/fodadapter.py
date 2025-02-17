@@ -9,8 +9,6 @@ from utils.route_spec_utils import translate_cisco_flow_id__to__generic_rulespec
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_nokiastats_dfncert.log", False)
 
-logger.info("test1")
-
 # adapted from utils.dfncert.daemon-sum-router:
 
 import os
@@ -331,7 +329,8 @@ def dicts_to_nokia_output2(routes, results):
             rate_limit__cisco_format=rate_limit__cisco_format[0:(len(rate_limit__cisco_format)-len(postfix__bps))]
 
           # TODO: interprete k/M unit scale ...
-          xtype=unify_ratelimit_value(rate_limit__cisco_format, base=8) 
+          #xtype=unify_ratelimit_value(rate_limit__cisco_format, base=8) 
+          xtype=unify_ratelimit_value(rate_limit__cisco_format, base=1) 
           logger.info("dicts_to_nokia_output2(): rate_limit__cisco_format="+str(rate_limit__cisco_format)+" => xtype="+str(xtype))
 
           results[rulespec_by_params][xtype] = {

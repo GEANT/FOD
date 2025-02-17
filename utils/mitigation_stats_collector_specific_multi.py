@@ -53,5 +53,31 @@ class MitigationStatisticCollectorSpecific_Multi(MitigationStatisticCollectorSpe
       logger.info("get_new_mitigation_statistic_data(): fetching stats_data2: got exception e="+str(e), exc_info=True)
     logger.info("stats_data2="+str(stats_data2))
 
-    # TODO: merge data 
+    ##
+
+    merged_stats = {}
+
+    seen_ruleids={}
+    for ruleid in stats_data1:
+      stat1 = stats_data1[ruleid]
+      if not (ruleid in stats_data2):
+        merged = stat1 
+      else:
+        merged = stat1
+        stat2 = stats_data2[ruleid]
+        if 'counter' in stat1 and 'counter' in stat2:
+          stat1counter = stat1['counter']
+          stat2counter = stat2['counter']
+          if 'packets' in stat1counter and 'packets' in stat2counter and 'bytes' in stat1counter and 'bytes' in stat2counter:
+            merged = { 'counter': { 'packets' : stat1counter['packets'] + stat2counter['packets'], 'bytes' : stat1counter['bytes'] + stat2counter['bytes']  } } 
+      merged_stats[ruleid] = merged
+
+    for ruleid in stats_data2:
+      if not (ruleid in merged_stats):
+        merged_stats[ruleid] = stats_data2[ruleid]
+
+    # TODO: only non ratelimit rules for now supported
+    logger.info("=> merged_stats="+str(merged_stats))
+
+    return merged_stats
 
