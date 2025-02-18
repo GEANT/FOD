@@ -65,11 +65,16 @@ class MitigationStatisticCollectorSpecific_Multi(MitigationStatisticCollectorSpe
       else:
         merged = stat1
         stat2 = stats_data2[ruleid]
-        if 'counter' in stat1 and 'counter' in stat2:
-          stat1counter = stat1['counter']
-          stat2counter = stat2['counter']
-          if 'packets' in stat1counter and 'packets' in stat2counter and 'bytes' in stat1counter and 'bytes' in stat2counter:
-            merged = { 'counter': { 'packets' : stat1counter['packets'] + stat2counter['packets'], 'bytes' : stat1counter['bytes'] + stat2counter['bytes']  } } 
+
+        merged = {}
+        for statkey in stat1:
+          if statkey in stat2:
+
+            stat1counter = stat1[statkey]
+            stat2counter = stat2[statkey]
+            if 'packets' in stat1counter and 'packets' in stat2counter and 'bytes' in stat1counter and 'bytes' in stat2counter:
+              merged[statkey] = { 'packets' : stat1counter['packets'] + stat2counter['packets'], 'bytes' : stat1counter['bytes'] + stat2counter['bytes']  }
+
       merged_stats[ruleid] = merged
 
     for ruleid in stats_data2:
