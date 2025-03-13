@@ -449,6 +449,14 @@ def translate_cisco_flow_id__to__generic_rulespec_by_params(cisco_rule_spec):
 
           source_port_spec = rest_spec
 
+      # TODO: IPv6 ? 
+      if source_prefix=="":
+        source_prefix="0.0.0.0/0"
+
+      # TODO: IPv6 ? 
+      if destination_prefix=="":
+        destination_prefix="0.0.0.0/0"
+
       ##
 
       logger.info("translate_cisco_flow_id__to__generic_rulespec_by_params(): => destination_prefix="+str(destination_prefix))

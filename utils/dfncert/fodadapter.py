@@ -9,8 +9,6 @@ from utils.route_spec_utils import translate_cisco_flow_id__to__generic_rulespec
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_nokiastats_dfncert.log", False)
 
-logger.info("test1")
-
 # adapted from utils.dfncert.daemon-sum-router:
 
 import os
@@ -130,10 +128,13 @@ def get_nokia_stats():
 
     logger.info("get_nokia_stats(): before creating manager")
     #multiprocessing.set_start_method('spawn')
+
+    ## hack to make current celery worker process non-daemonic, so it can reuse multiprocessing:
+    #del (multiprocessing.current_process()._config)['daemon']
     #manager = multiprocessing.Manager()
 
     import queue
-    #q = queue.Queue()
+    ##q = queue.Queue()
     manager = queue
 
     logger.info("get_nokia_stats(): after creating manager")
@@ -145,7 +146,7 @@ def get_nokia_stats():
 
     if option_oneshot:
 
-        logger.info("get_nokia_stats(): option_oneshot")
+        logger.info("get_nokia_stats(): option_oneshotx ROUTERS="+str(ROUTERS))
 
         router_data = {router['name']: query_router_once(router) for router in ROUTERS}
 
@@ -328,7 +329,8 @@ def dicts_to_nokia_output2(routes, results):
             rate_limit__cisco_format=rate_limit__cisco_format[0:(len(rate_limit__cisco_format)-len(postfix__bps))]
 
           # TODO: interprete k/M unit scale ...
-          xtype=unify_ratelimit_value(rate_limit__cisco_format, base=8) 
+          #xtype=unify_ratelimit_value(rate_limit__cisco_format, base=8) 
+          xtype=unify_ratelimit_value(rate_limit__cisco_format, base=1) 
           logger.info("dicts_to_nokia_output2(): rate_limit__cisco_format="+str(rate_limit__cisco_format)+" => xtype="+str(xtype))
 
           results[rulespec_by_params][xtype] = {

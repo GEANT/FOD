@@ -144,6 +144,8 @@ class MitigationStatisticCollectorSpecific_Base():
       except Exception as e:
         logger.error("poll_mitigation_statistics(): get_new_mitigation_statistic_data failed: "+str(e))
         return False
+      
+      logger.info("poll_mitigation_statistics(): polling mitigation statistics newdata="+str(newdata))
   
       if False:
         for id in newdata:
