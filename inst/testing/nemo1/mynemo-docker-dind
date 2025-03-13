@@ -191,8 +191,8 @@ elif [ "$1" = "--docker-build" ]; then #arg
   #(set -x; docker volume rm "$docker_outer_volume_forinnerdockerdir")
   outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
   echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
-  #(set -x; rm -rf /var/lib/docker/volumes/dind1/_data/containers/*)
   (set -x; rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
+  (set -x; rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/containers/"*) || true
   echo 1>&2
 
   ##
