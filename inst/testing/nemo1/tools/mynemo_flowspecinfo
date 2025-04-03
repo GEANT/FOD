@@ -15,7 +15,7 @@ echo "# exabgp conf:"
 echo
 
 echo "# exabgp show neighbor summary:"
-"$MYNDD"--bash-vsmd1 exabgp-cli show neighbor summary
+"$MYNDD" --bash-vsmd1 exabgp-cli show neighbor summary
 echo
 
 # e.g. debug fwd packet
