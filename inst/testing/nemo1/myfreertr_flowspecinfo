@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# to be called outside of any container on the host
+
+# debug fwd packet
+
+echo "# exabgp conf:"
+./mynemo-docker-dind --bash-vsmd1 cat /etc/exabgp/exabgp.conf
+echo
+
+echo "# exabgp show neighbor summary:"
+./mynemo-docker-dind --bash-vsmd1 exabgp-cli show neighbor summary
+echo
+
+echo "# freertr bgp summary:"
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 summary"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'
+echo
+
+echo "# freertr flowspec summary:"
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'
+echo
+
+echo "# exabgp show adj-rib in extensive:"
+./mynemo-docker-dind --bash-vsmd1 exabgp-cli show adj-rib in extensive
+echo
+
+echo "# freertr flowspec database:"
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec database"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }' 
+echo
+
+echo "# freertr flowspec unused:"
+docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec unused"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }' 
+echo
+
+# show ipv4 bgp 1 flowspec allroute f01:200a:20a:c02:200a:10a:b03:8106#::
+
+echo "# freertr policy-map flowspec:"
+docker exec -ti freertr sh -c '{ echo "show policy-map flowspec CORE ipv4"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'
+
+
+
