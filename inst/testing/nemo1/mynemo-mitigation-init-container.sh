@@ -39,5 +39,7 @@ docker run -d \
 	--mount type=bind,source=/nemo-all/secrets/,target=/nemo-all/secrets/ \
 	"$container_name"
 
-docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
+docker exec -ti "$container_name" hostname vsmd1
+
+exec docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
 

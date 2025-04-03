@@ -4,8 +4,13 @@
 
 # debug fwd packet
 
+# flowspec examples:
 # e.g. exabgpcli neighbor 10.197.36.3 announce flow route destination-ipv4 10.1.1.1/32 source-ipv4 1.1.1.1/32 protocol =tcp destination-port =2 source-port =1 
 # e.g. exabgpcli neighbor 10.197.36.3 announce flow route destination-ipv4 10.1.10.11/32 extended-community redirect:1001:100
+
+# normal route example:
+# e.g. exabgpcli neighbor 10.197.36.3 announce route 100.100.0.0/16 next-hop 172.16.2.202
+# e.g. exabgpcli neighbor 10.197.36.3 announce route 100.100.0.0/16 next-hop 172.16.2.202 community 65001:666
 
 if [ "$1" = "--list0" -o "$1" = "--list-in0" ]; then
   shift 1
@@ -16,6 +21,12 @@ elif [ "$1" = "--list" -o "$1" = "--list-in" ]; then
   shift 1
 
   set -- show adj-rib in extensive 
+
+elif [ "$1" = "--announce1" -o "$1" = "--announce-freertr" ]; then
+  shift 1
+
+  set -- neighbor 10.197.36.3 announce "$@"
+
 fi	
 
 #

@@ -93,6 +93,11 @@ docker_outer_hostname="localhost"
 
 #
 
+#docker_outer__sshauth_volume__args=(--volume "$SSH_AUTH_SOCK:/ssh-auth-sock") # useful, but renders restart of outer nemo container tricky to impossible after system user logout/system reboot (when SSH_AUTH_SOCK env var has changed)
+docker_outer__sshauth_volume__args=()
+
+#
+
 if [ "$1" = "--dockerfile-output" ]; then #arg
   shift 1
 
@@ -213,10 +218,15 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ## 
 
   echo "# starting new debian-docker-in-docker container:" 1>&2
-  (set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
+  (set -x; docker run -d --privileged "${docker_outer__sshauth_volume__args[@]}" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
+  #(set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
   #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   docker network connect "$network1_name" "$docker_outer__container_name"
+  echo 1>&2
+
+  echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
+  (set -x; docker exec -ti "$docker_outer__container_name" hostname "nemo-all1")
   echo 1>&2
     
   echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
@@ -531,7 +541,7 @@ elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner do
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
    "$0" --exec ./mynemo-mitigation-init-container.sh
 
-elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd continer in foreground
+elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd container in foreground
   shift 1
 
    "$0" --exec ./mynemo-mitigation-vsmd-run-in-container
@@ -551,6 +561,10 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   #./frnet/docker-compose/freertr_disable_offload.sh
   ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
+
+  docker exec freertr hostname freertr
+  docker exec host1 hostname host1
+  docker exec host2 hostname host2
 
 elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open telnet to freertr console
   shift 1

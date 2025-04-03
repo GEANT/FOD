@@ -14,5 +14,5 @@ shift 1
 # just re-runs last action of ./mynemo-mitigation-init-container.sh, which is to run vsmd process in foreground
 
 #docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
-docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-run
+exec docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-run
 
