@@ -5,6 +5,8 @@
 
 ./mynemo-mitigation-vsmd-install-deps0
 
+update-alternatives --set iptables /usr/sbin/iptables-legacy
+
 if [ "$1" = "--stage1" ]; then
   exit
 fi
