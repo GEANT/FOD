@@ -12,10 +12,12 @@ fi
 
 #
 
+# ./tools/mynemo_flowspecinfo
 "$DIR1/mynemo_flowspecinfo"
 echo
 
 echo "# nemo mitigation countermeasures (old iptables + ebpf):"
+# ./tools/mycountermeasures_iptables_list
 "$DIR1/mycountermeasures_iptables_list"
 
 #

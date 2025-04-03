@@ -27,8 +27,8 @@ echo "# freertr flowspec summary:"
 docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'
 echo
 
-echo "# exabgp show adj-rib in extensive:"
-"$MYNDD" --bash-vsmd1 exabgp-cli show adj-rib in extensive
+echo "# exabgp show adj-rib out extensive:"
+"$MYNDD" --bash-vsmd1 exabgp-cli show adj-rib out extensive
 echo
 
 echo "# freertr flowspec database:"
