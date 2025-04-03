@@ -2,16 +2,23 @@
 
 # to be called outside of any container on the host
 
-# debug fwd packet
+if [ -e "./mynemo-docker-dind" ]; then
+  MYNDD="./mynemo-docker-dind"
+elif [ -e "../mynemo-docker-dind" ]; then
+  MYNDD="../mynemo-docker-dind"
+fi  
+
+#
 
 echo "# exabgp conf:"
-./mynemo-docker-dind --bash-vsmd1 cat /etc/exabgp/exabgp.conf
+"$MYNDD" --bash-vsmd1 cat /etc/exabgp/exabgp.conf | tr -d $'\r'
 echo
 
 echo "# exabgp show neighbor summary:"
-./mynemo-docker-dind --bash-vsmd1 exabgp-cli show neighbor summary
+"$MYNDD"--bash-vsmd1 exabgp-cli show neighbor summary
 echo
 
+# e.g. debug fwd packet
 echo "# freertr bgp summary:"
 docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 summary"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'
 echo
@@ -21,7 +28,7 @@ docker exec -ti freertr sh -c '{ echo "show ipv4 bgp 1 flowspec summary"; echo "
 echo
 
 echo "# exabgp show adj-rib in extensive:"
-./mynemo-docker-dind --bash-vsmd1 exabgp-cli show adj-rib in extensive
+"$MYNDD" --bash-vsmd1 exabgp-cli show adj-rib in extensive
 echo
 
 echo "# freertr flowspec database:"

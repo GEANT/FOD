@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# to be called outside of any container on the host
+
+# debug fwd packet
+
+docker exec -ti freertr sh -c '{ echo "'"$*"'"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'

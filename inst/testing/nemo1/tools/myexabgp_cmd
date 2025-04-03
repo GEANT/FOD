@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# to be called outside of any container on the host
+
+# debug fwd packet
+
+# e.g. exabgpcli neighbor 10.197.36.3 announce flow route destination-ipv4 10.1.1.1/32 source-ipv4 1.1.1.1/32 protocol =tcp destination-port =2 source-port =1 
+# e.g. exabgpcli neighbor 10.197.36.3 announce flow route destination-ipv4 10.1.10.11/32 extended-community redirect:1001:100
+
+if [ "$1" = "--list0" -o "$1" = "--list-in0" ]; then
+  shift 1
+
+  set -- show adj-rib in 
+
+elif [ "$1" = "--list" -o "$1" = "--list-in" ]; then
+  shift 1
+
+  set -- show adj-rib in extensive 
+fi	
+
+#
+
+if [ -e "./mynemo-docker-dind" ]; then
+  MYNDD="./mynemo-docker-dind"
+elif [ -e "../mynemo-docker-dind" ]; then
+  MYNDD="../mynemo-docker-dind"
+fi  
+
+exec "$MYNDD" --bash-vsmd1 exabgpcli "$@"
+

@@ -5,7 +5,8 @@ countermeasurectl: /opt/countermeasure/countermeasure
 #offrampctl: /bin/echo
 offrampctl: /opt/offrampctl/offrampctl
 
-flowspec_redirect: 65023:172
+#flowspec_redirect: 65023:172
+flowspec_redirect: 1001:100
 
 #rpc_host: localhost
 rpc_host: 172.18.0.1
