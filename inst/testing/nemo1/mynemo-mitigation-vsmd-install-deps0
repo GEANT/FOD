@@ -22,6 +22,9 @@ if [ ! -f /.nemo_vsmd-deps0_setuped ]; then
 
   apt-get update -yyy  
   apt-get -yyy install virtualenv
+
+  # also needed for countermeasurectl:
+  apt-get -yyy install ipset
   
   touch /.nemo_vsmd-deps0_setuped
 

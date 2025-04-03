@@ -1,5 +1,6 @@
 #!/bin/bash
 
+apt-get install bpftool
 apt-get install linux-tools-common linux-tools-generic
 
 apt-get install bpfmon 
