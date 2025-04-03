@@ -225,9 +225,10 @@ elif [ "$1" = "--docker-build" ]; then #arg
   docker network connect "$network1_name" "$docker_outer__container_name"
   echo 1>&2
 
-  echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
-  (set -x; docker exec -ti "$docker_outer__container_name" hostname "nemo-all1")
-  echo 1>&2
+  # does not work: breaks inner fishtank?:
+  #echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
+  #(set -x; docker exec -ti "$docker_outer__container_name" hostname "nemo-all1")
+  #echo 1>&2
     
   echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
   (set -x; docker exec -ti "$docker_outer__container_name" sh -c "sleep 1; while ! docker ps >/dev/null; do sleep 1; done; echo docker-inside running")
