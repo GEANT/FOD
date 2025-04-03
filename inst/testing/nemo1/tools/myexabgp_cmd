@@ -12,6 +12,7 @@
 # e.g. exabgpcli neighbor 10.197.36.3 announce route 100.100.0.0/16 next-hop 172.16.2.202
 # e.g. exabgpcli neighbor 10.197.36.3 announce route 100.100.0.0/16 next-hop 172.16.2.202 community 65001:666
 # e.g. ./tools/myexabgp_cmd --announce1 route 10.1.10.11/32 next-hop 10.197.36.2 community 65001:666
+# e.g. ./tools/myexabgp_cmd --announce1 route 10.1.10.11/32 next-hop 10.197.36.2
 
 if [ "$1" = "--list0" -o "$1" = "--list-out0" ]; then
   shift 1

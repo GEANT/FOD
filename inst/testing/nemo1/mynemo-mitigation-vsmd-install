@@ -173,7 +173,9 @@ neighbor 10.197.36.3 {
 
   family {
     ipv4 flow;
+    ipv4 unicast; # needed for "hardcoded" rerouting of traffic (via normal bgp route) as freertr does not yet support flowspec-based redirect:...
     ipv6 flow;
+    ipv6 unicast; # needed for "hardcoded" rerouting of traffic (via normal bgp route) as freertr does not yet support flowspec-based redirect:...
   }
 
   api {
