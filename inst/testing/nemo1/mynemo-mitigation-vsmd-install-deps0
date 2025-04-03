@@ -25,6 +25,9 @@ if [ ! -f /.nemo_vsmd-deps0_setuped ]; then
 
   # also needed for countermeasurectl:
   apt-get -yyy install ipset
+ 
+  # useful:
+  apt-get -yyy install gawk
   
   touch /.nemo_vsmd-deps0_setuped
 

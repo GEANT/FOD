@@ -479,6 +479,24 @@ elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log fi
 
 #
 
+elif [ "$1" = "--logsall2vsmd" ]; then #arg # determine all active log files in nemo container
+  shift 1
+
+  pid1_vsmd_inner="$(docker exec "$docker_outer__container_name" docker inspect vsmd1 | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')"
+  echo "$0: vsmd1 => inner pid $pid1_vsmd_inner" 1>&2
+
+  [ -n "$pid1_vsmd_inner" ] && pid1_vsmd_outer="$(grep -E -h "^NSpid:\\s*[0-9]+\\s*$pid1_vsmd_inner" /proc/*/status | awk 'NR==1 { print $2; }')"
+  echo "$0: vsmd1 => outer pid $pid1_vsmd_outer" 1>&2
+
+  (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid1_vsmd_outer/root")
+
+elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active log files in nemo container
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
+
+#
+
 elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside 
   shift 1
 
