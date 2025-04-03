@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# to be called outside of any container on the host
+
+if [ -e "./mynemo-docker-dind" ]; then
+  MYNDD="./mynemo-docker-dind"
+  DIR1="./tools/"
+elif [ -e "../mynemo-docker-dind" ]; then
+  MYNDD="../mynemo-docker-dind"
+  DIR1="./"
+fi  
+
+#
+
+"$DIR1/mynemo_flowspecinfo"
+echo
+
+echo "# nemo mitigation countermeasures (old iptables + ebpf):"
+"$DIR1/mycountermeasures_iptables_list"
+
+#
+
+
+

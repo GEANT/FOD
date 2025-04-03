@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# to be called outside of any container on the host
+
+#
+
+if [ -e "./mynemo-docker-dind" ]; then
+  MYNDD="./mynemo-docker-dind"
+elif [ -e "../mynemo-docker-dind" ]; then
+  MYNDD="../mynemo-docker-dind"
+fi  
+
+exec "$MYNDD" --bash-vsmd1 iptables -L -v  "$@"
+
