@@ -159,6 +159,11 @@ for item in fileinput.input():
                     )
             #print("content="+str(content))
 
+            if src_is_any:
+                ""
+            else:
+                src_all_str=",Source:"+str(source_net)+"/"+str(source_mask)
+
             with open(destination_filename, mode = "w") as message:
                 message.write(content)
             command = "chown freerouter:freerouter /home/freerouter/template_result.txt"
