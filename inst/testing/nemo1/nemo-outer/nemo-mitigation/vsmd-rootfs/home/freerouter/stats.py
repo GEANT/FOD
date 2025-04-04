@@ -87,10 +87,19 @@ for item in fileinput.input():
             line.remove("")
         #print("line="+str(line))
 
+        delta=0
+        src_is_any=False
         if len(line) > 11:
+            if line[11]=="any":
+              src_is_any=True
+              delta=-1
+
             afi = "IPv4"
-            dest_net = line[14]
-            source_net = line[11]
+            dest_net = line[14+delta]
+            if not src_is_any:
+              source_net = line[11]
+            else:
+              source_net = "0.0.0.0"
 
             add_opts_str=""
 
@@ -101,7 +110,7 @@ for item in fileinput.input():
             if proto!="":
                 add_opts_str=add_opts_str+",Proto:="+str(proto)
 
-            dport = line[16].split("-")[0]
+            dport = line[16+delta].split("-")[0]
             dport = dport.rstrip()
             if dport=="all":
                 dport=""
@@ -109,7 +118,7 @@ for item in fileinput.input():
                 print("using dport="+str(dport)+".")
                 add_opts_str=add_opts_str+",DPort:="+str(dport)
 
-            sport = line[13].split("-")[0]
+            sport = line[13+delta].split("-")[0]
             sport = sport.rstrip()
             if sport=="all":
                 sport=""
@@ -122,9 +131,15 @@ for item in fileinput.input():
             drop = line[9].split("=")[1].replace(")", "")
             drop_left = drop.split("(")[0]
             drop_right = drop.split("(")[1]
-            source_mask = ipaddress.ip_address(line[12]).exploded
-            source_mask = 32 - 4 * str(source_mask).count("0")
-            dest_mask = ipaddress.ip_address(line[15]).exploded
+
+            if not src_is_any:
+              source_mask = ipaddress.ip_address(line[12+delta]).exploded
+              source_mask = 32 - 4 * str(source_mask).count("0")
+            else:
+              source_mask = ipaddress.ip_address("0.0.0.0").exploded
+              source_mask = "0"
+
+            dest_mask = ipaddress.ip_address(line[15+delta]).exploded
 
             dest_mask = 32 - 4 * str(dest_mask).count("0")
             content = template.render(
