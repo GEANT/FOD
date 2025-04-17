@@ -183,7 +183,68 @@ neighbor 10.197.36.3 {
   }
 
 }
+
 EOF
+
+if ifconfig eth2 &>/dev/null; then
+
+cat >> /etc/exabgp/exabgp.conf <<EOF
+neighbor 10.197.37.3 {
+  router-id  10.197.37.3;
+  local-address 10.197.37.2;
+  local-as 1001;
+  peer-as 2001;
+	  
+  #md5-password "SOME-PASSWORD";
+  group-updates;
+
+  family {
+    ipv4 flow;
+    ipv4 unicast; # needed for "hardcoded" rerouting of traffic (via normal bgp route) as freertr does not yet support flowspec-based redirect:...
+    ipv6 flow;
+    ipv6 unicast; # needed for "hardcoded" rerouting of traffic (via normal bgp route) as freertr does not yet support flowspec-based redirect:...
+  }
+
+  api {
+     processes [ announce-routes ];
+  }
+
+}
+
+EOF
+
+fi
+
+if ifconfig eth3 &>/dev/null; then
+
+cat >> /etc/exabgp/exabgp.conf <<EOF
+neighbor 10.197.38.3 {
+  router-id  10.197.38.3;
+  local-address 10.197.38.2;
+  local-as 1001;
+  peer-as 2001;
+	  
+  #md5-password "SOME-PASSWORD";
+  group-updates;
+
+  family {
+    ipv4 flow;
+    ipv4 unicast; # needed for "hardcoded" rerouting of traffic (via normal bgp route) as freertr does not yet support flowspec-based redirect:...
+    ipv6 flow;
+    ipv6 unicast; # needed for "hardcoded" rerouting of traffic (via normal bgp route) as freertr does not yet support flowspec-based redirect:...
+  }
+
+  api {
+     processes [ announce-routes ];
+  }
+
+}
+
+EOF
+
+fi
+
+sed -i -e "s/^bind *=.*$/bind = '0.0.0.0'/" /etc/exabgp/exabgp.env
 
 mkdir -p /services/inst/offrampctl/bin/
 { echo '#!/usr/bin/python3'; cat /nemo-all/nemo-vsmd/doc/example_controller/bin/exabgp_plugin.py; } > /services/inst/offrampctl/bin/exabgp_plugin.py

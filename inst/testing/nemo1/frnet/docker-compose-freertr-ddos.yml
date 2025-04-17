@@ -24,6 +24,11 @@ services:
               ipv4_address: 10.197.36.3
               #depends_on:
               #- fod
+      xnemo-trafficin:
+              ipv4_address: 10.197.37.3
+      xnemo-trafficout:
+              ipv4_address: 10.197.38.3
+
     volumes:
         - freertr:/opt
         - ./freertr/run:/rtr/run/
@@ -78,6 +83,25 @@ networks:
       driver: default
       config:
         - subnet: 10.197.36.0/24
+
+  xnemo-trafficin:
+    driver: bridge
+    driver_opts: 
+        com.docker.network.bridge.enable_ip_masquerade: 'false'
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.197.37.0/24
+
+  xnemo-trafficout:
+    driver: bridge
+    driver_opts: 
+        com.docker.network.bridge.enable_ip_masquerade: 'false'
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.197.38.0/24
+
 
   nhost1:
     driver: bridge
