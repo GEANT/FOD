@@ -3,5 +3,9 @@
 # to be called outside of any container on the host
 
 # debug fwd packet
+# debug proto bgp full
+
+# show ipv4 bgp 1 neighbor 10.197.37.2 messages
+# show ipv4 bgp 1 neighbor 10.197.37.2 status  
 
 docker exec -ti freertr sh -c '{ echo "'"$*"'"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'
