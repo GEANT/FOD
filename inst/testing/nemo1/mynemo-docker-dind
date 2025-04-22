@@ -222,16 +222,16 @@ elif [ "$1" = "--docker-build" ]; then #arg
   #(set -x; docker network inspect "freertr_nhost1" || docker network create -d bridge --subnet 10.1.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost1")
   #(set -x; docker network inspect "freertr_nhost2" || docker network create -d bridge --subnet 10.2.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost2")
   #(set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.198.36.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
-  (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
+  (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
 
   if [ "$enable_network2" = 1 ]; then
     echo "# setting up extra docker network for $network2_name:" 1>&2
-    (set -x; docker network inspect "$network2_name" || docker network create -d bridge --subnet 10.197.37.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network2_name")
+    (set -x; docker network inspect "$network2_name" || docker network create -d bridge --subnet 10.197.37.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network2_name")
   fi
 
   if [ "$enable_network3" = 1 ]; then
     echo "# setting up extra docker network for $network3_name:" 1>&2
-    (set -x; docker network inspect "$network3_name" || docker network create -d bridge --subnet 10.197.38.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network3_name")
+    (set -x; docker network inspect "$network3_name" || docker network create -d bridge --subnet 10.197.38.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network3_name")
   fi
 
   ## 
@@ -608,6 +608,10 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   #./frnet/docker-compose/freertr_disable_offload.sh
   ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
+
+  # fix needed to fix bgp connections on eth4 and eth5?:
+  docker exec freertr ip add del dev eth4 10.197.37.3
+  docker exec freertr ip add del dev eth5 10.197.38.3
 
   docker exec freertr hostname freertr
   docker exec host1 hostname host1
