@@ -4,6 +4,8 @@ ethtool -k eth0 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read k
 ethtool -k eth1 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read key; do ethtool -K eth1 "$key" off; done
 ethtool -k eth2 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read key; do ethtool -K eth2 "$key" off; done
 ethtool -k eth3 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read key; do ethtool -K eth3 "$key" off; done
+ethtool -k eth4 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read key; do ethtool -K eth4 "$key" off; done
+ethtool -k eth5 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read key; do ethtool -K eth5 "$key" off; done
 
 /rtr/hwdet-init.sh
 
@@ -12,5 +14,7 @@ ethtool -k eth3 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read k
 ip addr flush dev eth1
 ip addr flush dev eth2
 ip addr flush dev eth3
+ip addr flush dev eth4
+ip addr flush dev eth5
 
 exec java -Xmx1024m -jar /rtr/rtr.jar routerc /rtr/run/conf/rtr-

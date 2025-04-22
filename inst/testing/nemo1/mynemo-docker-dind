@@ -609,9 +609,9 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   #./frnet/docker-compose/freertr_disable_offload.sh
   ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
 
-  # fix needed to fix bgp connections on eth4 and eth5?:
-  docker exec freertr ip add del dev eth4 10.197.37.3
-  docker exec freertr ip add del dev eth5 10.197.38.3
+  # fix needed to fix bgp connections on eth4 and eth5
+  #docker exec freertr ip add del dev eth4 10.197.37.3
+  #docker exec freertr ip add del dev eth5 10.197.38.3
 
   docker exec freertr hostname freertr
   docker exec host1 hostname host1
