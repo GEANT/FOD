@@ -38,6 +38,7 @@ RUN mkdir -p /rtr && \
     wget https://raw.githubusercontent.com/rare-freertr/freeRtr-containerlab/main/start-rtr.sh -O /rtr/start-rtr.sh && \
     chmod +x /rtr/*
 
+COPY freertr-hw-add.cfg /rtr/rtr-hw-add.txt
 COPY freertr.cfg /rtr/rtr-sw.txt
 COPY freertr_setup_environment.sh /usr/local/bin/setup_environment.sh
 
