@@ -7,5 +7,12 @@
 
 # show ipv4 bgp 1 neighbor 10.197.37.2 messages
 # show ipv4 bgp 1 neighbor 10.197.37.2 status  
+# show ipv4 bgp 1 unicast allroute 10.1.10.11/32
+# show ipv4 route CORE 10.1.10.11/32
+# show ipv4 route CORE
+
+# ./tools/myexabgp_cmd --announce1 route 10.1.10.11/32 next-hop 10.197.36.2
+# route add 10.2.10.12/32 gw 10.197.36.3
+# route add 10.1.10.11/32 gw 10.197.38.3
 
 docker exec -ti freertr sh -c '{ echo "'"$*"'"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }'

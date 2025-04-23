@@ -192,8 +192,8 @@ cat >> /etc/exabgp/exabgp.conf <<EOF
 neighbor 10.197.37.3 {
   router-id  10.197.37.3;
   local-address 10.197.37.2;
-  local-as 1001;
-  peer-as 2001;
+  local-as 1011;
+  peer-as 2011;
 	  
   #md5-password "SOME-PASSWORD";
   group-updates;
@@ -221,8 +221,8 @@ cat >> /etc/exabgp/exabgp.conf <<EOF
 neighbor 10.197.38.3 {
   router-id  10.197.38.3;
   local-address 10.197.38.2;
-  local-as 1001;
-  peer-as 2001;
+  local-as 1021;
+  peer-as 2021;
 	  
   #md5-password "SOME-PASSWORD";
   group-updates;

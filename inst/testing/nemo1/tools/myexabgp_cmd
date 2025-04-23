@@ -39,6 +39,11 @@ elif [ "$1" = "--announce1" -o "$1" = "--announce-freertr" ]; then
 
   set -- neighbor 10.197.36.3 announce "$@"
 
+elif [ "$1" = "--withdraw1" -o "$1" = "--withdraw-freertr" ]; then
+  shift 1
+
+  set -- neighbor 10.197.36.3 announce "$@"
+
 fi	
 
 #
