@@ -27,6 +27,8 @@ from .flowspec_utils import map__ip_proto__for__ip_version__to_flowspec
 #import xml.etree.ElementTree as ET
 import re
 import sys
+from django.template.loader import render_to_string
+#from flowspec.models import Route
 
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "celery_exabpg.log", False)
@@ -463,6 +465,38 @@ class Applier(object):
 
     except Exception as e:
         logger.error("proxy_exabgp::apply(): got exception="+str(e), exc_info=True)
+
+  def post_apply(self):
+    self.update_exabgp_current_flows_config_fragment__file()
+
+  def update_exabgp_current_flows_config_fragment__file(self):
+
+    update_conf_fragement = hasattr(settings, "EXABGP_CURRENT_FLOWSPEC_CONF_FRAGMENT__FILENAME") and settings.EXABGP_CURRENT_FLOWSPEC_CONF_FRAGMENT__FILENAME
+    update_conf = hasattr(settings, "EXABGP_CONF__FILENAME") and settings.EXABGP_CONF__FILENAME and hasattr(settings, "EXABGP_CONF__TEMPLATE_FILENAME") and settings.EXABGP_CONF__TEMPLATE_FILENAME!=""
+
+    if update_conf_fragement or update_conf:
+
+      from flowspec.models import Route
+      queryset = Route.objects.filter(status__exact='ACTIVE')
+      context = {
+        'routes': queryset
+        #'routes': self.route_objects_all
+      }
+      config_fragment1 = render_to_string(f'conf/exabgp.txt', context)
+      logger.info("update_exabgp_current_flows_config_fragment__file(): => config_fragment1="+str(config_fragment1))
+
+      if update_conf_fragement:
+        with open(settings.EXABGP_CURRENT_FLOWSPEC_CONF_FRAGMENT__FILENAME, "w") as f:
+          f.write(config_fragment1)
+
+      if update_conf:
+        with open(settings.EXABGP_CONF__TEMPLATE_FILENAME, "r") as f:
+          data = f.read().replace('__CURRENT_FLOWSPEC_FLOW__', config_fragment1)
+          with open(settings.EXABGP_CONF__FILENAME, "w") as fnew:
+            fnew.write(data)
+
+    else:
+      logger.info("update_exabgp_current_flows_config_fragment__file(): no EXABGP_CURRENT_FLOWSPEC_CONF_FRAGMENT__FILENAME or EXABGP_CONF__FILENAME and EXABGP_CONF__TEMPLATE_FILENAME defined")
 
 #    def delete_routes(self):
 #        if self.route_objects:

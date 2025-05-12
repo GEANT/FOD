@@ -453,6 +453,8 @@ class Applier(object):
         finally:
             lock.release()
 
+    def post_apply(self):
+      pass
 
 def is_successful(response):
     if response.ok:

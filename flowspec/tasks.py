@@ -71,6 +71,7 @@ def add(routepk, callback=None):
         route.status = "ERROR"
         route.response = response
         route.save()
+    applier.post_apply()
     announce("[%s] Rule add: %s - Result: %s" % (route.applier_username_nice, route.name_visible, response), route.applier, route)
 
 
@@ -117,6 +118,7 @@ def edit(routepk, route_original__data, rate_limit_changed=False, callback=None)
         route.save()
     #route.response = response
     #route.save()
+    applier.post_apply()
     announce("[%s] Rule edit: %s - Result: %s" % (route.applier_username_nice, route.name_visible, response), route.applier, route)
 
 @shared_task(ignore_result=True, autoretry_for=(TimeoutError, TimeLimitExceeded, SoftTimeLimitExceeded), retry_backoff=True, retry_kwargs={'max_retries': settings.NETCONF_MAX_RETRY_BEFORE_ERROR})
@@ -157,6 +159,7 @@ def deactivate_route(routepk, **kwargs):
         route.response = response
         route.save()
         route.commit_deactivate()
+        applier.post_apply()
         return
     
     else:
@@ -174,6 +177,7 @@ def deactivate_route(routepk, **kwargs):
             route.status = status
             route.response = response
             route.save()
+            applier.post_apply()
             announce("[%s] Suspending rule : %s%s- Result %s" % (route.applier_username_nice, route.name_visible, reason_text, response), route.applier, route)
 
 @shared_task(ignore_result=True, autoretry_for=(TimeoutError, TimeLimitExceeded, SoftTimeLimitExceeded), retry_backoff=True, retry_kwargs={'max_retries': settings.NETCONF_MAX_RETRY_BEFORE_ERROR})
@@ -197,6 +201,7 @@ def delete_route(routepk, **kwargs):
             # Repeat due to error in deactivation
             route.status = "PENDING"
             route.save()
+            applier.post_apply()
             if True:
               logger.error("Deactivation failed, repeat the deletion process.")
               raise TimeoutError()
@@ -209,6 +214,7 @@ def delete_route(routepk, **kwargs):
     else:
         route.status = "ERROR"
         route.save()
+        applier.post_apply()
         logger.error("Deleting Route failed, it could not be deactivated - remaining in DB.")
     return
 
