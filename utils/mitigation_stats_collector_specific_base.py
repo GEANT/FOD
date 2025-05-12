@@ -405,7 +405,7 @@ class MitigationStatisticCollectorSpecific_Base():
       nowstr = now.isoformat()
   
       # lock history file access
-      success = lock_history_file(wait=1, reason="add_initial_zero_value("+str(rule_id)+","+str(zero_or_null)+")")
+      success = self.lock_history_file(wait=1, reason="add_initial_zero_value("+str(rule_id)+","+str(zero_or_null)+")")
       if not success: 
         logger.error("add_initial_zero_value(): locking history file failed, aborting");
         return False
