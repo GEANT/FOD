@@ -22,6 +22,8 @@ from flowspec.serializers import (
 from flowspec.validators import check_if_rule_exists
 from rest_framework.response import Response
 
+from flowspec.renderers import PlainTextRenderer
+
 from flowspec.tasks import *
 
 import flowspec.logging_utils
@@ -497,6 +499,25 @@ class StatsRoutesViewSet(viewsets.ViewSet):
         route = get_object_or_404(queryset, id=pk)
         logger.info("StatsRoutesViewSet:::retrieve(): route.name="+str(route.name))
         return routestats(request, route.name)
+
+class ExaBGPConfViewSet(viewsets.ViewSet):
+    """
+    A simple Viewset for retrieving exabgp configs.
+    """
+    renderer_classes = [PlainTextRenderer]
+    serializer_class = RouteSerializer
+    permission_classes = (IsAuthenticated,)
+    def list(self, request):
+        logger.info("ExaBGPConfViewSet:::retrieve()")
+
+        queryset = Route.objects.filter(status__exact='ACTIVE')
+        
+        context = {
+          'routes': queryset
+        }
+        return Response( render_to_string(f'conf/exabgp.txt', context) )
+
+
 
 class StatsAllRoutesViewSet(viewsets.ViewSet):
     """

@@ -15,6 +15,7 @@ from flowspec.viewsets import (
     MatchProtocolViewSet,
     MatchDscpViewSet,
     StatsRoutesViewSet,
+    ExaBGPConfViewSet,
     StatsAllRoutesViewSet,
     StatsAllRoutesLastTSViewSet,
 )
@@ -30,6 +31,7 @@ router.register(r'fragmenttypes', FragmentTypeViewSet)
 router.register(r'matchprotocol', MatchProtocolViewSet)
 router.register(r'matchdscp', MatchDscpViewSet)
 router.register(r'stats/routes', StatsRoutesViewSet, basename='statsroute')
+router.register(r'conf/exabgp', ExaBGPConfViewSet, basename='exabgpconf')
 
 
 urlpatterns = [
