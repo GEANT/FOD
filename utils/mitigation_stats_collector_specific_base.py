@@ -36,7 +36,7 @@ class MitigationStatisticCollectorSpecific_Base():
         first=0
         try:
             os.mkdir(settings.SNMP_TEMP_FILE+".lock") # TODO use regular file than dir
-            logger.debug("lock_history_file(): creating lock dir succeeded (reason="+str(reason)+")")
+            logger.info("lock_history_file(): creating lock dir succeeded (reason="+str(reason)+")")
             success=1
             return success
         except OSError as e:
@@ -50,13 +50,13 @@ class MitigationStatisticCollectorSpecific_Base():
           time.sleep(1)
       return success;
   
-  def unlock_history_file(self):
+  def unlock_history_file(self, reason=""):
       try:
         os.rmdir(settings.SNMP_TEMP_FILE+".lock") # TODO use regular file than dir
-        logger.debug("unlock_history_file(): succeeded")
+        logger.info("unlock_history_file(): succeeded (reason="+str(reason)+")")
         return 1
       except Exception as e:
-        logger.debug("unlock_history_file(): failed "+str(e))
+        logger.error("unlock_history_file(): failed (reason="+str(reason)+"): "+str(e))
         return 0
   
   def load_history(self):
@@ -156,6 +156,7 @@ class MitigationStatisticCollectorSpecific_Base():
       if not success: 
         logger.error("poll_mitigation_statistics(): locking history file failed, aborting");
         return False
+      logger.info("poll_mitigation_statistics(): locking history file succeeded");
   
       # load history
       history = self.load_history()
@@ -390,13 +391,16 @@ class MitigationStatisticCollectorSpecific_Base():
           logger.error("poll_mitigation_statistics(): polling failed. exception: "+str(e))
           logger.error("poll_mitigation_statistics(): ", exc_info=True)        
           
-      self.unlock_history_file()
+      self.unlock_history_file(reason="poll_mitigation_statistics()")
       logger.info("poll_mitigation_statistics(): polling end: old_nowstr="+str(nowstr)+" last_poll_no_time="+str(last_poll_no_time))
     except Exception as e:
         logger.error("poll_mitigation_statistics(): outside frame: got exception: "+str(e))
         return False
   
   def add_initial_zero_value(self, rule_id, route_obj, zero_or_null=True):
+
+    try:
+
       rule_id=str(rule_id)
       logger.debug("add_initial_zero_value(): rule_id="+str(rule_id))
   
@@ -409,10 +413,11 @@ class MitigationStatisticCollectorSpecific_Base():
       if not success: 
         logger.error("add_initial_zero_value(): locking history file failed, aborting");
         return False
+      logger.info("add_initial_zero_value(): locking history file succeeded");
   
       # load history
       history = self.load_history()
-  
+
       try:
         history_per_rule = history['_per_rule']
       except Exception as e:
@@ -426,7 +431,7 @@ class MitigationStatisticCollectorSpecific_Base():
       
       #
   
-      xtype = self.helper_get_countertype_of_rule(self, route_obj)
+      xtype = self.helper_get_countertype_of_rule(route_obj)
      
       if xtype==self.xtype_default:
         counter = {"ts": nowstr, "value": zero_measurement }
@@ -434,7 +439,7 @@ class MitigationStatisticCollectorSpecific_Base():
         counter = {"ts": nowstr, "value": zero_measurement, "value_matched": zero_measurement }
           
       samplecount = settings.SNMP_MAX_SAMPLECOUNT
-  
+      
       try:
           if rule_id in history_per_rule:
                 logger.error("add_initial_zero_value(): rule_id="+str(rule_id)+" : already in hist");
@@ -443,6 +448,7 @@ class MitigationStatisticCollectorSpecific_Base():
                 if last_rec==None or (zero_or_null and last_rec['value']==0) or ((not zero_or_null) and last_rec['value']!=0):
                   rec.insert(0, counter)
                   history_per_rule[rule_id] = rec[:samplecount]
+
           else:
                 logger.error("add_initial_zero_value(): rule_id="+str(rule_id)+" : missing in hist");
                 if zero_or_null:
@@ -455,8 +461,12 @@ class MitigationStatisticCollectorSpecific_Base():
   
       except Exception as e:
           logger.error("add_initial_zero_value(): failure: exception: "+str(e))
-  
-      self.unlock_history_file()
+      
+      self.unlock_history_file(reason="add_initial_zero_value("+str(rule_id)+","+str(zero_or_null)+")")
+      logger.info("add_initial_zero_value(): unlocking history file succeeded");
+
+    except Exception as e:
+      logger.error("add_initial_zero_value(): outer failure: exception: "+str(e))
   
   ##
   
@@ -485,6 +495,7 @@ class MitigationStatisticCollectorSpecific_Base():
       if not success: 
         logger.error("remember_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file failed, aborting");
         return False
+      logger.info("remember_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file succeeded");
   
       # load history
       history = self.load_history()
@@ -530,7 +541,7 @@ class MitigationStatisticCollectorSpecific_Base():
       except Exception as e:
           logger.error("remember_oldmatched__for_changed_ratelimitrules_whileactive(): failure: exception: "+str(e))
   
-      self.unlock_history_file()
+      self.unlock_history_file(reason="remember_oldmatched__for_changed_ratelimitrules_whileactive("+str(rule_id)+")")
   
   
   def clean_oldmatched__for_changed_ratelimitrules_whileactive(self, rule_id, route_obj):
@@ -544,6 +555,7 @@ class MitigationStatisticCollectorSpecific_Base():
       if not success: 
         logger.error("clean_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file failed, aborting");
         return False
+      logger.info("clean_oldmatched__for_changed_ratelimitrules_whileactive(): locking history file succeeded");
   
       # load history
       history = self.load_history()
@@ -564,6 +576,6 @@ class MitigationStatisticCollectorSpecific_Base():
       except Exception as e:
           logger.error("clean_oldmatched__for_changed_ratelimitrules_whileactive(): failure: exception: "+str(e))
   
-      self.unlock_history_file()
+      self.unlock_history_file(reason="clean_oldmatched__for_changed_ratelimitrules_whileactive("+str(rule_id)+","+str(zero_or_null)+")")
   
 
