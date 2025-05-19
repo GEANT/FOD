@@ -65,10 +65,21 @@ EOF
   chmod +x /home/freerouter/bin/test1
 fi
 
+if [ ! -f /home/freerouter/bin/rare0 ]; then
+  cat > /home/freerouter/bin/rare0 <<EOF
+#!/bin/sh
+
+{ echo "show policy-map flowspec CORE ipv4"; echo exit; } | \
+        netcat 10.197.36.3 23 
+
+EOF
+  chmod +x /home/freerouter/bin/rare0
+fi
+
+
 if [ ! -f /home/freerouter/bin/rare ]; then
   cat > /home/freerouter/bin/rare <<EOF
 #!/bin/sh
-echo "Hello" # TODO: use freertr stats script instead
 
 #exec python3 ~freerouter/stats.py
 

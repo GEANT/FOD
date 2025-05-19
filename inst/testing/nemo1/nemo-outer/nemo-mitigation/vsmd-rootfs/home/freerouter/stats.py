@@ -142,6 +142,12 @@ for item in fileinput.input():
             dest_mask = ipaddress.ip_address(line[15+delta]).exploded
 
             dest_mask = 32 - 4 * str(dest_mask).count("0")
+
+            if src_is_any:
+                src_all_str=""
+            else:
+                src_all_str=",Source:"+str(source_net)+"/"+str(source_mask)
+
             content = template.render(
                     afi = afi,
                     dest_net = dest_net,
@@ -155,14 +161,10 @@ for item in fileinput.input():
                     match_right = match_right,
                     drop_left = drop_left,
                     drop_right = drop_right,
-                    add_opts_str = add_opts_str
+                    add_opts_str = add_opts_str,
+                    src_all_str = src_all_str
                     )
             #print("content="+str(content))
-
-            if src_is_any:
-                ""
-            else:
-                src_all_str=",Source:"+str(source_net)+"/"+str(source_mask)
 
             with open(destination_filename, mode = "w") as message:
                 message.write(content)
