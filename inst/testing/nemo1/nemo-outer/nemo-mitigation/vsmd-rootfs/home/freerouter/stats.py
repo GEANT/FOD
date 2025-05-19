@@ -125,9 +125,13 @@ for item in fileinput.input():
             if sport!="":
                 add_opts_str=add_opts_str+",SPort:="+str(sport)
 
-            match = line[7].split("=")[1].replace(")", "")
-            match_left = match.split("(")[0]
-            match_right = match.split("(")[1]
+            match_left = line[5]
+            match_right = line[6]
+
+            tx = line[7].split("=")[1].replace(")", "")
+            tx_left = tx.split("(")[0]
+            tx_right = tx.split("(")[1]
+
             drop = line[9].split("=")[1].replace(")", "")
             drop_left = drop.split("(")[0]
             drop_right = drop.split("(")[1]
@@ -147,6 +151,12 @@ for item in fileinput.input():
                 src_all_str=""
             else:
                 src_all_str=",Source:"+str(source_net)+"/"+str(source_mask)
+
+            #print("match_left="+str(match_left), file=sys.stderr)
+            #if int(match_left)==0 and int(match_right)==0:
+            #    print("match_left and match_right both zero", file=sys.stderr)
+            #    match_left = drop_left
+            #    match_right = drop_right 
 
             content = template.render(
                     afi = afi,
