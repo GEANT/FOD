@@ -152,8 +152,8 @@ for item in fileinput.input():
             else:
                 src_all_str=",Source:"+str(source_net)+"/"+str(source_mask)
 
-            match_bps = tx_bps
-            match_pps = tx_pps
+            match_bps = rx_bps
+            match_pps = rx_pps
             #if int(match_bps)==0 and int(match_pps)==0:
             #    print("match_bps and match_pps both zero", file=sys.stderr)
             #    match_bps = drop_bps
