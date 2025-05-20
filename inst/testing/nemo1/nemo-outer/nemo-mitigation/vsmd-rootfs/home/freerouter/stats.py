@@ -125,16 +125,16 @@ for item in fileinput.input():
             if sport!="":
                 add_opts_str=add_opts_str+",SPort:="+str(sport)
 
-            match_left = line[5]
-            match_right = line[6]
+            rx_bps = line[5]
+            rx_pps = line[6]
 
             tx = line[7].split("=")[1].replace(")", "")
-            tx_left = tx.split("(")[0]
-            tx_right = tx.split("(")[1]
+            tx_bps = tx.split("(")[0]
+            tx_pps = tx.split("(")[1]
 
             drop = line[9].split("=")[1].replace(")", "")
-            drop_left = drop.split("(")[0]
-            drop_right = drop.split("(")[1]
+            drop_bps = drop.split("(")[0]
+            drop_pps = drop.split("(")[1]
 
             if not src_is_any:
               source_mask = ipaddress.ip_address(line[12+delta]).exploded
@@ -152,11 +152,12 @@ for item in fileinput.input():
             else:
                 src_all_str=",Source:"+str(source_net)+"/"+str(source_mask)
 
-            #print("match_left="+str(match_left), file=sys.stderr)
-            #if int(match_left)==0 and int(match_right)==0:
-            #    print("match_left and match_right both zero", file=sys.stderr)
-            #    match_left = drop_left
-            #    match_right = drop_right 
+            match_bps = tx_bps
+            match_pps = tx_pps
+            #if int(match_bps)==0 and int(match_pps)==0:
+            #    print("match_bps and match_pps both zero", file=sys.stderr)
+            #    match_bps = drop_bps
+            #    match_pps = drop_pps
 
             content = template.render(
                     afi = afi,
@@ -167,10 +168,10 @@ for item in fileinput.input():
                     proto = proto,
                     dport = dport,
                     sport = sport,
-                    match_left = match_left,
-                    match_right = match_right,
-                    drop_left = drop_left,
-                    drop_right = drop_right,
+                    match_left = match_pps,
+                    match_right = match_bps,
+                    drop_left = drop_pps,
+                    drop_right = drop_bps,
                     add_opts_str = add_opts_str,
                     src_all_str = src_all_str
                     )
