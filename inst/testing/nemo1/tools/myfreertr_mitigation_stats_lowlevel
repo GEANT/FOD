@@ -14,7 +14,7 @@ elif [ "$1" = "--grep-for-rule-idx" ]; then
 
   ./mynemo-docker-dind --bash-vsmd1 sh  -c "date; ~freerouter/bin/rare0" | awk '$0 ~ "^" idx { gsub(/[()=]/, " "); print $6 " " $7 " " $9 " " $10 " " $15 " " $16; } ' idx="$idx" 
 
-elif [ "$1" = "--delta--grep-for-rule-idx" ]; then
+elif [ "$1" = "--delta" -o "$1" = "--delta--grep-for-rule-idx" ]; then
   shift 1
   idx="$1" 
   shift 1
