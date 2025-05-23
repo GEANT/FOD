@@ -102,10 +102,12 @@ docker_outer__sshauth_volume__args=()
 network1_name="nemo1_xnemo-flow-input"
 
 network2_name="nemo1_xnemo-trafficin"
-enable_network2=1
+#enable_network2=1
+enable_network2=0
 
 network3_name="nemo1_xnemo-trafficout"
-enable_network3=1
+#enable_network3=1
+enable_network3=0
 
 #
 
