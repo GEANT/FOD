@@ -10,4 +10,6 @@ docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin 
 
 docker exec -ti nemo_nemodb_1 psql -U nemo -c "INSERT INTO router_nets (router_id, net_id) VALUES (1, 1), (1, 2), (1, 3)"
 
+cat /nemo-all/nemo-initial-detectors1.sql | docker exec -i nemo_nemodb_1 psql -U nemo nemo
+
 
