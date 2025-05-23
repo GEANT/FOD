@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [ "$1" = "--inner" ]; then
+  shift 1
+
+  ./mynemo-docker-dind --bash-vsmd1 sh  -c "date; ~freerouter/bin/rare0"
+
+elif [ "$1" = "--grep-for-rule-idx" ]; then
+  shift 1
+  idx="$1" 
+  shift 1
+
+  [ -n "$idx" ] || idx="1"
+
+  ./mynemo-docker-dind --bash-vsmd1 sh  -c "date; ~freerouter/bin/rare0" | awk '$0 ~ "^" idx { gsub(/[()=]/, " "); print $6 " " $7 " " $9 " " $10 " " $15 " " $16; } ' idx="$idx" 
+
+elif [ "$1" = "--delta--grep-for-rule-idx" ]; then
+  shift 1
+  idx="$1" 
+  shift 1
+  waitx="$1"
+  shift 1
+
+  [ -n "$idx" ] || idx="1"
+  [ -n "$waitx"  ] || waitx="5"
+
+  ./mynemo-docker-dind --bash-vsmd1 sh  -c "date +'xtime %s'; ~freerouter/bin/rare0; sleep '$waitx'; date +'xtime %s'; ~freerouter/bin/rare0" | awk '
+  
+   /^xtime / { if (xtime) { waitx=$2-xtime; } xtime=$2; }
+
+   $0 ~ "^" idx { 
+    gsub(/[()=]/, " "); 
+
+    if (seen) {
+      print ($6-r1)*8*1.024/waitx " " ($7-r2)/waitx " " ($9-t1)*8*1.024/waitx " " ($10-t2)/waitx " " ($15-d1)*8*1.024/waitx " " ($16-d2)/waitx
+    }
+
+    r1=$6; r2=$7; 
+    t1=$9; t2=$10;
+    d1=$15; d2=$16
+    print "# " r1*8*1.024 " " r2 " " t1*8*1.024 " " t2 " " d1*8*1.024 " " d2; 
+
+    seen=1
+  } ' idx="$idx" waitx="$waitx" | tr "\r" "\n"
+
+else
+
+  ./mynemo-docker-dind --bash-vsmd1 sh  -c "date; ~freerouter/bin/rare0" 
+
+  sleep 60
+
+  ./mynemo-docker-dind --bash-vsmd1 sh  -c "date; ~freerouter/bin/rare0" 
+
+fi
+
