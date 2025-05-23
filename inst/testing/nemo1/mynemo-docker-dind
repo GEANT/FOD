@@ -590,6 +590,11 @@ elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner do
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
    "$0" --exec ./mynemo-mitigation-init-container.sh
 
+elif [ "$1" = "--setup-db-contents" ]; then #arg # inti some data in nemo db regrading test network 
+  shift 1
+
+   "$0" --exec ./mynemo-mitigation-init-db-final.sh
+
 elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd container in foreground
   shift 1
 
@@ -835,6 +840,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    # build and init nemo-outer container and build and init and run all detection container inside
    "$0" --all1 "$@"
+   "$0" --setup-db-contents
 
    # init frnet comprising freertr router and host1/host2 test network
    "$0" --freertr-testnet-prep-and-run
