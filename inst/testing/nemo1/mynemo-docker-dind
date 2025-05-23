@@ -399,10 +399,13 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
 
 elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access to web UI with curl (assumes empty client cert pwd)
   shift 1
+  url_part="$1"
+  shift 1
 
   echo "# inside debian-docker-in-docker container: test access to UI via curl+lynx (assumes empty password for the client certificate):" 1>&2
   #(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
-  (set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
+  #(set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
+  (set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 "https://localhost/$url_part" | lynx -stdin -dump)
   status1="$?"
 
   echo 1>&2
