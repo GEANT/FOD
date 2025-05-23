@@ -1,0 +1,4 @@
+#!/bin/bash
+
+exec ./mynemo-docker-dind --exec docker exec -ti nemo_nemodb_1 psql -U nemo "$@"
+
