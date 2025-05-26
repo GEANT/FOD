@@ -57,8 +57,8 @@ COPY public.trigger (id, name, description, trigger_type, autostart, email, desc
 --
 
 COPY public.timewindowtrigger (triggerconfig_ptr_id, per_object, per_event_type, per_detector, open_conditions, upgrade_conditions1, upgrade_conditions2, close_conditions) FROM stdin;
-1	f	f	t	{"severity":"0","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[]}
-2	f	t	f	{"severity":"2","op":"all","conds":[{"type":"timewindow","comp":"eq","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[]}
+1	f	f	t	{"severity":"0","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[{"type":"timewindow","comp":"lt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}
+2	f	t	f	{"severity":"2","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[{"type":"timewindow","comp":"lt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}
 \.
 
 
