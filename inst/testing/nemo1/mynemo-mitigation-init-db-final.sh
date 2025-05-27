@@ -12,4 +12,8 @@ docker exec -ti nemo_nemodb_1 psql -U nemo -c "INSERT INTO router_nets (router_i
 
 cat /nemo-all/nemo-initial-detectors1.sql | docker exec -i nemo_nemodb_1 psql -U nemo nemo
 
+#
+
+docker restart nemo_eventd_1
+
 
