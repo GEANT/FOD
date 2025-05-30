@@ -47,8 +47,8 @@ COPY public.tagged_item (id, object_id, content_type_id, tag_id, automatic) FROM
 --
 
 COPY public.trigger (id, name, description, trigger_type, autostart, email, description_template, subject_template, body_template, short_open_template, long_open_template, short_upgrade_template, long_upgrade_template, short_close_template, long_close_template, default_filter, do_not_send_mails, mail_analysis_severity) FROM stdin;
-1	evw		time_window	t	\N											f	100
 2	evw2		time_window	t	\N											f	100
+1	evw		time_window	t	\N											f	100
 \.
 
 
@@ -57,8 +57,8 @@ COPY public.trigger (id, name, description, trigger_type, autostart, email, desc
 --
 
 COPY public.timewindowtrigger (triggerconfig_ptr_id, per_object, per_event_type, per_detector, open_conditions, upgrade_conditions1, upgrade_conditions2, close_conditions) FROM stdin;
-1	f	f	t	{"severity":"0","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[{"type":"timewindow","comp":"lt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}
-2	f	t	f	{"severity":"2","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[{"type":"timewindow","comp":"lt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}
+2	f	t	f	{"severity":"2","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"0","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[{"type":"timewindow","comp":"lt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"},{"type":"severity","comp":"eq","val":"2"}],"filter_op":"all"}]}
+1	f	f	t	{"severity":"0","op":"all","conds":[{"type":"timewindow","comp":"gt","count":"0","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}	{"severity":"0","op":"all","conds":[]}	{"severity":"0","op":"all","conds":[]}	{"op":"all","conds":[{"type":"timewindow","comp":"lt","count":"1","minutes":"5","filter":[{"type":"detector_id","comp":"eq","val":"1"}],"filter_op":"all"}]}
 \.
 
 
