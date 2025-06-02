@@ -165,6 +165,7 @@ class RouteForm(forms.ModelForm):
         destination = self.cleaned_data.get('destination', None)
         destinationports = self.cleaned_data.get('destinationport', None)
         user = self.cleaned_data.get('applier', None)
+        fragmenttypes = self.cleaned_data.get('fragmenttype', None)
 
         if source:
             source = ip_network(source, strict=False).compressed
@@ -183,6 +184,15 @@ class RouteForm(forms.ModelForm):
 
         else:
             existing_routes = existing_routes.filter(protocol=None)
+
+        if fragmenttypes:
+            route_pk_list=get_fragementtypes_route_pks(fragmenttypes, existing_routes)
+            if route_pk_list:
+                existing_routes = existing_routes.filter(pk__in=route_pk_list)
+            else:
+                existing_routes = existing_routes.filter(fragmenttype=None) 
+        else:
+            existing_routes = existing_routes.filter(fragmenttype=None)
 
         if sourceports:
             route_pk_list=get_matchingport_route_pks(sourceports, existing_routes)
@@ -294,6 +304,14 @@ def get_matchingport_route_pks(portlist, routes):
             route_pk_list.append(route.pk)
     return route_pk_list
 
+def get_fragementtypes_route_pks(fragmenttype_list, routes):
+    route_pk_list = []
+    fragmenttype_value_list = value_list_to_list(fragmenttype_list.values_list('fragmenttype').order_by('fragmenttype'))
+    for route in routes:
+        rsp = value_list_to_list(route.fragmenttype.all().values_list('fragmenttype').order_by('fragmenttype'))
+        if rsp and rsp == fragmenttype_value_list:
+            route_pk_list.append(route.pk)
+    return route_pk_list
 
 def get_matchingprotocol_route_pks(protocolist, routes):
     route_pk_list = []
