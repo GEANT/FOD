@@ -1,7 +1,7 @@
 #!/bin/bash
 
-
-for container_interface in 0 1 2 3 4 5; do
+#for container_interface in 0 1 2 3 4 5; do
+for container_interface in $(docker exec freertr sh -c 'ls /sys/class/net/eth*/iflink | grep -Eo [0-9]+'); do
   IFINDEX="$(docker exec freertr cat "/sys/class/net/eth$container_interface/iflink")"
   [ -n "$IFINDEX" ] || continue
 
