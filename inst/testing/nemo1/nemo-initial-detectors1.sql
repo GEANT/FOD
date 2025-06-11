@@ -84,14 +84,14 @@ SELECT pg_catalog.setval('public.detector_param_id_seq', 1, false);
 -- Name: tag_id_seq; Type: SEQUENCE SET; Schema: public; Owner: nemo
 --
 
-SELECT pg_catalog.setval('public.tag_id_seq', 2, true);
+SELECT pg_catalog.setval('public.tag_id_seq', 3, true);
 
 
 --
 -- Name: tagged_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: nemo
 --
 
-SELECT pg_catalog.setval('public.tagged_item_id_seq', 2, true);
+SELECT pg_catalog.setval('public.tagged_item_id_seq', 4, true);
 
 
 --
