@@ -39,6 +39,8 @@ RUN mkdir -p /rtr && \
     chmod +x /rtr/*
 
 COPY freertr-hw-add.cfg /rtr/rtr-hw-add.txt
+COPY freertr_fixup_for_nondetected_interfaces.sh /usr/local/bin/
+
 COPY freertr.cfg /rtr/rtr-sw.txt
 COPY freertr_setup_environment.sh /usr/local/bin/setup_environment.sh
 

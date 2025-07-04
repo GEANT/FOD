@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+
+#proc ifc1.sh /rtr/run/conf/pcapInt.bin eth1 20002 127.0.0.1 20001 127.0.0.1
+#int ether1 eth 02:42:0a:01:0a:03 127.0.0.1 20001 127.0.0.1 20002
+#proc ifc2.sh /rtr/run/conf/pcapInt.bin eth2 20012 127.0.0.1 20011 127.0.0.1
+#int ether2 eth 02:42:0a:02:0a:03 127.0.0.1 20011 127.0.0.1 20012
+#proc ifc3.sh /rtr/run/conf/pcapInt.bin eth3 20022 127.0.0.1 20021 127.0.0.1
+#int ether3 eth 02:42:0a:03:0a:03 127.0.0.1 20021 127.0.0.1 20022
+##proc ifc4.sh /rtr/run/conf/pcapInt.bin eth4 20032 127.0.0.1 20031 127.0.0.1
+##int ether4 eth 02:42:0a:c5:24:03 127.0.0.1 20031 127.0.0.1 20032
+##proc ifc5.sh /rtr/run/conf/pcapInt.bin eth5 20042 127.0.0.1 20041 127.0.0.1
+##int ether5 eth 02:42:0a:c5:25:03 127.0.0.1 20041 127.0.0.1 20042
+##proc ifc6.sh /rtr/run/conf/pcapInt.bin eth6 20052 127.0.0.1 20051 127.0.0.1
+##int ether6 eth 02:42:0a:c5:26:03 127.0.0.1 20051 127.0.0.1 20052
+##proc ifc7.sh /rtr/run/conf/pcapInt.bin veth1 20062 127.0.0.1 20061 127.0.0.1
+##int ether7 eth 02:01:01:01:01:01 127.0.0.1 20061 127.0.0.1 20062
+##proc ifc8.sh /rtr/run/conf/pcapInt.bin veth2 20072 127.0.0.1 20071 127.0.0.1
+##int ether8 eth 02:68:0d:e7:69:b9 127.0.0.1 20071 127.0.0.1 20072
+
+hwfile="/rtr/run/conf/rtr-hw.txt"
+
+if ! grep -q "^proc ifc1.sh" "$hwfile"; then
+  cat <<EOF
+proc ifc1.sh /rtr/run/conf/pcapInt.bin eth1 20002 127.0.0.1 20001 127.0.0.1
+int ether1 eth 02:42:0a:01:0a:03 127.0.0.1 20001 127.0.0.1 20002
+EOF
+fi
+
+if ! grep -q "^proc ifc2.sh" "$hwfile"; then
+  cat <<EOF
+proc ifc2.sh /rtr/run/conf/pcapInt.bin eth2 20012 127.0.0.1 20011 127.0.0.1
+int ether2 eth 02:42:0a:02:0a:03 127.0.0.1 20011 127.0.0.1 20012
+EOF
+fi
+
+if ! grep -q "^proc ifc3.sh" "$hwfile"; then
+  cat <<EOF
+proc ifc3.sh /rtr/run/conf/pcapInt.bin eth3 20022 127.0.0.1 20021 127.0.0.1
+int ether3 eth 02:42:0a:03:0a:03 127.0.0.1 20021 127.0.0.1 20022
+EOF
+fi
+
+
