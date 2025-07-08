@@ -118,7 +118,7 @@ class Retriever(object):
     # e.g., 4 source-ipv6 ::/0/0 protocol [ =tcp =udp ] destination-port [ >=2&<=900 ] source-port [ >=1&<=100 ] fragment [ dont-fragment last-fragment ]
     def parse_exabgp_route__str(self, route_exabgp__str):
       #re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?')
-      re1 = re.compile('^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?(extended-community +)?(rate-limit:+(?P<ratelimit>(\[[^\[\]]+\])|\S+) +)?')
+      re1 = re.compile(r'^(?P<version>[46]) +((destination-ipv[46]) +(?P<destination>\S+) +)?((source-ipv[46]) +(?P<source>\S+) +)?(protocol +(?P<protocol>(\[[^\[\]]+\])|\S+) +)?(destination-port +(?P<destination_port>(\[[^\[\]]+\])|\S+) +)?(source-port +(?P<source_port>(\[[^\[\]]+\])|\S+) +)?(fragment +(?P<fragment>(\[[^\[\]]+\])|\S+) +)?(extended-community +)?(rate-limit:+(?P<ratelimit>(\[[^\[\]]+\])|\S+) +)?')
       key_is_singlevalued = {
         'version': 1,
         #'source': 1,
@@ -154,7 +154,7 @@ class Retriever(object):
       return route
 
     def parse_exabgp_list__str(self, list__str):
-      m = re.match('\[ *([^\[\]]+) *\]', list__str)
+      m = re.match(r'\[ *([^\[\]]+) *\]', list__str)
       if m:
         inner__str = m.group(1)
         list = inner__str.split()
