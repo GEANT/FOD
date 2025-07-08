@@ -49,7 +49,7 @@
 				            </ul>
                </li>
             	<li class="dropdown">
-				            <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">{% trans "Language" %}: {% for lang in settings.LANGUAGES %}{% ifequal settings.LANGUAGE_CODE lang.0 %}{% trans lang.1 %}{% endifequal %}{% endfor %}<b class="caret"></b></a>
+				            <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">{% trans "Language" %}: {% for lang in settings.LANGUAGES %}{% if settings.LANGUAGE_CODE == lang.0 %}{% trans lang.1 %}{% endif %}{% endfor %}<b class="caret"></b></a>
 				            <ul class="dropdown-menu">
 						    <form action="/set_language/" method="post" style="display:inline;" id="langform">
 												{% csrf_token %}
@@ -58,7 +58,7 @@
 											</form>
 				            	{% for lang in settings.LANGUAGES %}
 				                <li>
-				                    <a class="select_lang" href="#" onclick="setlang('{{ lang.0 }}'); return false;" title="{{lang.1}}">{% trans lang.1 %}{% ifequal settings.LANGUAGE_CODE lang.0 %}  <i class="icon-ok"></i>{% endifequal %}</a>
+				                    <a class="select_lang" href="#" onclick="setlang('{{ lang.0 }}'); return false;" title="{{lang.1}}">{% trans lang.1 %}{% if settings.LANGUAGE_CODE == lang.0 %}  <i class="icon-ok"></i>{% endif %}</a>
 				                </li>
 				              {% endfor %}
 				            </ul>

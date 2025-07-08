@@ -106,24 +106,24 @@
 
 										</small>
 										<div>
-										{% ifequal route.status 'ACTIVE' %}
+										{% if route.status == 'ACTIVE' %}
 											<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "Edit" %}</a>
 											<button class="del_buttonpre btn-outline btn btn-xs btn-warning" id="{{route.name}}" data-routename="{{route.name}}">{% trans "Deactivate" %}</button>
 										{% else %}
 											{% if route.status == 'EXPIRED' or route.status == 'ADMININACTIVE' or route.status == 'INACTIVE' %}
 												<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}" type="button">{% trans "Reactivate" %}</a>
 											{% else %}
-												{% ifequal route.status 'OUTOFSYNC' %}
+												{% if route.status == 'OUTOFSYNC' %}
 													<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" id="edit_button_{{route.pk}}">{% trans "ReSync" %}</a>
 												{% else %}
-													{% ifequal route.status 'ERROR' %}
+													{% if route.status == 'ERROR' %}
 														<a href="{% url 'edit-route' route.name %}" class="btn-info btn btn-xs btn-outline" name="edit_button_{{routename}}" id="edit_button_{{route.pk}}">{% trans "Fix it!" %}</a>
 													{% else %}
 													-
-													{% endifequal %}
-												{% endifequal %}
+													{% endif %}
+												{% endif %}
 											{% endif %}
-										{% endifequal %}
+										{% endif %}
 										</div>
                                         </div>
                                     </div>

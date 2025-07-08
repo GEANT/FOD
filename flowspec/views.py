@@ -100,6 +100,9 @@ rule_changelog_logger.setLevel(logging.INFO)
 #############################################################################
 #############################################################################
 
+def is_ajax(request):
+  return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
 @login_required
 def user_routes(request):
     user_routes = Route.objects.filter(applier=request.user)
@@ -723,7 +726,7 @@ def prolong_route(request, route_slug):
 @login_required
 @never_cache
 def delete_route_view(request, route_slug):
-    if request.is_ajax():
+    if is_ajax(request):
         route = get_object_or_404(Route, name=route_slug)
         user_peers = request.user.userprofile.peers.all()
         if route.applier!=None:
@@ -785,7 +788,7 @@ def delete_route_view(request, route_slug):
 @login_required
 @never_cache
 def deactivate_route_view(request, route_slug):
-    if request.is_ajax():
+    if is_ajax(request):
         route = get_object_or_404(Route, name=route_slug)
 
         route_applier_peers = route.applier.userprofile.peers.all()

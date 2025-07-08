@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from django.conf.urls import url
+from django.urls import re_path
 
 from poller import views
 urlpatterns = [
     #'poller.views',
-    url('^$', views.main),
+    re_path('^$', views.main),
     # 1st call to get all existing messages
-    url('^message/existing/(?P<peer_id>[\w\-]+)/$', views.message_existing, name='fetch-existing'),
+    re_path('^message/existing/(?P<peer_id>[\w\-]+)/$', views.message_existing, name='fetch-existing'),
     # update - get new messages
-    url('^message/updates/(?P<peer_id>[\w\-]+)/$', views.message_updates, name='fetch-updates'),
-    url('^message/updates/(?P<peer_id>[\w\-]+)/(?P<last_id>[\w\-]+)$', views.message_updates, name='fetch-updates')
+    re_path('^message/updates/(?P<peer_id>[\w\-]+)/$', views.message_updates, name='fetch-updates'),
+    re_path('^message/updates/(?P<peer_id>[\w\-]+)/(?P<last_id>[\w\-]+)$', views.message_updates, name='fetch-updates')
 ]

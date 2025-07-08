@@ -41,6 +41,9 @@ import redis
 import flowspec.logging_utils
 logger = flowspec.logging_utils.logger_init_default(__name__, "poller.log", False)
 
+def is_ajax(request):
+  return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
 def create_message(message, user, msgid, time, peer_id):
     """Create new message that will be sent in a response to client with text "message".
     Params:
@@ -86,13 +89,13 @@ class Msgs(object):
         pass
 
     def message_existing(self, request, peer_id):
-        if request.is_ajax():
+        if is_ajax(request):
             logger.debug("Polling all existing notifications")
             return self.message_updates(request, peer_id, "")
         return HttpResponseRedirect(reverse('group-routes'))
 
     def message_updates(self, request, peer_id, last_id=""):
-        if request.is_ajax():
+        if is_ajax(request):
             if last_id:
                 logger.debug("Polling updates of notifications since " + last_id)
             last_id = bytes(last_id, "utf-8")

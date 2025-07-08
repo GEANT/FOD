@@ -316,11 +316,13 @@ class Applier(object):
     return ret
 
   def announce_route(self, route):
-    ret, msg = do_exabgp_interaction("announce flow route "+self.helper_get_exabgp__route_parameter_string(route))
+    #ret, msg = do_exabgp_interaction("announce flow route "+self.helper_get_exabgp__route_parameter_string(route))
+    ret, msg = do_exabgp_interaction("dummy announce flow route "+self.helper_get_exabgp__route_parameter_string(route))
     return ret==0, msg
 
   def withdraw_route(self, route):
-    ret, msg = do_exabgp_interaction("withdraw flow route "+self.helper_get_exabgp__route_parameter_string(route))
+    #ret, msg = do_exabgp_interaction("withdraw flow route "+self.helper_get_exabgp__route_parameter_string(route))
+    ret, msg = do_exabgp_interaction("dummy withdraw flow route "+self.helper_get_exabgp__route_parameter_string(route))
     return ret==0, msg
 
   ###
