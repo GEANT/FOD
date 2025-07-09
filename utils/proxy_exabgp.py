@@ -47,13 +47,13 @@ lock = Lock()
 
 def do_exabgp_interaction(command_list):
     pre1="[pid:"+str(os.getpid())+"] "
-    logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): called")
+    logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): called command_list="+str(command_list))
     lock.acquire()
     logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): lock acquired")
     ret=""
     msg=""
     try:
-      logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): before exabgp_interaction")
+      logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): before exabgp_interaction command_list="+str(command_list))
       ret, msg = exabgp_interaction(command_list)
       logger.info(pre1+"proxy_exabgp::do_exabgp_interaction(): done with exabgp_interaction")
     except Exception as e:
@@ -91,9 +91,10 @@ class Retriever(object):
     # +
     # generic method for returning raw data string (here NETCONF XML)
     def fetch_raw(self):
-      logger.info("proxy_exabgp::Retriever::fetch_raw(): called")
+      logger.info("proxy_exabgp::Retriever::fetch_raw(): calledX")
       #ret, msg = do_exabgp_interaction(["show adj-rib out"])
-      ret, msg = do_exabgp_interaction(["show adj-rib out extensive"])
+      #ret, msg = do_exabgp_interaction(["show adj-rib out extensive"])
+      ret, msg = do_exabgp_interaction("dummy show adj-rib out extensive")
       logger.info("proxy_exabgp::Retriever::fetch_raw(): ret="+str(ret))
       #logger.info("proxy_exabgp::Retriever::fetch_raw(): msg="+str(msg))
       return msg
