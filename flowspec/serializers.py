@@ -5,7 +5,7 @@ from rest_framework import serializers
 from flowspec.models import (
     Route, MatchPort, ThenAction, FragmentType, MatchProtocol, MatchDscp)
 from flowspec.validators import (
-    clean_source, clean_destination, clean_expires, clean_status, clean_route_form)
+    clean_source, clean_destination, clean_expires, clean_status, clean_bgpextendedcommunity, clean_route_form)
 
 from django.conf import settings
 
@@ -128,6 +128,12 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
         #return attrs
         return res
 
+    def validate_bgpextendedcommunity(self, value):
+        res = clean_bgpextendedcommunity(value)
+        if res != value:
+            raise serializers.ValidationError(res)
+        return res
+
     def validate(self, data):
         if self.context and self.context["request"] and self.context["request"].method == "POST":
             if "applier" not in data:
@@ -181,7 +187,8 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
             'then', 
             'filed', 'last_updated', 
             'status', 'expires', 'response', 
-            'requesters_address')
+            'requesters_address',
+            'bgpextendedcommunity')
         read_only_fields = (
             'id', 'requesters_address', 'filed', 'last_updated', 'response')
 

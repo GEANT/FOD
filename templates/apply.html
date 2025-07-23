@@ -404,6 +404,20 @@
             </div>
             </div>
 
+	    {% if settings.BGP_EXTENDED_COMMUNITY_CHOICES_ENABLED_IN_WEBUI %}
+	     {% if settings.BRANDING %} 
+                <div class="form-group {% if form.bgpextendedcommunity.errors %} has-error {% endif %}">
+            <label for="id_bgpextendedcommunity" class="col-md-2 control-label">{% trans "BGP Extended Community" %}</label>
+            <div class="col-md-8">
+                {% render_field form.bgpextendedcommunity class+="form-control" %}
+                {% if form.bgpextendedcommunity.errors %} <span class="help-block" id="bgpextendedcommunity_error_id"> {{ form.bgpextendedcommunity.errors|join:", " }} </span>
+                {% endif %}
+            </div>
+            </div>
+	     {% endif %}
+	    {% endif %}
+
+
             </fieldset>
             <fieldset>
         <hr>

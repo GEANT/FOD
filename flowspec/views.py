@@ -307,7 +307,12 @@ def build_routes_json(ivaltrees_per_version, groutes, user, is_superuser):
         else:
             rd['comments'] = r.comments
         rd['match'] = r.get_match()
+
         rd['then'] = r.get_then()
+        rd['bgpextendedcommunity'] = r.bgpextendedcommunity
+        if r.bgpextendedcommunity!=None:
+            rd['then'] = rd['then'] + " " + r.bgpextendedcommunity
+
         rd['status'] = r.status
         # in case there is no applier (this should not occur)
         try:
@@ -465,6 +470,9 @@ def add_route(request):
 def edit_route(request, route_slug):
     applier = request.user.pk
     route_edit = get_object_or_404(Route, name=route_slug)
+  
+    logger.info("views::edit_route(): route_edit.type="+str(type(route_edit))+" route_edit="+str(route_edit))
+    logger.info("views::edit_route(): route_edit.protocol="+str(route_edit.protocol.all()))
 
     applier_peer_networks = []
     if request.user.is_superuser:
@@ -488,8 +496,10 @@ def edit_route(request, route_slug):
         )
         return HttpResponseRedirect(reverse("group-routes"))
     route_original = deepcopy(route_edit)
+    route_original_protocols = [x for x in route_original.protocol.all()]
+    logger.info("views::edit_route(): route_original.protocol="+str(route_original_protocols))
 
-    critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype']
+    critical_changed_values = ['source', 'destination', 'sourceport', 'destinationport', 'port', 'protocol', 'then', 'fragmenttype', 'bgpextendedcommunity']
 
     try:
       setting_dup_routes_chk = settings.ROUTES_DUPLICATES_CHECKING
@@ -626,6 +636,9 @@ def edit_route(request, route_slug):
 
                 route_original__serializer = RouteSerializer(route_original)
                 logger.info("views::edit(): route_original="+str(route_original))
+                logger.info("views::edit(): route_original.protocol="+str(route_original.protocol.all()))
+                logger.info("views::edit(): route_original.protocolsaved="+str(route_original_protocols))
+                logger.info("views::edit(): route_original__serializer.data="+str(route_original__serializer.data))
                 logger.info("views::edit(): debug: pre pre route.then1="+last__then_action__string)
                 route.commit_edit(route_original=route_original__serializer.data, last__then_action__string=last__then_action__string)
 

@@ -55,6 +55,17 @@ def clean_status(status):
     return status
 
 
+def clean_bgpextendedcommunity(value):
+    found=False
+    for records in settings.BGP_EXTENDED_COMMUNITY_CHOICES:
+      if records[0]==value:
+        found=True
+
+    if not found:
+            return _('Not allowed BGP extended community value')
+
+    return value
+
 def clean_source(user, source):
     success, address = get_network(source)
     if not success:

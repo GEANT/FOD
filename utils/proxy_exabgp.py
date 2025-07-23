@@ -235,6 +235,8 @@ class Applier(object):
   def helper_get_exabgp__route_parameter_string(self, route):
     ret = ""
 
+    logger.info("helper_get_exabgp__route_parameter_string(): called route.type="+str(type(route))+" route="+str(route))
+
     if isinstance(route, dict):
         source = route['source']
         destination = route['destination']
@@ -243,6 +245,7 @@ class Applier(object):
         protocols = route['protocol']
         fragtypes = route['fragmenttype']
         thens = route['then']
+        bgpextendedcommunity = route['bgpextendedcommunity']
     else:
         source = route.source
         destination = route.destination
@@ -251,6 +254,7 @@ class Applier(object):
         protocols = route.protocol.all()
         fragtypes = route.fragmenttype.all()
         thens = route.then.all()
+        bgpextendedcommunity = route.bgpextendedcommunity
 
     ret = ret + " source-ipv4 " + str(source) + " "
     ret = ret + " destination-ipv4 " + str(destination) + " "
@@ -303,6 +307,10 @@ class Applier(object):
         ret2 = "rate-limit 0"
       else:
         logger.error("currently only rate-limit and discard supported as then action")
+
+      # TODO: support bgpextendedcommunity per then action in a rule?
+      if bgpextendedcommunity!=None and bgpextendedcommunity!="":
+        ret2 = "{ " + ret2 + " " + "extended-community " + bgpextendedcommunity + " }"
 
       ret1 = ret1 + ret2 + " "
       logger.info("then => ret1="+str(ret1))
@@ -420,7 +428,7 @@ class Applier(object):
             status_del = True
             msg_del = "route_with_same_old_params__exists, nothing todo"
           else:
-            logger.info("proxy_exabgp::apply(): NO route_with_same_old_params__exists => need to withdraw old route")
+            logger.info("proxy_exabgp::apply(): NO route_with_same_old_params__exists => need to withdraw old route="+str(route_original))
             status_del, msg1 = self.withdraw_route(route_original) 
             logger.info("proxy_exabgp::apply(): withdrawing done status="+str(status_del)+", "+str(msg1))
             msg_del = "withdraw old flow: "+str(msg1)+"; "
