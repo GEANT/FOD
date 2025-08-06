@@ -496,6 +496,7 @@ def edit_route(request, route_slug):
         )
         return HttpResponseRedirect(reverse("group-routes"))
     route_original = deepcopy(route_edit)
+    #route_original_protocols = [type(x) for x in route_original.protocol.all()]
     route_original_protocols = [x for x in route_original.protocol.all()]
     logger.info("views::edit_route(): route_original.protocol="+str(route_original_protocols))
 
@@ -634,13 +635,19 @@ def edit_route(request, route_slug):
             if bool(set(changed_data) & set(critical_changed_values)) or (not route_original.status == 'ACTIVE'):
                 form.save_m2m()
 
+                #route_original.protocol.set(route_original_protocols)
                 route_original__serializer = RouteSerializer(route_original)
+                route_original__serializer_data = route_original__serializer.data
+                route_original__serializer_data['protocol'] = [str(x) for x in route_original_protocols]
+                logger.info("views::edit(): route_original__serializer.data0 intendend="+str(route_original_protocols))
+                logger.info("views::edit(): route_original__serializer.data0="+str(route_original__serializer_data))
+
                 logger.info("views::edit(): route_original="+str(route_original))
                 logger.info("views::edit(): route_original.protocol="+str(route_original.protocol.all()))
                 logger.info("views::edit(): route_original.protocolsaved="+str(route_original_protocols))
                 logger.info("views::edit(): route_original__serializer.data="+str(route_original__serializer.data))
                 logger.info("views::edit(): debug: pre pre route.then1="+last__then_action__string)
-                route.commit_edit(route_original=route_original__serializer.data, last__then_action__string=last__then_action__string)
+                route.commit_edit(route_original=route_original__serializer_data, last__then_action__string=last__then_action__string)
 
             return HttpResponseRedirect(reverse("group-routes"))
         else:
