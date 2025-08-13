@@ -167,9 +167,16 @@ fi
 ##############################################################################
 # exabgp install and conf
 
+cp /usr/share/doc/exabgp/examples/run/syslog-1.py /services/inst/
+
 cat > /etc/exabgp/exabgp.conf <<EOF
 process announce-routes {
   run "/services/inst/offrampctl/bin/exabgp_plugin.py";
+    encoder json;
+}
+
+process my-process {
+  run /services/inst/syslog-1.py;
     encoder json;
 }
 
@@ -190,8 +197,21 @@ neighbor 10.197.36.3 {
   }
 
   api {
-     processes [ announce-routes ];
+    processes [ announce-routes ];
   }
+
+  api {
+    processes [ my-process ];
+    neighbor-changes;
+    receive {
+            parsed;
+            update;
+    }
+    send {
+            packets;
+    }
+  }
+
 
 }
 
