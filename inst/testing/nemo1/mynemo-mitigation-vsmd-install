@@ -174,12 +174,20 @@ process announce-routes {
   run "/services/inst/offrampctl/bin/exabgp_plugin.py";
     encoder json;
 }
+EOF
 
+if [ -f /nemo-all/exabg-p4-fwd.py ]; then
+  echo "/nemo-all/exabg-p4-fwd.py exists, including it in exabgp config" 1>&2
+cat >> /etc/exabgp/exabgp.conf <<EOF
 process my-process {
-  run /services/inst/syslog-1.py;
+  #run /services/inst/syslog-1.py;
+  run /nemo-all/exabg-p4-fwd.py;
     encoder json;
 }
+EOF
+fi
 
+cat >> /etc/exabgp/exabgp.conf <<EOF
 neighbor 10.197.36.3 {
   router-id  10.197.36.3;
   local-address 10.197.36.2;
