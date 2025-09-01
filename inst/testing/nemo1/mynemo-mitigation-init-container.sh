@@ -20,6 +20,14 @@ fi
 
 ##
 
+vsmd_inbg=0
+if [ "$1" = "--vsmd_inbg" -o "$1" = "--bg" ]; then 
+  shift 1
+  vsmd_inbg=1
+fi
+
+#
+
 container_name="$1"
 shift 1
 
@@ -41,5 +49,18 @@ docker run -d \
 
 docker exec -ti "$container_name" hostname vsmd1
 
-exec docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
+if [ "$vsmd_inbg" = 1 ]; then
+
+  docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run --install_only
+
+  docker exec -d "$container_name" ./mynemo-mitigation-vsmd-install-and-run --run_only
+
+  while ! docker exec -ti "$container_name" grep "Nemo instance .NemoTestinstanzVsmd1" /nemo-all/vsmd.log; do
+    echo "$0: nemo detection (fishtank) not yet connected to vsmd, waiting" 1>&2
+    sleep 3
+  done
+
+else
+  exec docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run
+fi
 

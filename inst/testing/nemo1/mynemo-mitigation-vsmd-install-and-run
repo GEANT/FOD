@@ -1,6 +1,15 @@
 #!/bin/bash
 
-./mynemo-mitigation-vsmd-install
+if [ "$1" = "--run_only" ]; then
+  shift 1
+  
+  exec ./mynemo-mitigation-vsmd-run 2> /nemo-all/vsmd.log
 
-exec ./mynemo-mitigation-vsmd-run "$@"
+else
+
+  ./mynemo-mitigation-vsmd-install
+
+  exec ./mynemo-mitigation-vsmd-run "$@"
+
+fi
 
