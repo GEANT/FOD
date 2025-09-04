@@ -531,6 +531,17 @@ elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active lo
 
   (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
+elif [ "$1" = "--pcap-files-inotify" ]; then #arg
+  shift 1
+
+  # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
+  (set -x; docker exec "$docker_outer__container_name" sh -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/freertr1/")
+
+elif [ "$1" = "--logs-condensed" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs nemo_condensed_1) 2>&1
+
 #
 
 elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside 
