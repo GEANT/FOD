@@ -531,7 +531,7 @@ elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active lo
 
   (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
-elif [ "$1" = "--pcap-files-inotify" ]; then #arg
+elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
   shift 1
 
   # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
