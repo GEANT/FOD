@@ -542,6 +542,33 @@ elif [ "$1" = "--logs-condensed" ]; then #arg
 
   (set -x; docker exec "$docker_outer__container_name" docker logs nemo_condensed_1) 2>&1
 
+elif [ "$1" = "--dockerc_pid" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  [ -n "$id" ] || id="$docker_outer__container_name"
+
+  docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+
+elif [ "$1" = "--dockerc_inner_pid_inner" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  docker exec "$docker_outer__container_name" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+
+elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  pid_inner="$("$0" --dockerc_inner_pid_inner "$id")"
+  [ -n "$pid_inner" ] || exit 1
+
+  grep -E "NSpid:.*\s$pid_inner\s*1" /proc/*/status 1>&2
+  grep -E "NSpid:.*\s$pid_inner\s*1" /proc/*/status | tr -s $'\t' | cut -d $'\t' -f 2
+
 #
 
 elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside 
