@@ -566,8 +566,8 @@ elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
   pid_inner="$("$0" --dockerc_inner_pid_inner "$id")"
   [ -n "$pid_inner" ] || exit 1
 
-  grep -E "NSpid:.*\s$pid_inner\s*1" /proc/*/status 1>&2
-  grep -E "NSpid:.*\s$pid_inner\s*1" /proc/*/status | tr -s $'\t' | cut -d $'\t' -f 2
+  grep -E "NSpid:.*\s$pid_inner\s*1$" /proc/*/status 1>&2
+  grep -E "NSpid:.*\s$pid_inner\s*1$" /proc/*/status | tr -s $'\t' | cut -d $'\t' -f 2
 
 #
 
