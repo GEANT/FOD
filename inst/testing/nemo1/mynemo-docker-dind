@@ -841,6 +841,15 @@ elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside 
 elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    shift 1
 
+   use_addon1=""
+   if [ "$1" = "--addon" ]; then
+     shift 1
+     use_addon1="$1" 
+     shift 1
+   fi
+
+   ##
+
    vsmd_args=()
    if [ "$1" = "--vsmd_inbg" -o "$1" = "--bg" ]; then 
      shift 1
@@ -887,6 +896,12 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    echo
    echo "# client cert file:" 
    "$0" --nemo-get-filename-of-certfile 
+
+   ##
+
+   if [ "$use_addon1" ]; then
+     ./mynemo-docker-dind-add."$use_addon1"
+   fi
 
 #arg
 
