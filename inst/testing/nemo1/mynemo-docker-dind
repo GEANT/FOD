@@ -114,7 +114,25 @@ enable_network3=0
 
 #
 
-if [ "$1" = "--dockerfile-output" ]; then #arg
+if [ "$1" = "--nemo-git-repos-do" ]; then #arg
+  shift 1
+
+  if [ "$1" = "--short" ]; then #arg
+    use_short="$1" #arg
+    shift 1
+  fi
+
+  echo "# nemo git repos do: $*:" 1>&2
+  for dir1 in nemo-*/; do
+    if [ -d "$dir1/.git" ]; then
+      [ "$use_short" = 1 ] && echo "# $dir1: " || echo -n "$dir1: "
+      (cd "$dir1" && "$@")
+      [ "$use_short" != 1 ] || echo 1>&2
+    fi
+  done
+  echo 1>&2
+
+elif [ "$1" = "--dockerfile-output" ]; then #arg
   shift 1
 
   #set -x
@@ -152,11 +170,14 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ##
 
   echo "# show git commits of nemo repos:" 1>&2
-  for dir1 in nemo-*; do
-    echo "$dir1: "
-    (cd "$dir1" && git show-ref master)
-  done
-  echo 1>&2
+  #for dir1 in nemo-*; do
+  #  echo "$dir1: "
+  #  (cd "$dir1" && git show-ref master)
+  #done
+  #echo 1>&2
+  "$0" --nemo-git-repos-do --short git show-ref heads/master
+
+  ##
 
   find ./etc ./secrets 1>&2
 
