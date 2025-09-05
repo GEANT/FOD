@@ -993,7 +993,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    echo "use_addon1=$use_addon1" > ./nemo1.env
    if [ "$use_addon1" ]; then
      ./mynemo-docker-dind-add."$use_addon1" --baseconf >> ./nemo1.env
-   else
+   fi
 
    #
 
