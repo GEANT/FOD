@@ -531,16 +531,110 @@ elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active lo
 
   (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
+#
+
 elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
   shift 1
 
   # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
   (set -x; docker exec "$docker_outer__container_name" sh -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/freertr1/")
 
+elif [ "$1" = "--logs-nfcapd" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_nfcapd_1) 2>&1
+
+elif [ "$1" = "--logs-exportd" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_exportd_1) 2>&1
+
 elif [ "$1" = "--logs-condensed" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs nemo_condensed_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_condensed_1) 2>&1
+
+elif [ "$1" = "--logs-newfile" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_newfile_1) 2>&1
+
+elif [ "$1" = "--logs-eventd" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_eventd_1) 2>&1
+
+elif [ "$1" = "--logs-watsond" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_watsond_1) 2>&1
+
+elif [ "$1" = "--logs-analyzed" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_analyzed_1) 2>&1
+
+elif [ "$1" = "--logs-fishtank" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_fishtank_1) 2>&1
+
+elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_fishtank-nginx_1) 2>&1
+
+elif [ "$1" = "--logs-main-tail" ]; then #arg
+  shift 1
+
+  echo "# nfcapd:"
+  "$0" --logs-nfcapd | tail "$@"
+  echo
+  #echo "# exportd:"
+  #"$0" --logs-exportd | tail "$@"
+  #echo
+  echo "# condensed:"
+  "$0" --logs-condensed | tail "$@"
+  echo
+  echo "# newfile:"
+  "$0" --logs-newfile | tail "$@"
+  echo
+  echo "# eventd:"
+  "$0" --logs-eventd | tail "$@"
+  echo
+  echo "# watsond:"
+  "$0" --logs-watsond | tail "$@"
+  echo
+  echo "# analyzed:"
+  "$0" --logs-analyzed | tail "$@"
+  echo
+  echo "# fishtank:"
+  "$0" --logs-fishtank | tail "$@"
+  echo
+  echo "# fishtank-nginx:"
+  "$0" --logs-fishtanknginx | tail "$@"
+
+elif [ "$1" = "--dockerc_inner-fix-syslog-socket" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  id="nemo_${id}_1"
+
+  echo "$0: dockerc id=$id" 1>&2
+
+  nemo_uid=111
+
+  pid="$("$0" --dockerc_inner_pid "$id")"
+  cp -a "$(realpath /dev/log)" "/proc/$pid/root/run/syslog/syslog.socket"
+  chown "$nemo_uid" "/proc/$pid/root/run/"
+  chown "$nemo_uid" "/proc/$pid/root/run/syslog/"
+  chown "$nemo_uid" "/proc/$pid/root/run/syslog/syslog.socket"
+
+  "$0" --docker restart "$id"
+  "$0" --docker logs "$id" 2>&1 | tail 
+
+#
 
 elif [ "$1" = "--dockerc_pid" ]; then #arg
   shift 1
@@ -894,6 +988,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
      vsmd_args=("--vsmd_inbg")
    fi
    
+   #
+  
+   echo "use_addon1=$use_addon1" > ./nemo1.env
+   if [ "$use_addon1" ]; then
+     ./mynemo-docker-dind-add."$use_addon1" --baseconf >> ./nemo1.env
+   else
+
    #
 
    set -e 

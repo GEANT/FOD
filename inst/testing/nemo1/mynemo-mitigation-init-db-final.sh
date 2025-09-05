@@ -1,11 +1,23 @@
 #!/bin/bash
 
+# to be run inside nemo-all1 outer container
+
 set -x
 
 #
 
-docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "attacker network" 10.1.10.0/24 
-docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "victim network" 10.2.10.0/24 
+# defaults
+attacker_network1="10.1.10.0/24"
+victim_network1="10.2.10.0/24"
+
+[ ! -f /nemo-all/nemo1.env ] || . /nemo-all/nemo1.env
+
+#
+
+#docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "attacker network" 10.1.10.0/24 
+#docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "victim network" 10.2.10.0/24 
+docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "attacker network" "$attacker_network1" 
+docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "victim network" "$victim_network1"
 #docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "victim host" 10.2.10.12/32
 #docker exec -ti nemo_mitigated_1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "attacker host" 10.1.10.11/32
 
