@@ -91,8 +91,8 @@ docker_outer__docker_file_name="Dockerfile-nemo-all"
 
 docker_outer_hostname="localhost"
 
-#docker_outer_privilege_opts="--privileged"
-docker_outer_privilege_opts="--cap-add ALL --security-opt apparmor:unconfined --security-opt seccomp=unconfined --security-opt label:unconfined --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw"
+docker_outer_privilege_opts="--privileged"
+#docker_outer_privilege_opts="--cap-add ALL --security-opt apparmor:unconfined --security-opt seccomp=unconfined --security-opt label:unconfined --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw"
 
 #
 
@@ -116,19 +116,28 @@ enable_network3=0
 
 if [ "$1" = "--nemo-git-repos-do" ]; then #arg
   shift 1
-
+  
   use_short=0
+
+  if [ $# = 0 ]; then 
+    #set -- sh -c "git log --graph --abbrev-commit '--pretty=format:%h%x09%an%x09%ad%x09%d %s' -n 1 | head -1; git status"
+    set -- sh -c "git log --graph --abbrev-commit '--pretty=format:%h%x09%an%x09%ad%x09%d %s' -n 1 | head -1; git diff"
+    #use_short=1
+  fi
+
   if [ "$1" = "--short" ]; then #arg
     use_short="$1" #arg
     shift 1
   fi
 
+  ##
+
   echo "# nemo git repos do: $*:" 1>&2
   for dir1 in nemo-*/; do
     if [ -d "$dir1/.git" ]; then
-      [ "$use_short" = 0 ] && echo "# $dir1: " 1>&2 || echo -n "$dir1: "
-      (cd "$dir1" && "$@")
-      [ "$use_short" = 1 ] || echo 1>&2
+      [ "$use_short" = 0 ] && echo "# $dir1: " || echo -n "$dir1: "
+      (cd "$dir1" && "$@") 2>&1 | awk '{ print; }'
+      [ "$use_short" = 1 ] || echo 
     fi
   done
   echo 
@@ -176,7 +185,8 @@ elif [ "$1" = "--docker-build" ]; then #arg
   #  (cd "$dir1" && git show-ref master)
   #done
   #echo 1>&2
-  "$0" --nemo-git-repos-do --short git show-ref heads/master
+  #"$0" --nemo-git-repos-do --short git show-ref heads/master
+  "$0" --nemo-git-repos-do 
 
   ##
 
@@ -494,6 +504,13 @@ elif [ "$1" = "--docker" ]; then #arg
   shift 1
 
   (set -x; docker exec "$docker_outer__container_name" docker "$@")
+
+elif [ "$1" = "--docker-inner-clean" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker image prune -a -f')
+  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
+  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
 
 elif [ "$1" = "--docker.containerids" ]; then #arg
   shift 1
