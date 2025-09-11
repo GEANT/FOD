@@ -1,4 +1,10 @@
 #!/bin/bash
 
-exec ./mynemo-docker-dind --exec docker exec -ti nemo_nemodb_1 psql -U nemo "$@"
+DIDCLFS="_"
+[ ! -f /nemo-all/nemo1.env ] || . /nemo-all/nemo1.env
+
+#
+
+#exec ./mynemo-docker-dind --exec docker exec -ti nemo_nemodb_1 psql -U nemo "$@"
+exec ./mynemo-docker-dind --exec docker exec -ti "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo "$@"
 

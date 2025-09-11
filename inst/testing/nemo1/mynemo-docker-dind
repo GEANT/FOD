@@ -79,11 +79,20 @@ docker_outer__image_name="nemo-all1"
 docker_outer__container_name="nemo-all1"
 docker_outer_volume_forinnerdockerdir="dind1"
 
+#docker_inner_detection_container_label_format_sep="_"
+docker_inner_detection_container_label_format_sep="-"
+DIDCLFS="$docker_inner_detection_container_label_format_sep"
+
 outer_https_port="8000"
 
 extra_port_redirection_args=(-p "8025:8025")
 
-docker_log_postfix="_1" # has to be consistent with docker_outer__container_name?
+##
+
+docker_log_prefix="nemo${DIDCLFS}" # has to be consistent with docker_outer__container_name?
+
+#docker_log_postfix="_1" # has to be consistent with docker_outer__container_name?
+docker_log_postfix="${DIDCLFS}1" # has to be consistent with docker_outer__container_name?
 
 #
 
@@ -402,7 +411,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh --verbose "$@"' -- "$@")
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && docker-compose --version && ./setup.sh "$@"' -- "$@")
   echo 1>&2
 
   #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
@@ -522,17 +531,15 @@ elif [ "$1" = "--docker.containerids" ]; then #arg
 elif [ "$1" = "--logs0" -o "$1" = "--get-nemo-logs0" ]; then #arg # get nemo_fishtank-nginx_1 logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank-nginx$docker_log_postfix :" 1>&2
-  #(set -x; docker exec -ti "$docker_outer__container_name" docker logs nemo_fishtank-nginx_1)
-  (set -x; docker exec "$docker_outer__container_name" docker logs "nemo_fishtank-nginx$docker_log_postfix")
+  echo "# inside debian-docker-in-docker container: docker logs ${docker_log_prefix}fishtank-nginx$docker_log_postfix :" 1>&2
+  (set -x; docker exec "$docker_outer__container_name" docker logs "${docker_log_prefix}fishtank-nginx$docker_log_postfix")
   echo 1>&2
 
 elif [ "$1" = "--logs1" -o "$1" = "--get-nemo-logs1" ]; then #arg # get nemo_fishtank_1 logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: docker logs nemo_fishtank$docker_log_postfix :" 1>&2
-  #(set -x; docker exec -ti "$docker_outer__container_name" docker logs "nemo_fishtank$docker_log_postfix")
-  (set -x; docker exec "$docker_outer__container_name" docker logs "nemo_fishtank$docker_log_postfix")
+  echo "# inside debian-docker-in-docker container: docker logs ${docker_log_prefix}fishtank$docker_log_postfix :" 1>&2
+  (set -x; docker exec "$docker_outer__container_name" docker logs "${docker_log_prefix}fishtank$docker_log_postfix")
   echo 1>&2
 
 elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all nemo_*logs
@@ -581,47 +588,47 @@ elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
 elif [ "$1" = "--logs-nfcapd" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_nfcapd_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}nfcapd${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-exportd" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_exportd_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}exportd${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-condensed" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_condensed_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}condensed${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-newfile" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_newfile_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}newfile${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-eventd" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_eventd_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}eventd${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-watsond" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_watsond_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}watsond${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-analyzed" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_analyzed_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}analyzed${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-fishtank" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_fishtank_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}fishtank${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" nemo_fishtank-nginx_1) 2>&1
+  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}fishtank-nginx${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-main-tail" ]; then #arg
   shift 1
@@ -658,7 +665,8 @@ elif [ "$1" = "--dockerc_inner-fix-syslog-socket" ]; then #arg
   id="$1" #arg
   shift 1
 
-  id="nemo_${id}_1"
+  #id="remo_${id}_1"
+  id="${docker_log_prefix}${id}${docker_log_postfix}"
 
   echo "$0: dockerc id=$id" 1>&2
 
@@ -1029,7 +1037,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    
    #
   
-   echo "use_addon1=$use_addon1" > ./nemo1.env
+   echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
+
+   echo "use_addon1=$use_addon1" >> ./nemo1.env
    if [ "$use_addon1" ]; then
      ./mynemo-docker-dind-add."$use_addon1" --baseconf >> ./nemo1.env
    fi
