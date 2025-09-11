@@ -79,8 +79,8 @@ docker_outer__image_name="nemo-all1"
 docker_outer__container_name="nemo-all1"
 docker_outer_volume_forinnerdockerdir="dind1"
 
-#docker_inner_detection_container_label_format_sep="_"
-docker_inner_detection_container_label_format_sep="-"
+docker_inner_detection_container_label_format_sep="_"
+#docker_inner_detection_container_label_format_sep="-"
 DIDCLFS="$docker_inner_detection_container_label_format_sep"
 
 outer_https_port="8000"
@@ -407,11 +407,14 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
 
   echo "# inside debian-docker-in-docker status of /nemo-all dir prior to running setup.sh:" 1>&2
   (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
+  
+  echo "# inside debian-docker-in-docker show debian OS version, docker version and docker-compose version:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; cat /etc/debian_version; docker --version; docker-compose --version')
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh --verbose "$@"' -- "$@")
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && docker-compose --version && ./setup.sh "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
   echo 1>&2
 
   #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
