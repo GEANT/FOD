@@ -1,5 +1,6 @@
 #FROM debian:latest
-FROM debian:stable
+#FROM debian:stable
+FROM debian:oldstable
 RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
 RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y docker.io docker-compose jq pwgen gawk
 RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
