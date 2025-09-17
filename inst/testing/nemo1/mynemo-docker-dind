@@ -502,7 +502,7 @@ elif [ "$1" = "--bash" ]; then #arg
   
   (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; exec bash "$@"' -- "$@")
 
-elif [ "$1" = "--bash-vsmd1" ]; then #arg
+elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg
   shift 1
   
   [ $# = 0 ] && set -- bash -i #arg defaults
@@ -1033,14 +1033,18 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    ##
 
-   vsmd_args=()
+   vsmd_args=("--vsmd_inbg")
    if [ "$1" = "--vsmd_inbg" -o "$1" = "--bg" ]; then 
      shift 1
      vsmd_args=("--vsmd_inbg")
+   elif [ "$1" = "--vsmd_infg" -o "$1" = "--fg" ]; then 
+     shift 1
+     vsmd_args=()
    fi
    
    #
-  
+ 
+   echo "# allx step0 (preconf init)" 1>&2 
    echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
 
    echo "use_addon1=$use_addon1" >> ./nemo1.env
@@ -1054,20 +1058,31 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    set -x
 
    # build and init nemo-outer container and build and init and run all detection container inside
+   
+   echo "# allx step1 (all1):" 1>&2 
    "$0" --all1 "$@"
+
+   echo "# allx step2 (setup-db-contents):" 1>&2 
    "$0" --setup-db-contents
 
    # init frnet comprising freertr router and host1/host2 test network
+   echo "# allx step3.1 (freertr-testnet-prep-and-run):" 1>&2 
    "$0" --freertr-testnet-prep-and-run
+
+   echo "# allx step3.2 (freertr-host2-ping-host1.bg):" 1>&2 
    "$0" --freertr-host2-ping-host1.bg
+
+   echo "# allx step3.3 (freertr-host2-ping-host2.bg):" 1>&2 
    "$0" --freertr-host1-ping-host2.bg
 
    # test tshark
+   echo "# allx step4 (nemo-tshark-netflow):" 1>&2 
    "$0" --nemo-tshark-netflow -a duration:20
 
    # build and init and "wire" vsmd inner container within nemo outer container
    #"$0" --exec ./mynemo-mitigation-vsmd-install 
    #"$0" --exec ./mynemo-mitigation-init-container.sh
+   echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
    "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
 
    # currently: not reached, as precedingly called mode "--setup-and-run-vsmd-container" will continue to run in foreground (actually vsmd component is running so for now)
@@ -1078,20 +1093,24 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    #"$0" --exec cp -vf secrets/nemo-analyse-cachain.pem etc/nemo-erkennung/mitigated/chain.pem
 
    echo
+   echo "# allx post step1 (logfiles in outer nemo container):" 1>&2 
    echo "# logfiles in outer nemo container:" 
    "$0" --logsall2
-
    echo
+
+   echo "# allx post step2 (nemo installation dir in outer nemo container):" 1>&2 
    echo "# nemo installation dir in outer nemo container:" 
    "$0" --nemo-get-dirname-onhost
-
    echo
+
+   echo "# allx post step3 (client cert file):" 1>&2 
    echo "# client cert file:" 
    "$0" --nemo-get-filename-of-certfile 
 
    ##
 
    if [ "$use_addon1" ]; then
+     echo "# allx post addon step (use_addon1=$use_addon1):" 1>&2 
      ./mynemo-docker-dind-add."$use_addon1"
    fi
 
