@@ -1,0 +1,10 @@
+AFI: {{ afi }}
+Flow :{{ add_opts_str }}
+  Actions                : discard
+  Synced:                 TRUE
+  Last Error:             0:No error
+  Match Unsupported:      None
+  Statistics                     (packets/bytes)
+   Matched           :      {{ match_left }}/{{ match_right }}
+  Dropped           :      {{ drop_left }}/{{ drop_right }}
+
