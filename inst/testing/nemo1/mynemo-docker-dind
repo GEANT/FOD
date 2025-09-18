@@ -185,6 +185,38 @@ elif [ "$1" = "--docker-build" ]; then #arg
   shift 1
 
   echo "$0: docker-build: args=$*" 1>&2
+
+  ##
+  
+  use_docker_outer_clean=0
+  use_prune_all=0
+  use_prune=0
+  args1=()
+
+  while [ $# -gt 0 ]; do
+
+    if [ "$1" = "--prune-outer" ]; then #arg opt
+      shift 1
+      use_docker_outer_clean=1
+    elif [ "$1" = "--prune-outer-all" ]; then #arg opt
+      shift 1
+      use_docker_outer_clean=2
+    elif [ "$1" = "--prune-all" ]; then #arg opt
+      shift 1
+      use_prune_all=1
+    elif [ "$1" = "--prune" ]; then #arg opt
+      shift 1
+      use_prune=1
+    elif [ "$1" != "${1#--build-with}" ]; then #arg opt
+      args1=("$1") #arg
+      shift 1
+    else
+      break	
+    fi
+  
+  done
+
+  echo "$0: docker-build: use_docker_outer_clean=$use_docker_outer_clean use_prune_all=$use_prune_all use_prune=$use_prune args1=${args1[@]} rest_args=$*" 1>&2
   echo 1>&2
 
   ##
@@ -200,21 +232,24 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   ##
 
+  echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
   find ./etc ./secrets 1>&2
-
-  ##
-  
-  #set -x
+  echo 1>&2
 
   ##
 
-  args1=()
-  if [ "$1" != "${1#--build-with}" ]; then #arg opt
-    args1=("$1") #arg
-    shift 1
+  if [ "$use_docker_outer_clean" = 1 ]; then
+    echo "# clean outer docker container:" 1>&2
+    (set -x; "$0" --docker-outer-clean-container)
+    echo 1>&2
+  elif [ "$use_docker_outer_clean" = 2 ]; then
+    echo "# clean outer docker container:" 1>&2
+    (set -x; "$0" --docker-outer-clean-container)
+    echo 1>&2
+    echo "# clean outer docker volume:" 1>&2
+    (set -x; "$0" --docker-outer-clean-volume)
+    echo 1>&2
   fi
-
-  ##
 
   set -e
 
@@ -315,8 +350,7 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   #exit
 
-  if [ "$1" = "--prune-all" ]; then #arg opt
-    shift 1
+  if [ "$use_prune_all" = 1 ]; then #arg opt
 
     echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
     (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )")
@@ -335,9 +369,8 @@ elif [ "$1" = "--docker-build" ]; then #arg
     (set -x; docker exec -ti "$docker_outer__container_name" docker volume prune -f)
     echo 1>&2
 
+  elif [ "$use_prune" = 1 ]; then #arg opt
 
-  elif [ "$1" = "--prune" ]; then #arg opt
-    shift 1
     echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
     (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )") || true
     echo 1>&2
@@ -517,6 +550,18 @@ elif [ "$1" = "--docker" ]; then #arg
   shift 1
 
   (set -x; docker exec "$docker_outer__container_name" docker "$@")
+
+elif [ "$1" = "--docker-outer-clean-container" ]; then #arg
+  shift 1
+
+  docker stop "$docker_outer__container_name"
+  docker ps --filter=status=exited --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker rm "$id"; done
+
+elif [ "$1" = "--docker-outer-clean-volume" ]; then #arg
+  shift 1
+
+  docker stop "$docker_outer__container_name"
+  docker volume rm "$docker_outer_volume_forinnerdockerdir"
 
 elif [ "$1" = "--docker-inner-clean" ]; then #arg
   shift 1
@@ -761,7 +806,8 @@ elif [ "$1" = "--all1" ]; then #arg # --all --prune --verbose
 
   #exec "$0" --all --prune --verbose "$@" #arg rest
   #exec "$0" --build-and-setup --prune --verbose "$@" #arg rest
-  exec "$0" --build-and-setup --prune --verbose --dev "$@" #arg rest
+  #exec "$0" --build-and-setup --prune --verbose --dev "$@" #arg rest
+  exec "$0" --build-and-setup --prune "$@" --verbose --dev #arg rest
 
 elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
   shift 1
