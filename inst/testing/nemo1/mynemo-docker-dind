@@ -1079,6 +1079,15 @@ elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside 
 
 #arg
 
+elif [ "$1" = "--addon-init-run" ]; then #arg
+  shift 1
+  addon_name="$1" 
+  shift 1
+
+  exec "./addon/$addon_name/rarenemo/rarenemo-addon-init.sh" "$@"
+
+#arg
+
 elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
    shift 1
 
@@ -1107,7 +1116,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    echo "use_addon1=$use_addon1" >> ./nemo1.env
    if [ "$use_addon1" ]; then
-     ./mynemo-docker-dind-add."$use_addon1" --baseconf >> ./nemo1.env
+     #./mynemo-docker-dind-add."$use_addon1" --baseconf >> ./nemo1.env
+     #"./addon/$use_addon1/rarenemo/rarenemo-addon-init.sh" --baseconf >> ./nemo1.env
+     "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
    fi
 
    #
@@ -1169,7 +1180,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
 
    if [ "$use_addon1" ]; then
      echo "# allx post addon step (use_addon1=$use_addon1):" 1>&2 
-     ./mynemo-docker-dind-add."$use_addon1"
+     #./mynemo-docker-dind-add."$use_addon1"
+     #"./addon/$use_addon1/rarenemo/rarenemo-addon-init.sh" 
+     "$0" --addon-init-run "$use_addon1"
    fi
 
 #arg
