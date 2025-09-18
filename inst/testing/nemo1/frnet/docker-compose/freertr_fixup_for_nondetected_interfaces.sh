@@ -25,7 +25,7 @@ if ! grep -q "^proc ifc1.sh" "$hwfile"; then
 proc ifc1.sh /rtr/run/conf/pcapInt.bin eth1 20002 127.0.0.1 20001 127.0.0.1
 int ether1 eth 02:42:0a:01:0a:03 127.0.0.1 20001 127.0.0.1 20002
 EOF
-[ -e /rtr/run/conf/pcapInt.bin ] || cp -av /root/install.rtr/binTmp/pcapInt.bin /rtr/run/conf/pcapInt.bin
+[ -e /rtr/run/conf/pcapInt.bin ] || cp -av /root/install.rtr/binTmp/pcapInt.bin /rtr/run/conf/pcapInt.bin 1>&2
 fi
 
 if ! grep -q "^proc ifc2.sh" "$hwfile"; then
@@ -33,7 +33,7 @@ if ! grep -q "^proc ifc2.sh" "$hwfile"; then
 proc ifc2.sh /rtr/run/conf/pcapInt.bin eth2 20012 127.0.0.1 20011 127.0.0.1
 int ether2 eth 02:42:0a:02:0a:03 127.0.0.1 20011 127.0.0.1 20012
 EOF
-[ -e /rtr/run/conf/pcapInt.bin ] || cp -av /root/install.rtr/binTmp/pcapInt.bin /rtr/run/conf/pcapInt.bin
+[ -e /rtr/run/conf/pcapInt.bin ] || cp -av /root/install.rtr/binTmp/pcapInt.bin /rtr/run/conf/pcapInt.bin 1>&2
 fi
 
 if ! grep -q "^proc ifc3.sh" "$hwfile"; then
@@ -41,7 +41,7 @@ if ! grep -q "^proc ifc3.sh" "$hwfile"; then
 proc ifc3.sh /rtr/run/conf/pcapInt.bin eth3 20022 127.0.0.1 20021 127.0.0.1
 int ether3 eth 02:42:0a:03:0a:03 127.0.0.1 20021 127.0.0.1 20022
 EOF
-[ -e /rtr/run/conf/pcapInt.bin ] || cp -av /root/install.rtr/binTmp/pcapInt.bin /rtr/run/conf/pcapInt.bin
+[ -e /rtr/run/conf/pcapInt.bin ] || cp -av /root/install.rtr/binTmp/pcapInt.bin /rtr/run/conf/pcapInt.bin 1>&2
 fi
 
 

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -x
+
+#
+
 /rtr/veth.bin veth1 veth2 1500 1500 2:1:1:1:1:1 3:1:1:1:1:1
 ifconfig veth1 up
 ifconfig veth2 up
@@ -22,7 +26,7 @@ ethtool -k veth2 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read 
 
 /rtr/hwdet-mgmt.sh
 
-#
+##
 
 # fix for some issues having arised in 2024:
 mkdir -p /rtr/run/conf/
@@ -34,7 +38,20 @@ grep -v ^line /rtr/run/conf/rtr-hw.txt > /rtr/run/conf/rtr-hw.txt.new && mv /rtr
 /usr/local/bin/freertr_fixup_for_nondetected_interfaces.sh >> /rtr/run/conf/rtr-hw.txt
 
 # debug:
-cat /rtr/run/conf/rtr-hw.txt | nl 1>&2
+echo "# /rtr/run/conf/rtr-hw.txt:" 1>&2
+cat /rtr/run/conf/rtr-hw.txt | grep -Ev "(^#)|(^ *$)" | nl 1>&2
+echo 1>&2
+
+##
+
+[ -f /rtr/run/conf/rtr-sw.txt ] || cp -a /usr/local/rtr-sw.failback.txt /rtr/run/conf/rtr-sw.txt
+
+# debug:
+echo "# /rtr/run/conf/rtr-sw.txt:" 1>&2
+cat /rtr/run/conf/rtr-sw.txt | grep -Ev "(^#)|(^ *$)" | nl 1>&2
+echo 1>&2
+
+##
 
 #
 
