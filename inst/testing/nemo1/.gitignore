@@ -13,7 +13,11 @@ freertr
 nemo-*
 
 Dockerfile-nemo-all
+
+#
+
 nemo1.env
+exabg-addon.py
 
 #
 
@@ -22,8 +26,6 @@ nemo1.env
 #
 
 ./mynixsde1-local.sh
-
-p4
 
 #
 
