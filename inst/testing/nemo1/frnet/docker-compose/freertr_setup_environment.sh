@@ -25,10 +25,12 @@ ethtool -k veth2 | awk '$2=="on" { sub(/:$/, "", $1); print $1; }' | while read 
 #
 
 # fix for some issues having arised in 2024:
+mkdir -p /rtr/run/conf/
 cat /rtr/rtr-hw-add.txt >> /rtr/run/conf/rtr-hw.txt
 
 # fix new issues since 2025-07 (Ubuntu24):
 grep -v ^line /rtr/run/conf/rtr-hw.txt > /rtr/run/conf/rtr-hw.txt.new && mv /rtr/run/conf/rtr-hw.txt.new /rtr/run/conf/rtr-hw.txt
+# ./freertr_fixup_for_nondetected_interfaces.sh
 /usr/local/bin/freertr_fixup_for_nondetected_interfaces.sh >> /rtr/run/conf/rtr-hw.txt
 
 # debug:
