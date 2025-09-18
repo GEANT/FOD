@@ -176,12 +176,12 @@ process announce-routes {
 }
 EOF
 
-if [ -f /nemo-all/exabg-p4-fwd.py ]; then
-  echo "/nemo-all/exabg-p4-fwd.py exists, including it in exabgp config" 1>&2
+if [ -f /nemo-all/exabg-addon.py ]; then
+  echo "/nemo-all/exabg-addon.py exists, including it in exabgp config" 1>&2
 cat >> /etc/exabgp/exabgp.conf <<EOF
 process my-process {
   #run /services/inst/syslog-1.py;
-  run /nemo-all/exabg-p4-fwd.py;
+  run /nemo-all/exabg-addon.py;
     encoder json;
 }
 EOF
