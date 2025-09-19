@@ -157,7 +157,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    shift 1
 
    use_addon1=""
-   addon_init_early=1
+   addon_init_early=0
 
    vsmd_args=("--vsmd_inbg")
 
