@@ -1,22 +1,7 @@
 #!/bin/bash
 #
 
-##
-
-./mynemo-mitigation-fix-detection-containers.sh
-
-##
-
-if [ -e /.dockerenv ]; then # sanity check!
-  systemctl disable ssh
-  systemctl stop ssh
-fi
-
-##
-
-if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-  ./mynemo-mitigation-init-vsmd-certs.sh
-fi
+# to be called within /nemo-all/ as cwd in outer nemo-all container
 
 ##
 
@@ -33,7 +18,27 @@ shift 1
 
 [ -n "$container_name" ] || container_name="vsmd1"
 
+####
+
+# do some preparatory steps before building and starting vsmd inner container
+
+./mynemo-mitigation-fix-detection-containers.sh
+
 ##
+
+# disable ssh in outer container in order to avoid conflict with ssh in vsmd container which shares the network namespace with outer container
+if [ -e /.dockerenv ]; then # sanity check to really perfom following only in a container and not on the main host!
+  systemctl disable ssh
+  systemctl stop ssh
+fi
+
+##
+
+if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+  ./mynemo-mitigation-init-vsmd-certs.sh
+fi
+
+####
 
 docker build -f ./Dockerfile-vsmd1 -t "$container_name" . 
 
@@ -48,6 +53,8 @@ docker run -d \
 	"$container_name"
 
 docker exec -ti "$container_name" hostname vsmd1
+
+##
 
 if [ "$vsmd_inbg" = 1 ]; then
 

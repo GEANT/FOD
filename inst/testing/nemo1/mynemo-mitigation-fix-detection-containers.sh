@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# to be called within /nemo-all/ as cwd in outer nemo-all container
+
 ##############################################################################
 
 # to be fixed in outer docker container: /nemo-all/etc/*:
