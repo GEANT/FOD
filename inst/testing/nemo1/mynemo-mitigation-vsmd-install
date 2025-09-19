@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# to be called within /nemo-all/ as cwd in inner vsmd(=nemo-mitigation) container
+
 #############################################################################
 # vsmd deps0 (taks long time to run, not depending on python)
 
@@ -36,7 +38,7 @@ fi
 ##############################################################################
 # setup mitigated-vsmd certs
 
-if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
+if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then # should not happen, ./mynemo-mitigation-init-vsmd-certs.sh should have run before outside, i.e. in outer nemo-all container
   ./mynemo-mitigation-init-vsmd-certs.sh
 fi
 

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# to be called within /nemo-all/ as cwd in inner vsmd(=nemo-mitigation) container
+
+##
+
 . /nemo-all/env.sh
 
 cd /nemo-all/nemo-vsmd/ || exit 3

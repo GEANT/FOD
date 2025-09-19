@@ -20,24 +20,24 @@ DIDCLFS="_"
 
 set -x
 
+# add default authorization object:
+echo "$0: adding default nemo authorization:" 1>&2
 docker exec -ti "nemo${DIDCLFS}mitigated${DIDCLFS}1" /services/inst/nemo-erkennung/bin/nemo-dbadmin add_authframeinformation INFRA "Infrastructure Protection" 0.0.0.0/0,::/0 alwaystrue
 echo
 
 ##
 
+# needed fix:
+echo "$0: performing replisync fix:" 1>&2
 sed -i -e 's#^.*deactivate_replisync.*$#deactivate_replisync: 1#' /nemo-all/etc/nemo-analyse/fishtank/nemo.conf
 docker restart "nemo${DIDCLFS}fishtank${DIDCLFS}1"
 echo
 
+# add vsmd instance entry for 'vsmd1' in nemo db within inner nemo detection mitigated container (corresponds with stuff done by ./mynemo-mitigation-init-vsmd-certs.sh)
+echo "$0: in nemo-detection inner mitigated container: adding 'vsmd1' entry in nemo db" 1>&2
 cp -f /nemo-all/create_vsmd1.py /nemo-all/etc/nemo-erkennung/mitigated/ # TODO: currently misuse of shared fs
 docker exec -ti "nemo${DIDCLFS}mitigated${DIDCLFS}1" python3 /services/etc/nemo/create_vsmd1.py
 
 ##
-
-#docker exec -ti nemo${DIDCLFS}mitigated${DIDCLFS}1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "attacker network" 10.1.10.0/24 
-#docker exec -ti nemo${DIDCLFS}mitigated${DIDCLFS}1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "victim network" 10.2.10.0/24 
-#docker exec -ti nemo${DIDCLFS}mitigated${DIDCLFS}1 /services/inst/nemo-erkennung/bin/nemo-dbadmin add_net --comments "customer2 network" 10.3.10.0/24 
-#
-#docker exec -ti nemo${DIDCLFS}nemodb${DIDCLFS}1 psql -U nemo -c "INSERT INTO router_nets (router_id, net_id) VALUES (1, 1), (1, 2), (1, 3)"
 
 
