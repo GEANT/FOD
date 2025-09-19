@@ -151,35 +151,187 @@ if [ "$1" = "--nemo-git-repos-do" ]; then #arg
   done
   echo 
 
-elif [ "$1" = "--dockerfile-output" ]; then #arg
+#arg  
+
+elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
+   shift 1
+
+   use_addon1=""
+   addon_init_early=1
+
+   vsmd_args=("--vsmd_inbg")
+
+   while [ $# -gt 0 ]; do #arg loop
+
+     if [ "$1" = "--addon_init_early" ]; then #arg 
+       shift 1       
+       addon_init_early=1
+     elif [ "$1" = "--addon_init_later" ]; then #arg 
+       shift 1       
+       addon_init_early=0
+     elif [ "$1" = "--addon" ]; then #arg opt
+       shift 1
+       use_addon1="$1" #arg
+       shift 1
+     elif [ "$1" = "--addon_auto" ]; then #arg 
+       shift 1
+       for file1 in "./addon/"*"/rarenemo/rarenemo-addon-init.sh"; do
+         use_addon1="$(printf "$file1" | cut -d '/' -f 3,3)"
+         break
+       done
+       echo "$0: allx: using use_addon1=$use_addon1" 1>&2	     
+     elif [ "$1" = "--vsmd_inbg" -o "$1" = "--bg" ]; then #arg
+       shift 1
+       vsmd_args=("--vsmd_inbg")
+     elif [ "$1" = "--vsmd_infg" -o "$1" = "--fg" ]; then #arg
+       shift 1
+       vsmd_args=()a
+     else
+       break
+     fi
+
+   done
+   
+   #
+ 
+   echo "# allx step0 (preconf init)" 1>&2 
+   echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
+
+   echo "use_addon1=$use_addon1" >> ./nemo1.env
+   if [ "$use_addon1" ]; then
+     "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
+   fi
+
+   #
+
+   set -e 
+   set -x
+
+   # build and init nemo-outer container and build and init and run all detection container inside
+   
+   echo "# allx step1 (all1):" 1>&2 
+   "$0" --all1 "$@"
+
+   echo "# allx step2 (setup-db-contents):" 1>&2 
+   "$0" --setup-db-contents
+
+   ###
+
+   # init frnet comprising freertr router and host1/host2 test network
+   echo "# allx step3.1 (freertr-testnet-prep-and-run):" 1>&2 
+   "$0" --freertr-testnet-prep-and-run
+
+   echo "# allx step3.2 (freertr-host2-ping-host1.bg):" 1>&2 
+   "$0" --freertr-host2-ping-host1.bg
+
+   echo "# allx step3.3 (freertr-host2-ping-host2.bg):" 1>&2 
+   "$0" --freertr-host1-ping-host2.bg
+
+   # test tshark
+   echo "# allx step4 (nemo-tshark-netflow):" 1>&2 
+   "$0" --nemo-tshark-netflow -a duration:20
+
+   ###
+
+   if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
+     echo "# allx early addon init step (use_addon1=$use_addon1):" 1>&2 
+     "$0" --addon-init-run "$use_addon1"
+   fi
+
+   ###
+
+   # build and init and "wire" vsmd inner container within nemo outer container
+   #"$0" --exec ./mynemo-mitigation-vsmd-install 
+   #"$0" --exec ./mynemo-mitigation-init-container.sh
+   echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
+   "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
+
+   ###
+
+   echo
+   echo "# allx post step1 (logfiles in outer nemo container):" 1>&2 
+   echo "# logfiles in outer nemo container:" 
+   "$0" --logsall2
+   echo
+
+   echo "# allx post step2 (nemo installation dir in outer nemo container):" 1>&2 
+   echo "# nemo installation dir in outer nemo container:" 
+   "$0" --nemo-get-dirname-onhost
+   echo
+
+   echo "# allx post step3 (client cert file):" 1>&2 
+   echo "# client cert file:" 
+   "$0" --nemo-get-filename-of-certfile 
+
+   ##
+
+   if [ -n "$use_addon1" -a "$addon_init_early" = 0 ]; then
+     echo "# allx post addon init step (use_addon1=$use_addon1):" 1>&2 
+     "$0" --addon-init-run "$use_addon1"
+   fi
+
+#arg
+
+elif [ "$1" = "--addon-init-run" ]; then #arg
+  shift 1
+  addon_name="$1" 
   shift 1
 
-  #set -x
+  exec "./addon/$addon_name/rarenemo/rarenemo-addon-init.sh" "$@"
 
-  COPY_CMD="COPY . /nemo-all"
-  if [ "$1" = "--build-without-data" ]; then #arg opt
-    shift 1
-    COPY_CMD="COPY my* /nemo-all/"
-  fi    
+#arg
+
+elif [ "$1" = "--all1" ]; then #arg # --all --prune --verbose
+  shift 1
+
+  exec "$0" --build-and-setup --prune "$@" --verbose --dev #arg rest # --verbose and --dev are args passed to nemo-detection setup.sh
+
+elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
+  shift 1
+
+  exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose --dev
+
+#arg   
+
+elif [ "$1" = "--build-and-bash" ]; then #arg # 
+  shift 1
+
+  while [ $# -gt 0 ]; do #arg loop
+    if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
+      pass_args1=("${pass_args1[@]}" "$1")
+      shift 1
+    else
+      break
+     fi
+  done #arg loop
+  #arg
   
-  cat <<EOF
-#FROM debian:latest
-#FROM debian:stable
-FROM debian:oldstable
-RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
-RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y docker.io docker-compose jq pwgen gawk
-RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
-RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
+  set -e
 
-#COPY . /nemo-all
-$COPY_CMD
+  "$0" --docker-build "${pass_args1[@]}"
+  "$0" --bash "$@" #arg rest
 
-WORKDIR /nemo-all
-CMD [ "/sbin/init" ]
+elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside # build and run nemo-all container and inside init nemo-detection container (not nemo-mitigation) in it
+  shift 1
 
-EOF
+  pass_args1=()
 
-#
+  while [ $# -gt 0 ]; do #arg loop
+    if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
+      pass_args1=("${pass_args1[@]}" "$1")
+      shift 1
+    else
+      break
+     fi
+  done #arg loop
+  #arg
+
+  set -e
+
+  "$0" --docker-build "${pass_args1[@]}"
+  "$0" --run-setup-inside "$@" #arg rest
+
+#arg   
 
 elif [ "$1" = "--docker-build" ]; then #arg
   shift 1
@@ -195,18 +347,18 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   while [ $# -gt 0 ]; do
 
-    if [ "$1" = "--prune-outer" ]; then #arg opt
+    if [ "$1" = "--prune-outer" ]; then #arg opt # before actual building/init prune previously running outer nemo-all container
       shift 1
       use_docker_outer_clean=1
-    elif [ "$1" = "--prune-outer-all" ]; then #arg opt
+    elif [ "$1" = "--prune-outer-all" ]; then #arg opt # before actual building/init prune previously running outer nemo-all container and its outer docker volume
       shift 1
       use_docker_outer_clean=2
-    elif [ "$1" = "--prune-all" ]; then #arg opt
-      shift 1
-      use_prune_all=1
-    elif [ "$1" = "--prune" ]; then #arg opt
+    elif [ "$1" = "--prune-inner" -o "$1" = "--prune" ]; then #arg opt # initialy prune previously run inner containers (stop any inner containers + inner docker prune)
       shift 1
       use_prune=1
+    elif [ "$1" = "--prune-inner-all" -o "$1" = "--prune-all" ]; then #arg opt # initialy prune previously run inner containers (stop, remove inner containers+images + inner docker prune) # will only keep inner docker build cache!
+      shift 1
+      use_prune_all=1
     elif [ "$1" != "${1#--build-with}" ]; then #arg opt
       args1=("$1") #arg
       shift 1
@@ -222,11 +374,6 @@ elif [ "$1" = "--docker-build" ]; then #arg
   ##
 
   echo "# show git commits of nemo repos:" 1>&2
-  #for dir1 in nemo-*; do
-  #  echo "$dir1: "
-  #  (cd "$dir1" && git show-ref master)
-  #done
-  #echo 1>&2
   #"$0" --nemo-git-repos-do --short git show-ref heads/master
   "$0" --nemo-git-repos-do 
 
@@ -273,20 +420,10 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   echo "# check for old debian-docker-in-docker container:" 1>&2
   (set -x; docker ps -a "$docker_outer__container_name") || true
-  #(set -x; docker ps -a) || true
   echo 1>&2
 
   ##
 
-  #echo "# starting new debian-docker-in-docker container:" 1>&2
-  #docker_outer__container_name="$(set -x; docker run --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name" sh -c "ls -l /nemo-all; tree -d /nemo-all/")"
-  #echo "docker_outer__image_name=$docker_outer__image_name" 1>&2
-  #echo 1>&2
-
-  #exit 
-
-  #echo "# pruning outer volume $docker_outer_volume_forinnerdockerdir:" 1>&2
-  #(set -x; docker volume rm "$docker_outer_volume_forinnerdockerdir")
   outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
   echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
   (set -x; rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
@@ -294,9 +431,6 @@ elif [ "$1" = "--docker-build" ]; then #arg
   echo 1>&2
 
   ##
-  
-  #echo "# pruning outer docker networks:" 1>&2
-  #(set -x; yes | docker network prune)
 
   echo "# setting up extra docker network for $network1_name:" 1>&2
   #(set -x; docker network inspect dind-mgmt || docker network create -d bridge dind-mgmt)
@@ -348,8 +482,6 @@ elif [ "$1" = "--docker-build" ]; then #arg
   #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
   #echo 1>&2
 
-  #exit
-
   if [ "$use_prune_all" = 1 ]; then #arg opt
 
     echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
@@ -393,9 +525,126 @@ elif [ "$1" = "--docker-build" ]; then #arg
   (set -x; docker exec -ti "$docker_outer__container_name" docker ps -a)
   echo 1>&2
 
-#
+#arg  
 
-elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
+elif [ "$1" = "--dockerfile-output" ]; then #arg # generate outer nemo-all dockerfile file contents
+  shift 1
+
+  #set -x
+
+  COPY_CMD="COPY . /nemo-all"
+  if [ "$1" = "--build-without-data" ]; then #arg opt
+    shift 1
+    COPY_CMD="COPY my* /nemo-all/"
+  fi    
+  
+  cat <<EOF
+#FROM debian:latest
+#FROM debian:stable
+FROM debian:oldstable
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y docker.io docker-compose jq pwgen gawk
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
+
+#COPY . /nemo-all
+$COPY_CMD
+
+WORKDIR /nemo-all
+CMD [ "/sbin/init" ]
+
+EOF
+
+#arg
+
+elif [ "$1" = "--dockerc_pid" -o "$1" = "--dockerc_outer_pid" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  [ -n "$id" ] || id="$docker_outer__container_name"
+
+  docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+
+elif [ "$1" = "--dockerc_inner_pid_inner" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  docker exec "$docker_outer__container_name" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+
+elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
+  shift 1
+  id="$1" #arg
+  shift 1
+
+  pid_inner="$("$0" --dockerc_inner_pid_inner "$id")"
+  [ -n "$pid_inner" ] || exit 1
+
+  grep -E "NSpid:.*\s$pid_inner\s*1$" /proc/*/status 1>&2
+  grep -E "NSpid:.*\s$pid_inner\s*1$" /proc/*/status | tr -s $'\t' | cut -d $'\t' -f 2
+
+elif [ "$1" = "--docker.containerids" ]; then #arg
+  shift 1
+
+  exec docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$1; }'"
+
+#arg  
+
+elif [ "$1" = "--docker-outer-clean-container" ]; then #arg
+  shift 1
+
+  docker stop "$docker_outer__container_name"
+  docker ps --filter=status=exited --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker rm "$id"; done
+
+elif [ "$1" = "--docker-outer-clean-volume" ]; then #arg
+  shift 1
+
+  docker stop "$docker_outer__container_name"
+  docker volume rm "$docker_outer_volume_forinnerdockerdir"
+
+elif [ "$1" = "--docker-inner-clean" ]; then #arg
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker image prune -a -f')
+  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
+  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
+
+#arg
+
+elif [ "$1" = "--docker" -o "$1" = "--docker-inner" ]; then #arg # generic docker cmd in outer nemo-all container
+  shift 1
+
+  (set -x; docker exec "$docker_outer__container_name" docker "$@")
+
+elif [ "$1" = "--exec" ]; then #arg # generic exec in outer nemo-all container
+  shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
+
+  (set -x; docker exec -ti "$docker_outer__container_name" "$@")
+  
+elif [ "$1" = "--bash" ]; then #arg # generic bash in outer nemo-all container
+  shift 1
+
+  [ $# = 0 ] && set -- -i #arg defaults
+  
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; exec bash "$@"' -- "$@")
+
+elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg # generic bash into vsmd(=nemo mitigation) inner container
+  shift 1
+  
+  [ $# = 0 ] && set -- bash -i #arg defaults
+
+  if docker ps | grep -q vsmd1; then 
+    exec docker exec -ti vsmd1 "$@"
+  else
+    exec "$0" --exec docker exec -ti vsmd1 "$@"
+  fi
+
+#arg
+
+elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.sh inside nemo-all outer container+optionally finally run some tests and logging excerpts, requires running outer nemo-all container
   shift 1
 
   if [ "$1" = "--pre-setup-shcode" ]; then #arg opt
@@ -476,7 +725,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg
     :
   fi
 
-#
+#arg
 
 elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access to web UI with curl (assumes empty client cert pwd)
   shift 1
@@ -484,8 +733,6 @@ elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access 
   shift 1
 
   echo "# inside debian-docker-in-docker container: test access to UI via curl+lynx (assumes empty password for the client certificate):" 1>&2
-  #(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
-  #(set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
   (set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 "https://localhost/$url_part" | lynx -stdin -dump)
   status1="$?"
 
@@ -519,63 +766,8 @@ elif [ "$1" = "--w3m" -o "$1" = "--inside-run-w3m" ]; then #arg # test access to
   
   exit "$status1"
 
-#
 
-elif [ "$1" = "--exec" ]; then #arg
-  shift 1
-  
-  [ $# = 0 ] && set -- bash -i #arg defaults
-
-  (set -x; docker exec -ti "$docker_outer__container_name" "$@")
-  
-elif [ "$1" = "--bash" ]; then #arg
-  shift 1
-
-  [ $# = 0 ] && set -- -i #arg defaults
-  
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; exec bash "$@"' -- "$@")
-
-elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg
-  shift 1
-  
-  [ $# = 0 ] && set -- bash -i #arg defaults
-
-  if docker ps | grep -q vsmd1; then 
-    exec docker exec -ti vsmd1 "$@"
-  else
-    exec "$0" --exec docker exec -ti vsmd1 "$@"
-  fi
-
-elif [ "$1" = "--docker" ]; then #arg
-  shift 1
-
-  (set -x; docker exec "$docker_outer__container_name" docker "$@")
-
-elif [ "$1" = "--docker-outer-clean-container" ]; then #arg
-  shift 1
-
-  docker stop "$docker_outer__container_name"
-  docker ps --filter=status=exited --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker rm "$id"; done
-
-elif [ "$1" = "--docker-outer-clean-volume" ]; then #arg
-  shift 1
-
-  docker stop "$docker_outer__container_name"
-  docker volume rm "$docker_outer_volume_forinnerdockerdir"
-
-elif [ "$1" = "--docker-inner-clean" ]; then #arg
-  shift 1
-
-  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker image prune -a -f')
-  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
-  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
-
-elif [ "$1" = "--docker.containerids" ]; then #arg
-  shift 1
-
-  exec docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$1; }'"
-
-#
+#arg
 
 elif [ "$1" = "--logs0" -o "$1" = "--get-nemo-logs0" ]; then #arg # get nemo_fishtank-nginx_1 logs
   shift 1
@@ -628,11 +820,35 @@ elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active lo
 
 #
 
-elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
+elif [ "$1" = "--logs-main-tail" ]; then #arg
   shift 1
 
-  # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
-  (set -x; docker exec "$docker_outer__container_name" sh -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/freertr1/")
+  echo "# nfcapd:"
+  "$0" --logs-nfcapd | tail "$@"
+  echo
+  #echo "# exportd:"
+  #"$0" --logs-exportd | tail "$@"
+  #echo
+  echo "# condensed:"
+  "$0" --logs-condensed | tail "$@"
+  echo
+  echo "# newfile:"
+  "$0" --logs-newfile | tail "$@"
+  echo
+  echo "# eventd:"
+  "$0" --logs-eventd | tail "$@"
+  echo
+  echo "# watsond:"
+  "$0" --logs-watsond | tail "$@"
+  echo
+  echo "# analyzed:"
+  "$0" --logs-analyzed | tail "$@"
+  echo
+  echo "# fishtank:"
+  "$0" --logs-fishtank | tail "$@"
+  echo
+  echo "# fishtank-nginx:"
+  "$0" --logs-fishtanknginx | tail "$@"
 
 elif [ "$1" = "--logs-nfcapd" ]; then #arg
   shift 1
@@ -679,35 +895,15 @@ elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
 
   (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}fishtank-nginx${docker_log_postfix}") 2>&1
 
-elif [ "$1" = "--logs-main-tail" ]; then #arg
+#arg
+
+elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
   shift 1
 
-  echo "# nfcapd:"
-  "$0" --logs-nfcapd | tail "$@"
-  echo
-  #echo "# exportd:"
-  #"$0" --logs-exportd | tail "$@"
-  #echo
-  echo "# condensed:"
-  "$0" --logs-condensed | tail "$@"
-  echo
-  echo "# newfile:"
-  "$0" --logs-newfile | tail "$@"
-  echo
-  echo "# eventd:"
-  "$0" --logs-eventd | tail "$@"
-  echo
-  echo "# watsond:"
-  "$0" --logs-watsond | tail "$@"
-  echo
-  echo "# analyzed:"
-  "$0" --logs-analyzed | tail "$@"
-  echo
-  echo "# fishtank:"
-  "$0" --logs-fishtank | tail "$@"
-  echo
-  echo "# fishtank-nginx:"
-  "$0" --logs-fishtanknginx | tail "$@"
+  # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
+  (set -x; docker exec "$docker_outer__container_name" sh -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/freertr1/")
+
+#arg
 
 elif [ "$1" = "--dockerc_inner-fix-syslog-socket" ]; then #arg
   shift 1
@@ -730,110 +926,42 @@ elif [ "$1" = "--dockerc_inner-fix-syslog-socket" ]; then #arg
   "$0" --docker restart "$id"
   "$0" --docker logs "$id" 2>&1 | tail 
 
-#
-
-elif [ "$1" = "--dockerc_pid" ]; then #arg
-  shift 1
-  id="$1" #arg
-  shift 1
-
-  [ -n "$id" ] || id="$docker_outer__container_name"
-
-  docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
-
-elif [ "$1" = "--dockerc_inner_pid_inner" ]; then #arg
-  shift 1
-  id="$1" #arg
-  shift 1
-
-  docker exec "$docker_outer__container_name" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
-
-elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
-  shift 1
-  id="$1" #arg
-  shift 1
-
-  pid_inner="$("$0" --dockerc_inner_pid_inner "$id")"
-  [ -n "$pid_inner" ] || exit 1
-
-  grep -E "NSpid:.*\s$pid_inner\s*1$" /proc/*/status 1>&2
-  grep -E "NSpid:.*\s$pid_inner\s*1$" /proc/*/status | tr -s $'\t' | cut -d $'\t' -f 2
-
-#
-
-elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside 
-  shift 1
-
-  pass_args1=()
-
-  while [ $# -gt 0 ]; do #arg loop
-    if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
-      pass_args1=("${pass_args1[@]}" "$1")
-      shift 1
-    else
-      break
-     fi
-  done #arg loop
-  #arg
-
-  set -e
-
-  "$0" --docker-build "${pass_args1[@]}"
-  "$0" --run-setup-inside "$@" #arg rest
-
-elif [ "$1" = "--build-and-bash" ]; then #arg # 
-  shift 1
-
-  while [ $# -gt 0 ]; do #arg loop
-    if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
-      pass_args1=("${pass_args1[@]}" "$1")
-      shift 1
-    else
-      break
-     fi
-  done #arg loop
-  #arg
-  
-  set -e
-
-  "$0" --docker-build "${pass_args1[@]}"
-  "$0" --bash "$@" #arg rest
-
-#
-
-elif [ "$1" = "--all1" ]; then #arg # --all --prune --verbose
-  shift 1
-
-  #exec "$0" --all --prune --verbose "$@" #arg rest
-  #exec "$0" --build-and-setup --prune --verbose "$@" #arg rest
-  #exec "$0" --build-and-setup --prune --verbose --dev "$@" #arg rest
-  exec "$0" --build-and-setup --prune "$@" --verbose --dev #arg rest
-
-elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
-  shift 1
-
-  #exec "$0" --build-and-bash --build-without-data -c './mygit_clone_nemo0 && cd nemo-docker && ./setup.sh "$@"' -- "$@" #arg rest
-  #exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose
-  exec "$0" --build-and-setup --build-without-data --prune --pre-setup-shcode "./mygit_clone_nemo0" --verbose --dev
-
 #arg
 
-elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner docker container, setup everything for and in it, run vsmd in foreground; requieres setup and running outer container
+elif [ "$1" = "--setup-db-contents" ]; then #arg # init some data in nemo db regarding test network, required setup and running of outer nemo-all container
+  shift 1
+
+  exec "$0" --exec ./mynemo-mitigation-init-db-final.sh
+
+elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner docker container, setup everything for and in it, run vsmd in foreground; requires setup and running outer nemo-all container
   shift 1
 
   # build and init and "wire" vsmd inner container within nemo outer container
-   #"$0" --exec ./mynemo-mitigation-vsmd-install 
-   "$0" --exec ./mynemo-mitigation-init-container.sh "$@"
+  exec "$0" --exec ./mynemo-mitigation-init-container.sh "$@"
 
-elif [ "$1" = "--setup-db-contents" ]; then #arg # inti some data in nemo db regrading test network 
+elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd container in foreground, requires running outer nemo-all container, and vsmd container already build and running in it
   shift 1
 
-   "$0" --exec ./mynemo-mitigation-init-db-final.sh
+   exec "$0" --exec ./mynemo-mitigation-vsmd-run-in-container
 
-elif [ "$1" = "--run-vsmd-in-vsmd-container" ]; then #arg # just run vsmd in vsmd container in foreground
+#arg
+
+elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
 
-   "$0" --exec ./mynemo-mitigation-vsmd-run-in-container
+  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
+
+#arg
+
+elif [ "$1" = "--nemo-get-filename-of-certfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
+  shift 1
+
+  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/secrets/CA/admin.p12"
+
+elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside container dir /nemo-all/ as seen from outside on the host
+  shift 1
+
+  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
 
 #arg
 
@@ -871,6 +999,8 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker exec -ti host2 ping -c 3 10.1.10.11 || (docker logs freertr; false)
   echo 1>&2
 
+#arg short cuts  
+
 elif [ "$1" = "--freertr-console" ]; then #arg# enter freertr container and open telnet to freertr console
   shift 1
 
@@ -896,6 +1026,8 @@ elif [ "$1" = "--exec-host2" ]; then #arg
   [ $# = 0 ] && set -- bash -i #arg defaults
 
   (set -x; exec docker exec -ti host2 "$@")
+
+#arg  
  
 elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container and run ping host2
   shift 1
@@ -1062,128 +1194,6 @@ elif [ "$1" = "--network-inner-connections-test" ]; then #arg # enter freertr co
   "$0" --freertr-ping-nemo
   echo
 
-elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
-  shift 1
-
-  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
-
-elif [ "$1" = "--nemo-get-filename-of-certfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
-  shift 1
-
-  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/secrets/CA/admin.p12"
-
-elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside container dir /nemo-all/ as seen from outside on the host
-  shift 1
-
-  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
-
-#arg
-
-elif [ "$1" = "--addon-init-run" ]; then #arg
-  shift 1
-  addon_name="$1" 
-  shift 1
-
-  exec "./addon/$addon_name/rarenemo/rarenemo-addon-init.sh" "$@"
-
-#arg
-
-elif [ "$1" = "--allx" ]; then #arg # all-in-one mode
-   shift 1
-
-   use_addon1=""
-   if [ "$1" = "--addon" ]; then
-     shift 1
-     use_addon1="$1" 
-     shift 1
-   fi
-
-   ##
-
-   vsmd_args=("--vsmd_inbg")
-   if [ "$1" = "--vsmd_inbg" -o "$1" = "--bg" ]; then 
-     shift 1
-     vsmd_args=("--vsmd_inbg")
-   elif [ "$1" = "--vsmd_infg" -o "$1" = "--fg" ]; then 
-     shift 1
-     vsmd_args=()
-   fi
-   
-   #
- 
-   echo "# allx step0 (preconf init)" 1>&2 
-   echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
-
-   echo "use_addon1=$use_addon1" >> ./nemo1.env
-   if [ "$use_addon1" ]; then
-     #./mynemo-docker-dind-add."$use_addon1" --baseconf >> ./nemo1.env
-     #"./addon/$use_addon1/rarenemo/rarenemo-addon-init.sh" --baseconf >> ./nemo1.env
-     "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
-   fi
-
-   #
-
-   set -e 
-   set -x
-
-   # build and init nemo-outer container and build and init and run all detection container inside
-   
-   echo "# allx step1 (all1):" 1>&2 
-   "$0" --all1 "$@"
-
-   echo "# allx step2 (setup-db-contents):" 1>&2 
-   "$0" --setup-db-contents
-
-   # init frnet comprising freertr router and host1/host2 test network
-   echo "# allx step3.1 (freertr-testnet-prep-and-run):" 1>&2 
-   "$0" --freertr-testnet-prep-and-run
-
-   echo "# allx step3.2 (freertr-host2-ping-host1.bg):" 1>&2 
-   "$0" --freertr-host2-ping-host1.bg
-
-   echo "# allx step3.3 (freertr-host2-ping-host2.bg):" 1>&2 
-   "$0" --freertr-host1-ping-host2.bg
-
-   # test tshark
-   echo "# allx step4 (nemo-tshark-netflow):" 1>&2 
-   "$0" --nemo-tshark-netflow -a duration:20
-
-   # build and init and "wire" vsmd inner container within nemo outer container
-   #"$0" --exec ./mynemo-mitigation-vsmd-install 
-   #"$0" --exec ./mynemo-mitigation-init-container.sh
-   echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
-   "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
-
-   # currently: not reached, as precedingly called mode "--setup-and-run-vsmd-container" will continue to run in foreground (actually vsmd component is running so for now)
-
-   ## TODO: install certs for vsmd communication (client side)
-   #"$0" --exec cp -vf secrets/nemo-analyse.key etc/nemo-erkennung/mitigated/privkey.pem
-   #"$0" --exec cp -vf secrets/nemo-analyse.pem etc/nemo-erkennung/mitigated/cert.pem
-   #"$0" --exec cp -vf secrets/nemo-analyse-cachain.pem etc/nemo-erkennung/mitigated/chain.pem
-
-   echo
-   echo "# allx post step1 (logfiles in outer nemo container):" 1>&2 
-   echo "# logfiles in outer nemo container:" 
-   "$0" --logsall2
-   echo
-
-   echo "# allx post step2 (nemo installation dir in outer nemo container):" 1>&2 
-   echo "# nemo installation dir in outer nemo container:" 
-   "$0" --nemo-get-dirname-onhost
-   echo
-
-   echo "# allx post step3 (client cert file):" 1>&2 
-   echo "# client cert file:" 
-   "$0" --nemo-get-filename-of-certfile 
-
-   ##
-
-   if [ "$use_addon1" ]; then
-     echo "# allx post addon step (use_addon1=$use_addon1):" 1>&2 
-     #./mynemo-docker-dind-add."$use_addon1"
-     #"./addon/$use_addon1/rarenemo/rarenemo-addon-init.sh" 
-     "$0" --addon-init-run "$use_addon1"
-   fi
 
 #arg
 
