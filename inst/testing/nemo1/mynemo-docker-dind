@@ -444,7 +444,7 @@ elif [ "$1" = "--docker-build" ]; then #arg
   echo 1>&2
 
   echo "# attaching outer nemo-all docker container to extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
-  "$0" --docker-outer-network-connect
+  "$0" --docker-outer-network-attach
   echo 1>&2
 
   # does not work: breaks inner fishtank?:
