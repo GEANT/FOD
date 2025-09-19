@@ -37,7 +37,7 @@ fi
 ##
 
 if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-  echo "$0: WARN: running ./mynemo-mitigation-init-vsmd-certs.sh, as /nemo-all/secrets/vmsd1.site.crt.pem is missing; connection between mitigated and vsmd1 will not work anyway" 1>&2
+  echo "$0: running ./mynemo-mitigation-init-vsmd-certs.sh, as /nemo-all/secrets/vmsd1.site.crt.pem is missing" 1>&2
   ./mynemo-mitigation-init-vsmd-certs.sh
 fi
 

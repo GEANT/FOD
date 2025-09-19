@@ -39,6 +39,7 @@ fi
 # setup mitigated-vsmd certs
 
 if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then # should not happen, ./mynemo-mitigation-init-vsmd-certs.sh should have run before outside, i.e. in outer nemo-all container
+  echo "$0: WARN: running ./mynemo-mitigation-init-vsmd-certs.sh, as /nemo-all/secrets/vmsd1.site.crt.pem is missing; connection between mitigated and vsmd 1 will nor work anyway" 1>&2
   ./mynemo-mitigation-init-vsmd-certs.sh
 fi
 

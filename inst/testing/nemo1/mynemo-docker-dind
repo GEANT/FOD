@@ -234,8 +234,8 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    ###
 
    if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
-     echo "# allx early addon init step (use_addon1=$use_addon1):" 1>&2 
-     "$0" --addon-init-run "$use_addon1"
+     echo "# allx early addon (use_addon1=$use_addon1) main init step:" 1>&2 
+     "$0" --addon-init-run "$use_addon1" --main-init
    fi
 
    ###
@@ -264,8 +264,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    ##
 
    if [ -n "$use_addon1" -a "$addon_init_early" = 0 ]; then
-     echo "# allx post addon init step (use_addon1=$use_addon1):" 1>&2 
-     "$0" --addon-init-run "$use_addon1"
+     echo "# allx post addon (use_addon1=$use_addon1) main init step:" 1>&2 
+     "$0" --addon-init-run "$use_addon1" --main-init
+   fi
+     
+   if [ -n "$use_addon1" ]; then
+     echo "# allx post addon (use_addon1=$use_addon1) vsmd adapt step:" 1>&2 
+     "$0" --addon-init-run "$use_addon1" --vsmd-adapt
    fi
 
 #arg
