@@ -156,6 +156,7 @@ if [ "$1" = "--nemo-git-repos-do" ]; then #arg # run on all nemo-* git repo chec
 elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer nemo-all container + build+run freertr+test-hosts outer docker containers: inside outer nemo-all container init+run nemo detection inner containers and vsmd(=nemo mitigation) inner container etc; will do everything in the rights order to setup everything
    shift 1
 
+   net_init_first=0
    use_addon1=""
    addon_init_early=0
 
@@ -163,7 +164,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    while [ $# -gt 0 ]; do #arg loop
 
-     if [ "$1" = "--addon_init_early" ]; then #arg 
+     if [ "$1" = "--net_init_first" ]; then #arg 
+       shift 1       
+       net_init_first=1
+     elif [ "$1" = "--addon_init_early" ]; then #arg 
        shift 1       
        addon_init_early=1
      elif [ "$1" = "--addon_init_later" ]; then #arg 
@@ -207,35 +211,53 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    set -e 
    set -x
 
-   # build and init nemo-outer container and build and init and run all detection container inside
+   if [ "$net_init_first" = 0 ]; then
+     # build and init nemo-outer container and build and init and run all detection container inside
    
-   echo "# allx step1 (all1 = build+init outer nemo-all container + inside build+init nemo detection inner containers):" 1>&2 
-   "$0" --all1 "$@"
+     #echo "# allx step1 (all1 = build+init outer nemo-all container + inside build+init nemo detection inner containers):" 1>&2 
+     #"$0" --all1 "$@"
 
-   echo "# allx step2 (setup-db-contents):" 1>&2 
-   "$0" --setup-db-contents
+     #echo "# allx step2 (setup-db-contents):" 1>&2 
+     #"$0" --setup-db-contents
+     
+     "$0" --all1x 1 "$@"
+     echo 1>&2
 
-   ###
+     ###
+  
+     ## init frnet comprising freertr router and host1/host2 test network
+     #echo "# allx step3.1 (freertr-testnet-prep-and-run):" 1>&2 
+     #"$0" --freertr-testnet-prep-and-run
+     #echo "# allx step3.2 (freertr-host2-ping-host1.bg):" 1>&2 
+     #"$0" --freertr-host2-ping-host1.bg
+     #echo "# allx step3.3 (freertr-host2-ping-host2.bg):" 1>&2 
+     #"$0" --freertr-host1-ping-host2.bg
+     ## test tshark
+     #echo "# allx step4 (nemo-tshark-netflow):" 1>&2 
+     #"$0" --nemo-tshark-netflow -a duration:20
+  
+     ####
+     #if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
+     #  echo "# allx early addon (use_addon1=$use_addon1) main init step:" 1>&2 
+     #  "$0" --addon-init-run "$use_addon1" --main-init
+     #fi
+     
+     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
+     echo 1>&2
 
-   # init frnet comprising freertr router and host1/host2 test network
-   echo "# allx step3.1 (freertr-testnet-prep-and-run):" 1>&2 
-   "$0" --freertr-testnet-prep-and-run
+   else
 
-   echo "# allx step3.2 (freertr-host2-ping-host1.bg):" 1>&2 
-   "$0" --freertr-host2-ping-host1.bg
+     #echo "# setting up extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
+     #"$0" --docker-outer-network-create
+     "$0" --all1x 3 --build_only "$@"
+     echo 1>&2
 
-   echo "# allx step3.3 (freertr-host2-ping-host2.bg):" 1>&2 
-   "$0" --freertr-host1-ping-host2.bg
+     "$0" --testnet_init 1 "$use_addon1" "$addon_init_early"
+     echo 1>&2
 
-   # test tshark
-   echo "# allx step4 (nemo-tshark-netflow):" 1>&2 
-   "$0" --nemo-tshark-netflow -a duration:20
+     "$0" --all1x 3 --build_skip "$@"
+     echo 1>&2
 
-   ###
-
-   if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
-     echo "# allx early addon (use_addon1=$use_addon1) main init step:" 1>&2 
-     "$0" --addon-init-run "$use_addon1" --main-init
    fi
 
    ###
@@ -243,6 +265,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    # build and init and "wire" vsmd inner container within nemo outer container
    echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
    "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
+   echo 1>&2
 
    ###
 
@@ -273,6 +296,62 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --addon-init-run "$use_addon1" --vsmd-adapt
    fi
 
+#arg  
+
+elif [ "$1" = "--all1x" ]; then #arg
+  shift 1
+  step_nr="$1"
+  shift 1	
+
+  echo "# allx step$step_nr (all1 = build+init outer nemo-all container + inside build+init nemo detection inner containers):" 1>&2 
+  "$0" --all1 "$@"
+
+  step_nr=$(( $step_nr + 1 ))
+
+  echo "# allx step$step_nr (setup-db-contents):" 1>&2 
+  "$0" --setup-db-contents
+
+elif [ "$1" = "--testnet_init" ]; then #arg
+  shift 1
+  step_nr="$1"
+  shift 1	
+  use_addon1="$1"
+  shift 1
+  addon_init_early="$1"
+  shift 1
+
+  echo "$0: testnet_init: use_addon1=$use_addon1 addon_init_early=$addon_init_early" 1>&2
+
+  ##
+
+  # init frnet comprising freertr router and host1/host2 test network
+  echo "# allx step$step_nr.1 (freertr-testnet-prep-and-run):" 1>&2 
+  "$0" --freertr-testnet-prep-and-run
+  echo 1>&2
+
+  echo "# allx step$step_nr.2 (freertr-host2-ping-host1.bg):" 1>&2 
+  "$0" --freertr-host2-ping-host1.bg
+  echo 1>&2
+
+  echo "# allx step$step_nr.3 (freertr-host2-ping-host2.bg):" 1>&2 
+  "$0" --freertr-host1-ping-host2.bg
+  echo 1>&2
+
+  step_nr=$(( $step_nr + 1 ))
+
+  # test tshark
+  echo "# allx step$step_nr (nemo-tshark-netflow):" 1>&2 
+  "$0" --nemo-tshark-netflow -a duration:20
+  echo 1>&2
+
+  ###
+
+  if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
+    echo "# allx early addon (use_addon1=$use_addon1) main init step:" 1>&2 
+    "$0" --addon-init-run "$use_addon1" --main-init
+    echo 1>&2
+  fi
+
 #arg
 
 elif [ "$1" = "--addon-init-run" ]; then #arg
@@ -298,11 +377,22 @@ elif [ "$1" = "--all0" ]; then #arg # --all --prune --verbose
 
 elif [ "$1" = "--build-and-bash" ]; then #arg # 
   shift 1
+    
+  build=1
+  run=1
+
+  pass_args1=()
 
   while [ $# -gt 0 ]; do #arg loop
     if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
       pass_args1=("${pass_args1[@]}" "$1")
       shift 1
+    elif [ "$1" = "--build-only" ]; then #arg opt
+      shift 1
+      run=0
+    elif [ "$1" = "--build-skip" ]; then #arg opt
+      shift 1
+      build=0
     else
       break
      fi
@@ -311,28 +401,43 @@ elif [ "$1" = "--build-and-bash" ]; then #arg #
   
   set -e
 
-  "$0" --docker-build "${pass_args1[@]}"
-  "$0" --bash "$@" #arg rest
+  [ "$build" = 0 ] || "$0" --docker-build "${pass_args1[@]}"
+
+  [ "$run" = 0 ] || "$0" --bash "$@" #arg rest
 
 elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--and--run-setup-inside" ]; then #arg # --docker-build + --run-setup-inside # build and run nemo-all container and inside init nemo-detection container (not nemo-mitigation) in it
   shift 1
 
+  build=1
+  run=1
+
   pass_args1=()
+  
+  echo "$0: build-and-setup: initial args=$*" 1>&2
 
   while [ $# -gt 0 ]; do #arg loop
     if [ "$1" != "${1#--build-with}" -o "${1#--prune}" != "$1" ]; then #arg opt
       pass_args1=("${pass_args1[@]}" "$1")
       shift 1
+    elif [ "$1" = "--build-only" ]; then #arg opt
+      shift 1
+      run=0
+    elif [ "$1" = "--build-skip" ]; then #arg opt
+      shift 1
+      build=0
     else
       break
      fi
   done #arg loop
   #arg
+  
+  echo "$0: build-and-setup: build=$build run=$run args=$*" 1>&2
 
   set -e
 
-  "$0" --docker-build "${pass_args1[@]}"
-  "$0" --run-setup-inside "$@" #arg rest
+  [ "$build" = 0 ] || "$0" --docker-build "${pass_args1[@]}"
+
+  [ "$run" = 0 ] || "$0" --run-setup-inside "$@" #arg rest
 
 #arg   
 
