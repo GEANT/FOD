@@ -587,7 +587,12 @@ elif [ "$1" = "--dockerc_inner_pid_inner" ]; then #arg
   id="$1" #arg
   shift 1
 
-  docker exec "$docker_outer__container_name" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+  if [ -e /.dockerenv ]; then
+    echo "$0: docker: /.dockerenv exists, assuming to run inside nemo-all outer container" 1>&2
+    docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+  else
+    docker exec "$docker_outer__container_name" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+  fi
 
 elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
   shift 1
@@ -631,7 +636,12 @@ elif [ "$1" = "--docker-inner-clean" ]; then #arg
 elif [ "$1" = "--docker" -o "$1" = "--docker-inner" ]; then #arg # generic docker cmd in outer nemo-all container
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker "$@")
+  if [ -e /.dockerenv ]; then
+    echo "$0: docker: /.dockerenv exists, assuming to run inside nemo-all outer container" 1>&2
+    (set -x; docker "$@")
+  else
+    (set -x; docker exec "$docker_outer__container_name" docker "$@")
+  fi
 
 #arg  
 
