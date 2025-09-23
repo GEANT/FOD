@@ -179,10 +179,11 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
        shift 1
      elif [ "$1" = "--addon_auto" ]; then #arg 
        shift 1
-       for file1 in "./addon/"*"/rarenemo/rarenemo-addon-init.sh"; do
-         use_addon1="$(printf "$file1" | cut -d '/' -f 3,3)"
-         break
-       done
+       (shopt -s nullglob
+         for file1 in "./addon/"*"/rarenemo/rarenemo-addon-init.sh"; do
+           use_addon1="$(printf "$file1" | cut -d '/' -f 3,3)"
+           break
+         done)
        echo "$0: allx: using use_addon1=$use_addon1" 1>&2	     
      elif [ "$1" = "--vsmd_inbg" -o "$1" = "--bg" ]; then #arg
        shift 1
