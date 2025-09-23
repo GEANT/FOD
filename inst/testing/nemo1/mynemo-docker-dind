@@ -195,8 +195,20 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      fi
 
    done
-   
-   #
+  
+   ##
+ 
+   echo "# show git commits of nemo repos:" 1>&2
+   #"$0" --nemo-git-repos-do --short git show-ref heads/master
+   "$0" --nemo-git-repos-do 
+ 
+   ##
+ 
+   echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
+   find ./etc ./secrets 1>&2
+   echo 1>&2
+
+   ##
  
    echo "# allx step0 (preconf init)" 1>&2 
    echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
@@ -220,7 +232,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      #echo "# allx step2 (setup-db-contents):" 1>&2 
      #"$0" --setup-db-contents
      
-     "$0" --all1x 1 "$@"
+     "$0" --all1x 1 1 "$@"
      echo 1>&2
 
      ###
@@ -249,13 +261,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
      #echo "# setting up extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
      #"$0" --docker-outer-network-create
-     "$0" --all1x 3 --build_only "$@"
+     "$0" --all1x 1 0 --build-only "$@"
      echo 1>&2
 
-     "$0" --testnet_init 1 "$use_addon1" "$addon_init_early"
+     "$0" --testnet_init 2 "$use_addon1" "$addon_init_early"
      echo 1>&2
 
-     "$0" --all1x 3 --build_skip "$@"
+     "$0" --all1x 4 1 --build-skip "$@"
      echo 1>&2
 
    fi
@@ -301,7 +313,11 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 elif [ "$1" = "--all1x" ]; then #arg
   shift 1
   step_nr="$1"
-  shift 1	
+  shift 1
+  setup_db_contents="$1" 
+  shift 1
+
+  #
 
   echo "# allx step$step_nr (all1 = build+init outer nemo-all container + inside build+init nemo detection inner containers):" 1>&2 
   "$0" --all1 "$@"
@@ -309,7 +325,7 @@ elif [ "$1" = "--all1x" ]; then #arg
   step_nr=$(( $step_nr + 1 ))
 
   echo "# allx step$step_nr (setup-db-contents):" 1>&2 
-  "$0" --setup-db-contents
+  [ "$setup_db_contents" = 0 ] || "$0" --setup-db-contents
 
 elif [ "$1" = "--testnet_init" ]; then #arg
   shift 1
@@ -341,7 +357,8 @@ elif [ "$1" = "--testnet_init" ]; then #arg
 
   # test tshark
   echo "# allx step$step_nr (nemo-tshark-netflow):" 1>&2 
-  "$0" --nemo-tshark-netflow -a duration:20
+  #"$0" --nemo-tshark-netflow -a duration:20
+  "$0" --nemo-tshark-netflow-check-flows
   echo 1>&2
 
   ###
@@ -481,15 +498,13 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   ##
 
-  echo "# show git commits of nemo repos:" 1>&2
-  #"$0" --nemo-git-repos-do --short git show-ref heads/master
-  "$0" --nemo-git-repos-do 
-
-  ##
-
-  echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
-  find ./etc ./secrets 1>&2
-  echo 1>&2
+  #echo "# show git commits of nemo repos:" 1>&2
+  ##"$0" --nemo-git-repos-do --short git show-ref heads/master
+  #"$0" --nemo-git-repos-do 
+  ###
+  #echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
+  #find ./etc ./secrets 1>&2
+  #echo 1>&2
 
   ##
 
@@ -1086,6 +1101,13 @@ elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d c
   shift 1
 
   exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
+
+#arg
+
+elif [ "$1" = "--nemo-tshark-netflow-check-flows" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+  shift 1
+
+  "$0" --nemo-tshark-netflow -a duration:20 | awk '/^[1-9][0-9]* packet captured/ { ok=1; } END { exit(1-ok); }'
 
 #arg nemo-specific:
 
