@@ -6,6 +6,8 @@ RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y
 RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
 RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
 
+RUN systemctl disable getty@tty1.service
+
 #COPY . /nemo-all
 COPY . /nemo-all
 
