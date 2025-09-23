@@ -226,49 +226,29 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    if [ "$net_init_first" = 0 ]; then
      # build and init nemo-outer container and build and init and run all detection container inside
    
-     #echo "# allx step1 (all1 = build+init outer nemo-all container + inside build+init nemo detection inner containers):" 1>&2 
-     #"$0" --all1 "$@"
-
-     #echo "# allx step2 (setup-db-contents):" 1>&2 
-     #"$0" --setup-db-contents
-     
      "$0" --all1x 1 1 "$@"
      echo 1>&2
 
-     ###
-  
-     ## init frnet comprising freertr router and host1/host2 test network
-     #echo "# allx step3.1 (freertr-testnet-prep-and-run):" 1>&2 
-     #"$0" --freertr-testnet-prep-and-run
-     #echo "# allx step3.2 (freertr-host2-ping-host1.bg):" 1>&2 
-     #"$0" --freertr-host2-ping-host1.bg
-     #echo "# allx step3.3 (freertr-host2-ping-host2.bg):" 1>&2 
-     #"$0" --freertr-host1-ping-host2.bg
-     ## test tshark
-     #echo "# allx step4 (nemo-tshark-netflow):" 1>&2 
-     #"$0" --nemo-tshark-netflow -a duration:20
-  
-     ####
-     #if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
-     #  echo "# allx early addon (use_addon1=$use_addon1) main init step:" 1>&2 
-     #  "$0" --addon-init-run "$use_addon1" --main-init
-     #fi
-     
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
      echo 1>&2
+     
+     [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
+     [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1"
 
    else
 
-     #echo "# setting up extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
-     #"$0" --docker-outer-network-create
      "$0" --all1x 1 0 --build-only "$@"
      echo 1>&2
 
      "$0" --testnet_init 2 "$use_addon1" "$addon_init_early"
      echo 1>&2
+     
+     [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
 
      "$0" --all1x 4 1 --build-skip "$@"
      echo 1>&2
+
+     [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1"
 
    fi
 
@@ -298,15 +278,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    ##
 
-   if [ -n "$use_addon1" -a "$addon_init_early" = 0 ]; then
-     echo "# allx post addon (use_addon1=$use_addon1) main init step:" 1>&2 
-     "$0" --addon-init-run "$use_addon1" --main-init
-   fi
+   [ -z "$use_addon1" -o "$addon_init_early" = 1 ] || "$0" --addon-init-main "$use_addon1"
+   [ -z "$use_addon1" -o "$addon_init_early" = 1 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1" 
      
-   if [ -n "$use_addon1" ]; then
-     echo "# allx post addon (use_addon1=$use_addon1) vsmd adapt step:" 1>&2 
-     "$0" --addon-init-run "$use_addon1" --vsmd-adapt
-   fi
+   [ -z "$use_addon1" ] || "$0" --addon-init-vsmd-adapt "$use_addon1" 
 
 #arg  
 
@@ -361,14 +336,6 @@ elif [ "$1" = "--testnet_init" ]; then #arg
   "$0" --nemo-tshark-netflow-check-flows
   echo 1>&2
 
-  ###
-
-  if [ -n "$use_addon1" -a "$addon_init_early" = 1 ]; then
-    echo "# allx early addon (use_addon1=$use_addon1) main init step:" 1>&2 
-    "$0" --addon-init-run "$use_addon1" --main-init
-    echo 1>&2
-  fi
-
 #arg
 
 elif [ "$1" = "--addon-init-run" ]; then #arg
@@ -377,6 +344,33 @@ elif [ "$1" = "--addon-init-run" ]; then #arg
   shift 1
 
   exec "./addon/$addon_name/rarenemo/rarenemo-addon-init.sh" "$@"
+
+elif [ "$1" = "--addon-init-main" ]; then #arg
+  shift 1	
+  addon_name="$1" 
+  shift 1
+
+  echo "# allx addon (addon_name=$addon_name) main init step:" 1>&2 
+  "$0" --addon-init-run "$addon_name" --main-init
+  echo 1>&2
+
+elif [ "$1" = "--addon-init-nemodetection-adapt" ]; then #arg
+  shift 1	
+  addon_name="$1" 
+  shift 1
+
+  echo "# allx addon (addon_name=$addon_name) nemodetection adapt step:" 1>&2 
+  "$0" --addon-init-run "$addon_name" --nemo-detection-adapt
+  echo 1>&2
+
+elif [ "$1" = "--addon-init-vsmd-adapt" ]; then #arg
+  shift 1	
+  addon_name="$1" 
+  shift 1
+
+  echo "# allx addon (addon_name=$addon_name) vsmd adapt step:" 1>&2 
+  "$0" --addon-init-run "$addon_name" --vsmd-adapt
+  echo 1>&2
 
 #arg
 
