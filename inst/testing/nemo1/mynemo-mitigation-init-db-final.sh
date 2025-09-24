@@ -57,7 +57,8 @@ done
 #
 
 
-cat /nemo-all/nemo-initial-detectors1.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
+#cat /nemo-all/nemo-initial-detectors1.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
+cat /nemo-all/nemo-initial-*.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
 
 #
 
