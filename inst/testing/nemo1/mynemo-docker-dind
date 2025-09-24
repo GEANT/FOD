@@ -1136,6 +1136,11 @@ elif [ "$1" = "--nemo-tshark-netflow-check-flows" ]; then #arg # enter (outer) n
 
 #arg nemo-specific:
 
+elif [ "$1" = "--nemo-db-dump" ]; then #arg # nemo db dump
+  shift 1
+
+  exec "$0" --exec docker exec -ti "nemo${DIDCLFS}nemodb${DIDCLFS}1" pg_dump -U nemo -a nemo "$@"
+
 elif [ "$1" = "--nemo-get-filename-of-certfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
   shift 1
 

@@ -74,7 +74,7 @@ if [ "$vsmd_inbg" = 1 ]; then
   echo "$0: restarting inner nemo-detection mitigated container to start/resume its trials to (re)connect to vsmd:" 1>&2
   ./mynemo-detection-restart-mitigated # make sure mitigated now tries again to connect to configured vsmd1 (before if might have given up to do so after some threshold time because of vsmd1 not being setup and ready yet)
 
-  while ! docker exec -ti "$container_name" grep "Nemo instance .NemoTestinstanzVsmd1" /nemo-all/vsmd.log; do
+  while ! docker exec -ti "$container_name" grep "Nemo instance .NeMoMitigationInstanceVSMD1" /nemo-all/vsmd.log; do
     echo "$0: nemo detection (fishtank) not yet connected to vsmd, waiting" 1>&2
     sleep 3
   done
