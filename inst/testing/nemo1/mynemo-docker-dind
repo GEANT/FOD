@@ -779,7 +779,7 @@ elif [ "$1" = "--docker" -o "$1" = "--docker-inner" ]; then #arg # generic docke
     echo "$0: docker: /.dockerenv exists, assuming to run inside nemo-all outer container" 1>&2
     (set -x; docker "$@")
   else
-    (set -x; docker exec "$docker_outer__container_name" docker "$@")
+    (set -x; docker exec -ti "$docker_outer__container_name" docker "$@")
   fi
 
 #arg  
