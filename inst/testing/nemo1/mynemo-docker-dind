@@ -123,6 +123,12 @@ enable_network3=0
 
 #
 
+# dont try to change: hard-wired in other files (dockerfiles etc.) as well: ; addons may override it
+attacker_ip="10.1.10.1"
+victim_ip="10.2.10.1"
+
+#
+
 if [ "$1" = "--nemo-git-repos-do" ]; then #arg # run on all nemo-* git repo checkout dirs (running outside of (outer) docker directly on the host)
   shift 1
   
@@ -164,7 +170,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    while [ $# -gt 0 ]; do #arg loop
 
-     if [ "$1" = "--net_init_first" ]; then #arg 
+     if [ "$1" = "-x" ]; then #arg 
+       shift 1       
+       set -x
+     elif [ "$1" = "--net_init_first" ]; then #arg 
        shift 1       
        net_init_first=1
      elif [ "$1" = "--addon_init_early" ]; then #arg 
@@ -201,15 +210,23 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    done
   
    ##
+   
+   echo "# show files in rare nemo base prep dir" 1>&2
+   ls -l . 1>&2
+   echo 1>&2
+
+   ##
  
    echo "# show git commits of nemo repos:" 1>&2
    #"$0" --nemo-git-repos-do --short git show-ref heads/master
-   "$0" --nemo-git-repos-do 
- 
+   "$0" --nemo-git-repos-do 1>&2
+   #echo 1>&2
+
    ##
  
    echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
-   find ./etc ./secrets 1>&2
+   ! type -p tree &>/dev/null || tree -d ./etc ./secrets 1>&2
+   ! type -p find &>/dev/null || find ./etc ./secrets 1>&2
    echo 1>&2
 
    ##
@@ -221,11 +238,12 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    if [ "$use_addon1" ]; then
      "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
    fi
+   echo 1>&2
 
    #
 
    set -e 
-   set -x
+   #set -x
 
    if [ "$net_init_first" = 0 ]; then
      # build and init nemo-outer container and build and init and run all detection container inside
@@ -735,7 +753,8 @@ elif [ "$1" = "--docker.containerids" ]; then #arg
 elif [ "$1" = "--docker-outer-clean-container" ]; then #arg
   shift 1
 
-  docker stop "$docker_outer__container_name"
+  #docker stop "$docker_outer__container_name"
+  docker ps --filter=status=running --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker stop "$id"; done
   docker ps --filter=status=exited --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker rm "$id"; done
 
 elif [ "$1" = "--docker-outer-clean-volume" ]; then #arg
@@ -771,7 +790,12 @@ elif [ "$1" = "--exec" ]; then #arg # generic exec in outer nemo-all container
   [ $# = 0 ] && set -- bash -i #arg defaults
 
   (set -x; docker exec -ti "$docker_outer__container_name" "$@")
+
+elif [ "$1" = "--exec.noterm" ]; then #arg # generic exec in outer nemo-all container
+  shift 1
   
+  (set -x; docker exec "$docker_outer__container_name" "$@")
+
 elif [ "$1" = "--bash" ]; then #arg # generic bash in outer nemo-all container
   shift 1
 
@@ -1147,15 +1171,18 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker exec host2 hostname host2
 
   echo "# initial ping - give freertr router time to init routing" 1>&2
-  docker exec -ti host1 ping -c 1 -W 5 10.2.10.12 &>/dev/null || true # give freertr time for routing init etc.
+  #docker exec -ti host1 ping -c 1 -W 5 10.2.10.12 &>/dev/null || true # give freertr time for routing init etc.
+  docker exec -ti host1 ping -c 1 -W 5 "$victim_ip" &>/dev/null || true # give freertr time for routing init etc.
   echo 1>&2
 
   echo "# test ping host1 -> host2:" 1>&2
-  docker exec -ti host1 ping -c 3 10.2.10.12 || (docker logs freertr; false)
+  #docker exec -ti host1 ping -c 3 10.2.10.12 || (docker logs freertr; false)
+  docker exec -ti host1 ping -c 3 "$victim_ip" || (docker logs freertr; false)
   echo 1>&2
 
   echo "# test ping host2 -> host1:" 1>&2
-  docker exec -ti host2 ping -c 3 10.1.10.11 || (docker logs freertr; false)
+  #docker exec -ti host2 ping -c 3 10.1.10.11 || (docker logs freertr; false)
+  docker exec -ti host2 ping -c 3 "$attacker_ip" || (docker logs freertr; false)
   echo 1>&2
 
 #arg short cuts  
@@ -1191,24 +1218,46 @@ elif [ "$1" = "--exec-host2" ]; then #arg
 elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container and run ping host2
   shift 1
 
-  exec docker exec -ti host1 ping "$@" 10.2.10.12
+  [ ! -e ./nemo1.env ] || . ./nemo1.env
+  
+  echo "$0: freertr-host1-ping-host2: using victim_ip=$victim_ip" 1>&2
+
+  #exec docker exec -ti host1 ping "$@" 10.2.10.12
+  exec docker exec -ti host1 ping "$@" "$victim_ip"
 
 elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 container and run ping host2
   shift 1
+  
+  [ ! -e ./nemo1.env ] || . ./nemo1.env
+  
+  echo "$0: freertr-host1-ping-host2.bg: using victim_ip=$victim_ip" 1>&2
 
   docker exec host1 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
-  docker exec host1 screen -S ping2 -d -m ping 10.2.10.12
+  #docker exec host1 screen -S ping2 -d -m ping 10.2.10.12
+  docker exec host1 screen -S ping2 -d -m ping "$victim_ip"
 
 elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container and run ping host1
   shift 1
 
-  exec docker exec -ti host2 ping "$@" 10.1.10.11 
+  [ ! -e ./nemo1.env ] || . ./nemo1.env
+  
+  echo "$0: freertr-host2-ping-host1: using attacker_ip=$attacker_ip" 1>&2
+
+  #exec docker exec -ti host2 ping "$@" 10.1.10.11 
+  exec docker exec -ti host2 ping "$@" "$attacker_ip"
 
 elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 container and run ping host1
   shift 1
+  
+  [ ! -e ./nemo1.env ] || . ./nemo1.env
+
+  echo "$0: freertr-host2-ping-host1.bg: using attacker_ip=$attacker_ip" 1>&2
 
   docker exec host2 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
-  docker exec host2 screen -S ping1 -d -m ping 10.1.10.11
+  #docker exec host2 screen -S ping1 -d -m ping 10.1.10.11
+  docker exec host2 screen -S ping1 -d -m ping "$attacker_ip"
+
+#arg  
 
 elif [ "$1" = "--freertr-tshark-netflow" ]; then #arg # enter freertr container and run tshark on eth3, in order to monitor netconf traffic towards nemo container
   shift 1
