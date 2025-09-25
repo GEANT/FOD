@@ -124,8 +124,8 @@ enable_network3=0
 #
 
 # dont try to change: hard-wired in other files (dockerfiles etc.) as well: ; addons may override it
-attacker_ip="10.1.10.1"
-victim_ip="10.2.10.1"
+attacker_ip="10.1.10.11"
+victim_ip="10.2.10.12"
 
 #
 
