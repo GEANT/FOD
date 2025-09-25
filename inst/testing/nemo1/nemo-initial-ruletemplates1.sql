@@ -10,7 +10,8 @@
 --
 
 COPY public.mitigations_ruletemplate (id, description, description_editable, direction, direction_editable, src_nets, src_nets_editable, dst_nets, dst_nets_editable, protocol, protocol_editable, src_ports, src_ports_editable, dst_ports, dst_ports_editable, action, action_editable, limit_bps, limit_bps_editable) FROM stdin;
-1	drop default	t	in	t		t		t		t		t		f	drop	t	\N	t
+1	drop default in	t	in	t		t		t		t		t		f	drop	t	\N	t
+2	drop default out	t	out	t		t		t		t		t		t	drop	t	\N	t
 \.
 
 
@@ -18,7 +19,7 @@ COPY public.mitigations_ruletemplate (id, description, description_editable, dir
 -- Name: mitigations_ruletemplate_id_seq; Type: SEQUENCE SET; Schema: public; Owner: nemo
 --
 
-SELECT pg_catalog.setval('public.mitigations_ruletemplate_id_seq', 1, true);
+SELECT pg_catalog.setval('public.mitigations_ruletemplate_id_seq', 2, true);
 
 
 --
