@@ -11,6 +11,8 @@ RUN systemctl disable getty@tty1.service
 #COPY . /nemo-all
 COPY . /nemo-all
 
+RUN [ ! -f /nemo-all/etc/dfn-info/dfn-info-override.json ] || cp -f -v /nemo-all/etc/dfn-info/dfn-info-override.json /nemo-all/etc/dfn-info/dfn-info.json 1>&2
+
 WORKDIR /nemo-all
 CMD [ "/sbin/init" ]
 

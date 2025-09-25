@@ -40,7 +40,7 @@ echo "select id, name from router;" | docker exec -i "nemo${DIDCLFS}nemodb${DIDC
   echo "loop id=$id <-> name=$name" 1>&2
  
   case "$name" in
-	  freertr1*) 
+	  freertr1*|$main_router_name*) 
             docker exec "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo -c "INSERT INTO router_nets (router_id, net_id) VALUES ($id, 1), ($id, 2)"
           ;;
           host1*) 

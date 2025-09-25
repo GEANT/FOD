@@ -124,8 +124,16 @@ enable_network3=0
 #
 
 # dont try to change: hard-wired in other files (dockerfiles etc.) as well: ; addons may override it
-attacker_ip="10.1.10.11"
-victim_ip="10.2.10.12"
+testhost_ip_routing_via_frr=1
+testhost_ip_routing_text="via freertr1"
+attacker_ip_frrnet="10.1.10.11"
+victim_ip_frrnet="10.2.10.12"
+
+attacker_ip="$attacker_ip_frrnet"
+victim_ip="$victim_ip_frrnet"
+
+# correspondinf to and as defined in ./etc/dfn-info/dfn-info.json
+main_router_name="freertr1"
 
 #
 
@@ -221,15 +229,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    #"$0" --nemo-git-repos-do --short git show-ref heads/master
    "$0" --nemo-git-repos-do 1>&2
    #echo 1>&2
-
+   
    ##
- 
-   echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
-   ! type -p tree &>/dev/null || tree -d ./etc ./secrets 1>&2
-   ! type -p find &>/dev/null || find ./etc ./secrets 1>&2
-   echo 1>&2
 
-   ##
+   rm -v -f ./etc/dfn-info/dfn-info-override.json 1>&2
  
    echo "# allx step0 (preconf init)" 1>&2 
    echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
@@ -238,6 +241,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    if [ "$use_addon1" ]; then
      "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
    fi
+   echo 1>&2
+
+   ##
+ 
+   echo "# show pre-provided ./etc and ./secrets (artifacts for nemo-detection setup.sh):" 1>&2
+   ! type -p tree &>/dev/null || tree -d ./etc ./secrets 1>&2
+   ! type -p find &>/dev/null || find ./etc ./secrets 1>&2
    echo 1>&2
 
    #
@@ -671,6 +681,8 @@ RUN systemctl disable getty@tty1.service
 #COPY . /nemo-all
 $COPY_CMD
 
+RUN [ ! -f /nemo-all/etc/dfn-info/dfn-info-override.json ] || cp -f -v /nemo-all/etc/dfn-info/dfn-info-override.json /nemo-all/etc/dfn-info/dfn-info.json 1>&2
+
 WORKDIR /nemo-all
 CMD [ "/sbin/init" ]
 
@@ -1072,9 +1084,11 @@ elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
 
 elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
   shift 1
+  
+  [ ! -e ./nemo1.env ] || . ./nemo1.env
 
   # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
-  (set -x; docker exec "$docker_outer__container_name" sh -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/freertr1/")
+  (set -x; docker exec "$docker_outer__container_name" bash -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/{freertr1,$main_router_name}/ ")
 
 #arg nemo-specific:
 
@@ -1180,12 +1194,12 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker exec -ti host1 ping -c 1 -W 5 "$victim_ip" &>/dev/null || true # give freertr time for routing init etc.
   echo 1>&2
 
-  echo "# test ping host1 -> host2:" 1>&2
+  echo "# test ping host1 -> host2 (via freertr):" 1>&2
   #docker exec -ti host1 ping -c 3 10.2.10.12 || (docker logs freertr; false)
   docker exec -ti host1 ping -c 3 "$victim_ip" || (docker logs freertr; false)
   echo 1>&2
 
-  echo "# test ping host2 -> host1:" 1>&2
+  echo "# test ping host2 -> host1 (via freertr):" 1>&2
   #docker exec -ti host2 ping -c 3 10.1.10.11 || (docker logs freertr; false)
   docker exec -ti host2 ping -c 3 "$attacker_ip" || (docker logs freertr; false)
   echo 1>&2
@@ -1224,8 +1238,10 @@ elif [ "$1" = "--freertr-host1-ping-host2" ]; then #arg # enter host1 container 
   shift 1
 
   [ ! -e ./nemo1.env ] || . ./nemo1.env
-  
-  echo "$0: freertr-host1-ping-host2: using victim_ip=$victim_ip" 1>&2
+  add1="$testhost_ip_routing_text"
+  [ "$victim_ip" = "$victim_ip_frrnet" -a "$attacker_ip" = "$attacker_ip_frrnet" ] || add1="overridden, $add1"
+ 
+  echo "$0: freertr-host1-ping-host2: using victim_ip=$victim_ip ($add1)" 1>&2
 
   #exec docker exec -ti host1 ping "$@" 10.2.10.12
   exec docker exec -ti host1 ping "$@" "$victim_ip"
@@ -1234,8 +1250,10 @@ elif [ "$1" = "--freertr-host1-ping-host2.bg" ]; then #arg # enter host1 contain
   shift 1
   
   [ ! -e ./nemo1.env ] || . ./nemo1.env
+  add1="$testhost_ip_routing_text"
+  [ "$victim_ip" = "$victim_ip_frrnet" -a "$attacker_ip" = "$attacker_ip_frrnet" ] || add1="overridden, $add1"
   
-  echo "$0: freertr-host1-ping-host2.bg: using victim_ip=$victim_ip" 1>&2
+  echo "$0: freertr-host1-ping-host2.bg: using victim_ip=$victim_ip ($add1)" 1>&2
 
   docker exec host1 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
   #docker exec host1 screen -S ping2 -d -m ping 10.2.10.12
@@ -1245,8 +1263,10 @@ elif [ "$1" = "--freertr-host2-ping-host1" ]; then #arg # enter host2 container 
   shift 1
 
   [ ! -e ./nemo1.env ] || . ./nemo1.env
-  
-  echo "$0: freertr-host2-ping-host1: using attacker_ip=$attacker_ip" 1>&2
+  add1="$testhost_ip_routing_text"
+  [ "$victim_ip" = "$victim_ip_frrnet" -a "$attacker_ip" = "$attacker_ip_frrnet" ] || add1="overridden, $add1"
+   
+  echo "$0: freertr-host2-ping-host1: using attacker_ip=$attacker_ip ($add1)" 1>&2
 
   #exec docker exec -ti host2 ping "$@" 10.1.10.11 
   exec docker exec -ti host2 ping "$@" "$attacker_ip"
@@ -1255,8 +1275,10 @@ elif [ "$1" = "--freertr-host2-ping-host1.bg" ]; then #arg # enter host2 contain
   shift 1
   
   [ ! -e ./nemo1.env ] || . ./nemo1.env
+  add1="$testhost_ip_routing_text"
+  [ "$victim_ip" = "$victim_ip_frrnet" -a "$attacker_ip" = "$attacker_ip_frrnet" ] || add1="overridden, $add1"
 
-  echo "$0: freertr-host2-ping-host1.bg: using attacker_ip=$attacker_ip" 1>&2
+  echo "$0: freertr-host2-ping-host1.bg: using attacker_ip=$attacker_ip ($add1)" 1>&2
 
   docker exec host2 sh -c "type screen >/dev/null 2>/dev/null || apt-get install -yyy screen"
   #docker exec host2 screen -S ping1 -d -m ping 10.1.10.11
