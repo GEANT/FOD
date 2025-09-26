@@ -3,7 +3,8 @@
 FROM ubuntu:latest
 
 #RUN apt-get update -yy && DEBIAN_FRONTEND="noninteractive" apt-get install -yy net-tools iputils-ping tcpdump tshark hping3 nmap iperf
-RUN apt-get update -yy && DEBIAN_FRONTEND="noninteractive" apt-get install -yy net-tools iputils-ping tcpdump tshark hping3 nmap iperf screen
+#RUN apt-get update -yy && DEBIAN_FRONTEND="noninteractive" apt-get install -yy net-tools iputils-ping tcpdump tshark hping3 nmap iperf screen
+RUN apt-get update -yy && DEBIAN_FRONTEND="noninteractive" apt-get install -yy net-tools iputils-ping tcpdump tshark hping3 nmap iperf screen iproute2
 
 #RUN ifconfig -a
 

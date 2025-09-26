@@ -803,7 +803,7 @@ elif [ "$1" = "--exec" ]; then #arg # generic exec in outer nemo-all container
 
   (set -x; docker exec -ti "$docker_outer__container_name" "$@")
 
-elif [ "$1" = "--exec.noterm" ]; then #arg # generic exec in outer nemo-all container
+elif [ "$1" = "--exec.notty" ]; then #arg # generic exec in outer nemo-all container
   shift 1
   
   (set -x; docker exec "$docker_outer__container_name" "$@")
@@ -1220,17 +1220,33 @@ elif [ "$1" = "--exec-freertr" ]; then #arg
 
  elif [ "$1" = "--exec-host1" ]; then #arg
   shift 1
+
+  add1=""
+  if [ "$1" = "--notty" ]; then
+    shift 1
+  else 
+    add1="-ti"
+  fi
   
   [ $# = 0 ] && set -- bash -i #arg defaults
 
-  (set -x; exec docker exec -ti host1 "$@")
+  #(set -x; exec docker exec -ti host1 "$@")
+  (set -x; exec docker exec $add1 host1 "$@")
  
 elif [ "$1" = "--exec-host2" ]; then #arg
   shift 1
+
+  add1=""
+  if [ "$1" = "--notty" ]; then
+    shift 1
+  else 
+    add1="-ti"
+  fi
   
   [ $# = 0 ] && set -- bash -i #arg defaults
 
-  (set -x; exec docker exec -ti host2 "$@")
+  #(set -x; exec docker exec -ti host2 "$@")
+  (set -x; exec docker exec $add1 host2 "$@")
 
 #arg  
  
