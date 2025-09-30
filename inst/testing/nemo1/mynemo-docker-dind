@@ -769,6 +769,8 @@ elif [ "$1" = "--docker-outer-clean-container" ]; then #arg
   docker ps --filter=status=running --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker stop "$id"; done
   docker ps --filter=status=exited --filter=status=created --filter=name="$docker_outer__container_name" -q | while read -r id; do docker rm "$id"; done
 
+  docker ps -a 1>&2
+
 elif [ "$1" = "--docker-outer-clean-volume" ]; then #arg
   shift 1
 
