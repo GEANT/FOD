@@ -1449,6 +1449,28 @@ elif [ "$1" = "--network-inner-connections-test" ]; then #arg # enter freertr co
 
 #arg
 
+elif [ "$1" = "--addon-ctl" ]; then #arg
+  shift 1
+  use_addon1="$1" #arg
+  shift 1
+
+  if [ "$use_addon1" != "${use_addon1#--}" ]; then
+    arg1="$use_addon1"
+    set -- "$arg1" "$@"
+
+    for file1 in "./addon/"*"/rarenemo/rarenemo-addon-init.sh"; do
+       use_addon1="$(printf "$file1" | cut -d '/' -f 3,3)"
+       break
+    done
+
+  fi
+
+  echo "$0: using addon=$use_addon1" 1>&2
+
+  if [ -n "$use_addon1" ]; then
+    "./addon/$use_addon1/rarenemo/rarenemo-addon-ctl.sh" "$@"
+  fi
+
 else 
 
   #exec "$0" --docker-build--and--run-setup-inside "$@"
