@@ -1084,6 +1084,18 @@ elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
 
 #arg nemo-specific:
 
+elif [ "$1" = "--log-vsmd" ]; then
+  shift 1
+
+  exec "$0" --bash-vsmd1 tail "$@" ./vsmd.log #arg rest # e.g. -f
+
+elif [ "$1" = "--log-exabgp" ]; then
+  shift 1
+
+  exec "$0" --bash-vsmd1 ./tools/journalctl-exabgp "$@" #arg rest # e.g. -f
+
+#arg nemo-specific:
+
 elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
   shift 1
   

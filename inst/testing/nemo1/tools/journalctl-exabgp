@@ -1,5 +1,5 @@
 #!/bin/bash
 
-exec journalctl -f _SYSTEMD_UNIT=exabgp.service "$@"
+exec journalctl _SYSTEMD_UNIT=exabgp.service "$@"
 
 
