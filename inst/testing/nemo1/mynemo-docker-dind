@@ -636,7 +636,7 @@ elif [ "$1" = "--docker-build" ]; then #arg
   (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/containers/"*) || true
   echo 1>&2
 
-  if find "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" -type f | grep -q .; then
+  if ${nonroot_prefix_cmd} find "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" -type f | grep -q .; then
     echo "$0: pruning containers before inner docker daemon is started failed, aborting" 1>&2
     exit 1
   fi
