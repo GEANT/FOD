@@ -141,6 +141,15 @@ main_router_name="freertr1"
 
 #
 
+if [ -z "$nonroot_prefix_cmd" ] && [ 1=1 -o "$UID" != 0 ]; then
+  export nonroot_prefix_cmd="sudo"
+  echo "$0: user is not root, using nonroot_prefix_cmd=$nonroot_prefix_cmd" 1>&2
+else
+  export nonroot_prefix_cmd=""
+fi
+
+#
+
 ####
 
 function check_dep_sys_cmds_avail()
@@ -154,7 +163,7 @@ function check_dep_sys_cmds_avail()
   done
   echo 1>&2
 
- ./frnet/docker-compose/freertr_disable_offload.sh --only_verify_dep_sys_cmds_avail
+  ${nonroot_prefix_cmd} ./frnet/docker-compose/freertr_disable_offload.sh --only_verify_dep_sys_cmds_avail
 }
 
 if [ "$1" = "--only_verify_dep_sys_cmds_avail0" ]; then #arg 
@@ -621,9 +630,14 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
   echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
-  (set -x; rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
-  (set -x; rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/containers/"*) || true
+  (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
+  (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/containers/"*) || true
   echo 1>&2
+
+  if find "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" -type f | grep -q .; then
+    echo "$0: pruning containers before inner docker daemon is started failed, aborting" 1>&2
+    exit 1
+  fi
 
   ##
 
@@ -1239,7 +1253,7 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml up -d
 
   #./frnet/docker-compose/freertr_disable_offload.sh
-  ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
+  ${nonroot_prefix_cmd} ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
 
   # fix needed to fix bgp connections on eth4 and eth5
   #docker exec freertr ip add del dev eth4 10.197.37.3
