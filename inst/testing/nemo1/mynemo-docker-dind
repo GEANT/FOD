@@ -380,6 +380,8 @@ elif [ "$1" = "--all1x" ]; then #arg
   shift 1
 
   #
+  
+  set -e
 
   echo "# allx step$step_nr (all1 = build+init outer nemo-all container + inside build+init nemo detection inner containers):" 1>&2 
   "$0" --all1 "$@"
@@ -1253,7 +1255,8 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml up -d
 
   #./frnet/docker-compose/freertr_disable_offload.sh
-  ${nonroot_prefix_cmd} ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
+  #${nonroot_prefix_cmd} ./frnet/docker-compose/freertr_disable_offload.sh
+  ./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
 
   # fix needed to fix bgp connections on eth4 and eth5
   #docker exec freertr ip add del dev eth4 10.197.37.3
