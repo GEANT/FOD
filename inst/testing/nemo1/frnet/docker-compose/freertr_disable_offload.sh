@@ -51,7 +51,7 @@ for container_interface in $(docker exec freertr sh -c 'ls /sys/class/net/eth*/i
     #ethtool -k "$IFNAME" | awk '{ sub(/^\s+/, ""); } $2=="on" { sub(/:$/, "", $1); print $1; }' 
     "$ETHTOOL" -k "$IFNAME" | awk '{ sub(/^\s+/, ""); } $2=="on" { sub(/:$/, "", $1); print $1; }' 
 
-  } | while read key; do (ethtool -K "$IFNAME" "$key" off); done
+  } | while read key; do ("$ETHTOOL" -K "$IFNAME" "$key" off); done
 
   echo "# resulting ethtool settings for interface $IFNAME (pair end point of eth$container_interface in container freertr):"
   #ethtool -k "$IFNAME" | grep " on"
