@@ -73,6 +73,10 @@ fi
 #xarg ./mynemo-docker-dind --nemo-get-filename-of-certfile # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
 #xarg ./mynemo-docker-dind --nemo-get-dirname-onhost # show dirname of inside container dir /nemo-all/ as seen from outside on the host
 
+####
+
+DEP_SYS_COMMANDS=(docker docker-compose)
+
 ##
 
 docker_outer__image_name="nemo-all1"
@@ -137,7 +141,37 @@ main_router_name="freertr1"
 
 #
 
-if [ "$1" = "--nemo-git-repos-do" ]; then #arg # run on all nemo-* git repo checkout dirs (running outside of (outer) docker directly on the host)
+####
+
+function check_dep_sys_cmds_avail()
+{
+  echo "$0: verifying that necessary command dependencies are available:" 1>&2  
+  for cmd in ${DEP_SYS_COMMANDS[@]}; do
+    if ! type "$cmd" 1>&2; then
+      echo "$0: command '$cmd' not found in PATH=$PATH, aborting" 1>&2
+      exit 1
+    fi  
+  done
+  echo 1>&2
+
+ ./frnet/docker-compose/freertr_disable_offload.sh --only_verify_dep_sys_cmds_avail
+}
+
+if [ "$1" = "--only_verify_dep_sys_cmds_avail0" ]; then #arg 
+  shift 1
+	 
+  check_dep_sys_cmds_avail
+
+elif [ "$1" = "--only_verify_dep_sys_cmds_avail" ]; then #arg 
+  shift 1
+	 
+  "$0" --only_verify_dep_sys_cmds_avail0
+
+  [ ! -e ./nemo1.env ] || . ./nemo1.env
+
+  [ -z "$use_addon1" ] || "$0" --addon-init-run "$use_addon1" --only_verify_dep_sys_cmds_avail || exit 1
+
+elif [ "$1" = "--nemo-git-repos-do" ]; then #arg # run on all nemo-* git repo checkout dirs (running outside of (outer) docker directly on the host)
   shift 1
   
   use_short=0
@@ -216,7 +250,20 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      fi
 
    done
-  
+   
+   ##
+   
+   echo "use_addon1=$use_addon1" > ./nemo1.env
+   
+   ##
+
+   echo 1>&2
+   #check_dep_sys_cmds_avail0 || exit 1
+   #if [ "$use_addon1" ]; then
+   #  "$0" --addon-init-run "$use_addon1" --only_verify_dep_sys_cmds_avail || exit 1
+   #fi
+   check_dep_sys_cmds_avail || exit 1
+ 
    ##
    
    echo "# show files in rare nemo base prep dir" 1>&2
@@ -235,9 +282,8 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    rm -v -f ./etc/dfn-info/dfn-info-override.json 1>&2
  
    echo "# allx step0 (preconf init)" 1>&2 
-   echo "DIDCLFS=$DIDCLFS" > ./nemo1.env
+   echo "DIDCLFS=$DIDCLFS" >> ./nemo1.env
 
-   echo "use_addon1=$use_addon1" >> ./nemo1.env
    if [ "$use_addon1" ]; then
      "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
    fi
