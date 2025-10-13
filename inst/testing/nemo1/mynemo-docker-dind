@@ -102,7 +102,12 @@ docker_log_postfix="${DIDCLFS}1" # has to be consistent with docker_outer__conta
 
 docker_outer__docker_file_name="Dockerfile-nemo-all"
 
-docker_outer_hostname="localhost"
+docker_outer_hostname="localhost" # hostname for outer nemo-all container as specified to docker run command
+NEMO_SERVER_NAME="localhost" # explicit hostname to be used for nemo https certs, in case docker_outer_hostname is not respected inside nemo-all container for unknown reason
+ADMIN_MAIL="test@localhost";  # setting for HTTPS client cert
+ADMIN_NAME="test" # setting for HTTPS client cert
+
+#
 
 docker_outer_privilege_opts="--privileged"
 #docker_outer_privilege_opts="--cap-add ALL --security-opt apparmor:unconfined --security-opt seccomp=unconfined --security-opt label:unconfined --cgroupns=host -v /sys/fs/cgroup:/sys/fs/cgroup:rw"
@@ -110,7 +115,9 @@ docker_outer_privilege_opts="--privileged"
 #
 
 #docker_outer__sshauth_volume__args=(--volume "$SSH_AUTH_SOCK:/ssh-auth-sock") # useful, but renders restart of outer nemo container tricky to impossible after system user logout/system reboot (when SSH_AUTH_SOCK env var has changed)
+#docker_outer__bashc_precmd_str='export SSH_AUTH_SOCK="/ssh-auth-sock";'
 docker_outer__sshauth_volume__args=()
+docker_outer__bashc_precmd_str=''
 
 #
 
@@ -141,7 +148,7 @@ main_router_name="freertr1"
 
 #
 
-if [ -z "$nonroot_prefix_cmd" ] && [ 1=1 -o "$UID" != 0 ]; then
+if [ -z "$nonroot_prefix_cmd" ] && [ "$UID" != 0 ]; then
   export nonroot_prefix_cmd="sudo"
   echo "$0: user is not root, using nonroot_prefix_cmd=$nonroot_prefix_cmd" 1>&2
 else
@@ -651,9 +658,6 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   echo "# starting new outer nemo-all docker container as a debian docker-in-docker container:" 1>&2
   (set -x; docker run -d $docker_outer_privilege_opts "${docker_outer__sshauth_volume__args[@]}" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
-  #(set -x; docker run -d --privileged --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
-  #(set -x; docker run -d --privileged --net dind-mgmt --net nemo-flow-input --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
-  #(set -x; docker run -d --privileged --net dind-mgmt --volume "$SSH_AUTH_SOCK:/ssh-auth-sock" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p 8000:443 "$docker_outer__image_name")
   echo 1>&2
 
   echo "# attaching outer nemo-all docker container to extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
@@ -664,6 +668,10 @@ elif [ "$1" = "--docker-build" ]; then #arg
   #echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
   #(set -x; docker exec -ti "$docker_outer__container_name" hostname "nemo-all1")
   #echo 1>&2
+  
+  echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" sh -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
+  echo 1>&2
     
   echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
   (set -x; docker exec -ti "$docker_outer__container_name" sh -c "sleep 1; while ! docker ps >/dev/null; do sleep 1; done; echo docker-inside running")
@@ -877,7 +885,7 @@ elif [ "$1" = "--bash" ]; then #arg # generic bash in outer nemo-all container
 
   [ $# = 0 ] && set -- -i #arg defaults
   
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; exec bash "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c "$docker_outer__bashc_precmd_str"'exec bash "$@"' -- "$@")
 
 elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg # generic bash into vsmd(=nemo mitigation) inner container
   shift 1
@@ -901,7 +909,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
     shift 1
 
     echo "# inside debian-docker-in-docker running pre_setup_script_code=$pre_setup_script_code:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" bash -c "export SSH_AUTH_SOCK=/ssh-auth-sock; cd /nemo-all; $pre_setup_script_code") 
+    (set -x; docker exec -ti "$docker_outer__container_name" bash -c "${docker_outer__bashc_precmd_str}cd /nemo-all; $pre_setup_script_code") 
   fi
 
   use_test__access1="curl"
@@ -939,14 +947,15 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   echo "# inside debian-docker-in-docker status of /nemo-all dir prior to running setup.sh:" 1>&2
   (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
   
-  echo "# inside debian-docker-in-docker show debian OS version, docker version and docker-compose version:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; cat /etc/debian_version; docker --version; docker-compose --version')
+  echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
-  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh --verbose "$@"' -- "$@")
-  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'export SSH_AUTH_SOCK="/ssh-auth-sock"; export ADMIN_MAIL="test@localhost"; export ADMIN_NAME="test"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  (set -x; docker exec -ti "$docker_outer__container_name" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  #status1="$?"
   echo 1>&2
+
+  #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
 
   #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
   ##(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
@@ -954,14 +963,15 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   #echo 1>&2
 
   if [ "$use_test__access1" = "w3m" ]; then
-    "$0" --inside-run-w3m || true
+    "$0" --inside-run-w3m 
   elif [ "$use_test__access1" = "wget" ]; then
-    "$0" --inside-run-wget || true
+    "$0" --inside-run-wget 
   elif [ "$use_test__access1" = "curl" ]; then
-    "$0" --inside-run-curl || true
+    "$0" --inside-run-curl 
   else
     :
   fi
+  status2="$?"
 
   if [ "$logcheck" = "1" ]; then
     "$0" --logs1 
@@ -972,6 +982,8 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   else
     :
   fi
+  
+  [ "$status2" = 0 ] || echo "access to NeMo web server failed, aborting" 1>&2 && exit 1
 
 #arg http test functions in outer container:
 
