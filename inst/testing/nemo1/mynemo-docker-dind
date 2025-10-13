@@ -952,7 +952,8 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   (set -x; docker exec -ti "$docker_outer__container_name" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
-  #status1="$?"
+  status1="$?"
+  echo "$0: setup.sh: exit status=$status1" 1>&2
   echo 1>&2
 
   #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
@@ -972,18 +973,20 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
     :
   fi
   status2="$?"
+  echo "$0: nemo web access: exit status=$status2" 1>&2
+  echo 1>&2
 
   if [ "$logcheck" = "1" ]; then
-    "$0" --logs1 
+    "$0" --logs1 || true
   elif [ "$logcheck" = "2" ]; then
-    "$0" --logs0
+    "$0" --logs0 || true
   elif [ "$logcheck" = "all" ]; then
-    "$0" --logsall
+    "$0" --logsall || true
   else
     :
   fi
   
-  [ "$status2" = 0 ] || echo "access to NeMo web server failed, aborting" 1>&2 && exit 1
+  [ "$status2" = 0 ] || {echo "access to NeMo web server failed, aborting" 1>&2 && exit 1}
 
 #arg http test functions in outer container:
 
