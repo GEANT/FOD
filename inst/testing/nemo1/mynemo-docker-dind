@@ -986,7 +986,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
     :
   fi
   
-  [ "$status2" = 0 ] || {echo "access to NeMo web server failed, aborting" 1>&2 && exit 1}
+  [ "$status2" = 0 ] || { echo "access to NeMo web server failed, aborting" 1>&2 && exit 1; }
 
 #arg http test functions in outer container:
 
