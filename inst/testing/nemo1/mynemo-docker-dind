@@ -972,6 +972,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   if [ "$copycertstohostdir" = 1 ]; then
     echo "# copy certs created by setup.sh to host dir here:" 1>&2
     "$0" --nemo-certs-copy-tohostdir
+    echo 1>&2
   fi
 
   #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
