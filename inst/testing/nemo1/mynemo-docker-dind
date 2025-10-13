@@ -260,7 +260,8 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
        vsmd_args=()a
      elif [ "$1" = "--experimental" ]; then #arg 
        shift 1       
-       set -- --net_init_first --addon_auto --addon_init_early --prune-outer "$@" -q
+       #set -- --net_init_first --addon_auto --addon_init_early --prune-outer "$@" -q
+       set -- --net_init_first --addon_auto --addon_init_early --prune-outer --copy-certs-to-hostdir "$@" -q
      else
        break
      fi
@@ -903,43 +904,55 @@ elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg # generic bash
 elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.sh inside nemo-all outer container+optionally finally run some tests and logging excerpts, requires running outer nemo-all container
   shift 1
 
-  if [ "$1" = "--pre-setup-shcode" ]; then #arg opt
-    shift 1
-    pre_setup_script_code="$1" #arg # to be run via sh -c ... # should exit with zero status otherwise execution will stop
-    shift 1
+  copycertstohostdir=0
+  pre_setup_script_code=
+  use_test__access1="curl"
+  logcheck="1"
 
+  while [ $# -gt 0 ]; do #arg loop
+
+    if [ "$1" = "--copy-certs-to-hostdir" ]; then #arg opt
+      shift 1
+      copycertstohostdir=1 
+    elif [ "$1" = "--pre-setup-shcode" ]; then #arg opt
+      shift 1
+      pre_setup_script_code="$1" #arg # to be run via sh -c ... # should exit with zero status otherwise execution will stop
+      shift 1
+    elif [ "$1" = "--curl" ]; then #arg opt #default
+      shift 1
+      use_test__access1="curl"
+    elif [ "$1" = "--wget" ]; then #arg opt
+      shift 1
+      use_test__access1="wget"
+    elif [ "$1" = "--w3m" ]; then #arg opt
+      shift 1
+      use_test__access1="w3m"
+    elif [ "$1" = "--notest" ]; then #arg opt
+      shift 1
+      use_test__access1="notest"
+    elif [ "$1" = "--log1" ]; then #arg opt #default
+      shift 1
+      logcheck=1
+    elif [ "$1" = "--log0" ]; then #arg opt
+      shift 1
+      logcheck=2
+    elif [ "$1" = "--logall" ]; then #arg opt
+      shift 1
+      logcheck="all"
+    elif [ "$1" = "--nologcheck" ]; then #arg opt
+      shift 1
+      logcheck=""
+    else
+      break
+    fi
+
+  done #arg loop
+
+  ##
+
+  if [ -n "$pre_setup_script_code" ]; then #arg opt
     echo "# inside debian-docker-in-docker running pre_setup_script_code=$pre_setup_script_code:" 1>&2
     (set -x; docker exec -ti "$docker_outer__container_name" bash -c "${docker_outer__bashc_precmd_str}cd /nemo-all; $pre_setup_script_code") 
-  fi
-
-  use_test__access1="curl"
-  if [ "$1" = "--curl" ]; then #arg opt #default
-    shift 1
-    use_test__access1="curl"
-  elif [ "$1" = "--wget" ]; then #arg opt
-    shift 1
-    use_test__access1="wget"
-  elif [ "$1" = "--w3m" ]; then #arg opt
-    shift 1
-    use_test__access1="w3m"
-  elif [ "$1" = "--notest" ]; then #arg opt
-    shift 1
-    use_test__access1="notest"
-  fi
-
-  logcheck="1"
-  if [ "$1" = "--log1" ]; then #arg opt #default
-    shift 1
-    logcheck=1
-  elif [ "$1" = "--log0" ]; then #arg opt
-    shift 1
-    logcheck=2
-  elif [ "$1" = "--logall" ]; then #arg opt
-    shift 1
-    logcheck="all"
-  elif [ "$1" = "--nologcheck" ]; then #arg opt
-    shift 1
-    logcheck=""
   fi
 
   ##
@@ -955,6 +968,11 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   status1="$?"
   echo "$0: setup.sh: exit status=$status1" 1>&2
   echo 1>&2
+
+  if [ "$copycertstohostdir" = 1 ]; then
+    echo "# copy certs created by setup.sh to host dir here:" 1>&2
+    "$0" --nemo-certs-copy-tohostdir
+  fi
 
   #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
 
@@ -1255,6 +1273,11 @@ elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside 
   shift 1
 
   echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
+
+elif [ "$1" = "--nemo-certs-copy-tohostdir" ]; then #arg 
+
+  #cp -n -av "$("$0" --nemo-get-dirname-onhost)"/secrets/* ./secrets 1>&2
+  cp --update=none -av "$("$0" --nemo-get-dirname-onhost)"/secrets/CA/ ./secrets 1>&2
 
 #arg freertr-testnet related functions:
 
