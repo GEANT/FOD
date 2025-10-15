@@ -222,6 +222,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    net_init_first=0
    use_addon1=""
+   use_addon1_arg=""
    addon_init_early=0
 
    vsmd_args=("--vsmd_inbg")
@@ -243,6 +244,12 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      elif [ "$1" = "--addon" ]; then #arg opt
        shift 1
        use_addon1="$1" #arg
+       shift 1
+     elif [ "$1" = "--addon_arg" ]; then #arg opt
+       shift 1
+       use_addon1="$1" #arg
+       shift 1
+       use_addon1_arg="$1" #arg
        shift 1
      elif [ "$1" = "--addon_auto" ]; then #arg 
        shift 1
@@ -300,6 +307,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
  
    echo "# allx step0 (preconf init)" 1>&2 
    echo "DIDCLFS=$DIDCLFS" >> ./nemo1.env
+   echo "use_addon1_arg=$use_addon1_arg" >> nemo1.env
 
    if [ "$use_addon1" ]; then
      "$0" --addon-init-run "$use_addon1" --baseconf >> ./nemo1.env
@@ -1180,12 +1188,12 @@ elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
 
 #arg nemo-specific:
 
-elif [ "$1" = "--log-vsmd" ]; then
+elif [ "$1" = "--log-vsmd" ]; then #arg
   shift 1
 
   exec "$0" --bash-vsmd1 tail "$@" ./vsmd.log #arg rest # e.g. -f
 
-elif [ "$1" = "--log-exabgp" ]; then
+elif [ "$1" = "--log-exabgp" ]; then #arg
   shift 1
 
   exec "$0" --bash-vsmd1 ./tools/journalctl-exabgp "$@" #arg rest # e.g. -f
