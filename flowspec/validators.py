@@ -196,6 +196,22 @@ def clean_route_form(data):
     if not user.is_superuser and then[0].action not in settings.UI_USER_THEN_ACTIONS:
         return _('This action "%s" is not permitted') % (then[0].action)
 
+    if hasattr(settings, "RULE_MATCH_OPTIONS__ENABLE_NOKIA2025_QUIRKS_CHECKING") and settings.RULE_MATCH_OPTIONS__ENABLE_NOKIA2025_QUIRKS_CHECKING:
+        return clean_route_form__quirks_nokia(data)
+    else
+        return None
+
+
+def clean_route_form__quirks_nokia(data):
+  
+    protocols = data.get('protocol', set())
+
+    # NokiaQuirk (2025-10-20): not more ip protocols other than udp and tcp allowed simultaneously in a single rule
+    if 'udp' in protocols and 'tcp' in protocols and length(protocols)==2:
+      pass
+    else if length(protocols)>=2:
+      return _('Nokia Quirk: not more ip protocols other than udp and tcp allowed simultaneously') 
+
     return None
 
 
