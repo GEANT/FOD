@@ -286,6 +286,7 @@ SETTINGS_EXPORT = [
     'LANGUAGES',
     'LANGUAGE_CODE',
     'SHIB_LOGIN_ENABLED',
+    'BGP_EXTENDED_COMMUNITY_CHOICES_ENABLED_IN_WEBUI',
 ]
 
 AUTHENTICATION_BACKENDS = (
@@ -530,6 +531,22 @@ PORTRANGE_LIMIT = 65535
 # Then actions in the ui (dropdown)
 UI_USER_THEN_ACTIONS = ['discard', 'rate-limit']
 UI_USER_PROTOCOLS = ['icmp', 'tcp', 'udp']
+
+# bgp extended community choices in rules available:
+# in a rule bgp extended community may be empty, i.e., non-existent;
+# if only a single choice is defined, the user will not see any choice list in the UI;
+# defined in records of the form ( value, label ):
+#BGP_EXTENDED_COMMUNITY_CHOICES = ( ("", "none") )
+BGP_EXTENDED_COMMUNITY_CHOICES = (
+    ("", "none"),
+    ("target:20965:333", "target:20965:333"),
+    ("target:20965:331", "target:20965:331")
+)
+#BGP_EXTENDED_COMMUNITY_CHOICE_DEFAULT = "" # needs to be one of the values in choices in BGP_EXTENDED_COMMUNITY_CHOICES, not necesarily =""
+BGP_EXTENDED_COMMUNITY_CHOICE_DEFAULT = "target:20965:333" # needs to be one of the values in choices in BGP_EXTENDED_COMMUNITY_CHOICES, not necesarily =""
+
+#BGP_EXTENDED_COMMUNITY_CHOICES_ENABLED_IN_WEBUI = False
+BGP_EXTENDED_COMMUNITY_CHOICES_ENABLED_IN_WEBUI = len(BGP_EXTENDED_COMMUNITY_CHOICES)>1
 
 ##############################################################################
 ##############################################################################

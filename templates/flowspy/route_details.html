@@ -33,6 +33,9 @@ function myreloadPage() {
         <div>
             <h2>{% trans 'About' %}</h2>
             {{ route.get_then }}
+	    {% comment %} %{if route.bgpextendedcommunity != None %} {% endcomment %}
+              {{ route.bgpextendedcommunity }}
+	    {% comment %} %{endif %} {% endcomment %}
             {% trans 'all'%}
             {% if route.protocol.count %}
                 {% for proto in route.protocol.all %}

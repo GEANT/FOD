@@ -137,7 +137,7 @@ class RouteForm_lightweight(forms.ModelForm):
         return res
 
     def clean(self):
-        logger.debug("RouteForm_lightweight():forms::clean(): (1) called self=%s", str(self))
+        #logger.debug("RouteForm_lightweight():forms::clean(): (1) called self=%s", str(self))
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))
         error = clean_route_form(self.cleaned_data)
@@ -149,7 +149,7 @@ class RouteForm_lightweight(forms.ModelForm):
 class RouteForm(RouteForm_lightweight):
 
     def clean(self):
-        logger.debug("RouteForm():forms::clean(): (1) called self=%s", str(self))
+        #logger.debug("RouteForm():forms::clean(): (1) called self=%s", str(self))
 
         if self.errors:
             raise forms.ValidationError(_('Errors in form. Please review and fix them: %s' % ", ".join(self.errors)))

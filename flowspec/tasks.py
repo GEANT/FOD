@@ -80,7 +80,7 @@ def edit(routepk, route_original__data, rate_limit_changed=False, callback=None)
     from flowspec.models import Route
     route = Route.objects.get(pk=routepk)
     status_pre = route.status
-    logger.info("tasks::edit(): route="+str(route)+", status_pre="+str(status_pre))
+    logger.info("tasks::edit(): route_type="+str(type(route))+" route="+str(route)+", route.destination="+str(route.destination)+" route.protocol="+str(route.protocol.all())+" status_pre="+str(status_pre))
     logger.info("tasks::edit(): route_original__data_type="+str(type(route_original__data))+" route_original__data="+str(route_original__data))
 
     from flowspec.serializers import RouteSerializer
