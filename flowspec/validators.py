@@ -198,7 +198,7 @@ def clean_route_form(data):
 
     if hasattr(settings, "RULE_MATCH_OPTIONS__ENABLE_NOKIA2025_QUIRKS_CHECKING") and settings.RULE_MATCH_OPTIONS__ENABLE_NOKIA2025_QUIRKS_CHECKING:
         return clean_route_form__quirks_nokia(data)
-    else
+    else:
         return None
 
 
@@ -209,7 +209,7 @@ def clean_route_form__quirks_nokia(data):
     # NokiaQuirk (2025-10-20): not more ip protocols other than udp and tcp allowed simultaneously in a single rule
     if 'udp' in protocols and 'tcp' in protocols and length(protocols)==2:
       pass
-    else if length(protocols)>=2:
+    elif length(protocols)>=2:
       return _('Nokia Quirk: not more ip protocols other than udp and tcp allowed simultaneously') 
 
     return None
