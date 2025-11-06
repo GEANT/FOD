@@ -1,0 +1,3 @@
+#!/bin/bash
+
+python3 daemon-sum-router.py --conf config1.py 

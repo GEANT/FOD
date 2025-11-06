@@ -1,0 +1,110 @@
+
+===============================================================================
+IP Filter
+===============================================================================
+Filter Id           : fSpec-0                      
+Scope               : Embedded                     
+Type                : Normal                       
+Shared Policer      : Off                          
+Entries             : 3 (insert By Bgp)
+Sub-Entries         : 4 (insert By Bgp)
+Description         : IPv4 BGP FlowSpec filter for the Base router
+-------------------------------------------------------------------------------
+Filter Match Criteria : IP
+-------------------------------------------------------------------------------
+Entry               : 128
+Origin              : Inserted by BGP FlowSpec
+Description         : (Not Specified)
+Log Id              : n/a                          
+Src. IP             : 31.31.31.31/32
+Src. Port           : gt 1024
+Dest. IP            : 32.32.32.0/24
+Dest. Port          : port-list "_tmnx_fSpec_ipv4_10_dst"
+Protocol            : 6
+Dscp                : Undefined                    
+ICMP Type           : Undefined                    ICMP Code      : Undefined
+Fragment            : Off                          Src Route Opt  : Off
+Sampling            : Off                          Int. Sampling  : On
+IP-Option           : 0/0                          Multiple Option: Off
+Tcp-flag            : (Not Specified)
+Option-pres         : Off                          
+Egress PBR          : Disabled                     
+Primary Action      : Rate-limit 800 kbps          
+Ing. Matches        : 0 pkts
+Egr. Matches        : 0 pkts
+Ing. Rate-limiter
+  Offered           : 0 pkts
+  Forwarded         : 0 pkts
+  Dropped           : 0 pkts
+Egr. Rate-limiter
+  Offered           : 0 pkts
+  Forwarded         : 0 pkts
+  Dropped           : 0 pkts
+ 
+Entry               : 170
+Origin              : Inserted by BGP FlowSpec
+Description         : (Not Specified)
+Log Id              : n/a                          
+Src. IP             : 31.31.31.31/32
+Src. Port           : gt 1024
+Dest. IP            : 32.32.32.0/24
+Dest. Port          : eq 3128
+Protocol            : 6
+Dscp                : Undefined                    
+ICMP Type           : Undefined                    ICMP Code      : Undefined
+Fragment            : Off                          Src Route Opt  : Off
+Sampling            : Off                          Int. Sampling  : On
+IP-Option           : 0/0                          Multiple Option: Off
+Tcp-flag            : (Not Specified)
+Option-pres         : Off                          
+Egress PBR          : Disabled                     
+Primary Action      : Drop                         
+Ing. Matches        : 0 pkts
+Egr. Matches        : 0 pkts
+ 
+Entry               : 256
+Origin              : Inserted by BGP FlowSpec
+Description         : (Not Specified)
+Log Id              : n/a                          
+Src. IP             : 32.32.32.32/32
+Src. Port           : n/a
+Dest. IP            : 0.0.0.0/0
+Dest. Port          : n/a
+Protocol            : Undefined
+Dscp                : Undefined                    
+ICMP Type           : Undefined                    ICMP Code      : Undefined
+Fragment            : Off                          Src Route Opt  : Off
+Sampling            : Off                          Int. Sampling  : On
+IP-Option           : 0/0                          Multiple Option: Off
+Tcp-flag            : (Not Specified)
+Option-pres         : Off                          
+Egress PBR          : Disabled                     
+Primary Action      : Drop                         
+Ing. Matches        : 0 pkts
+Egr. Matches        : 0 pkts
+ 
+-------------------------------------------------------------------------------
+Filter Match IP Prefix Lists
+-------------------------------------------------------------------------------
+No IP Prefix Lists
+-------------------------------------------------------------------------------
+Filter Match Port Lists
+-------------------------------------------------------------------------------
+Port list "_tmnx_fSpec_ipv4_10_dst"
+    3128  8081-8087
+    NUM ports/ranges: 2
+
+    References:
+        IP-filter 900 entry 228 (Dst-Port)
+        IP-filter 904 entry 128 (Dst-Port)
+        IP-filter fSpec-0 entry 128 (Dst-Port)
+        NUM references: 3
+
+NUM Port Lists: 1
+-------------------------------------------------------------------------------
+Filter Match Protocol Lists
+-------------------------------------------------------------------------------
+No Protocol Lists
+===============================================================================
+
+
