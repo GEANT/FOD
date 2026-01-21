@@ -56,6 +56,7 @@ docker run -d \
 	--name "$container_name" \
 	--mount type=bind,source=/nemo-all/etc/,target=/nemo-all/etc/ \
 	--mount type=bind,source=/nemo-all/secrets/,target=/nemo-all/secrets/ \
+	--restart unless-stopped \
 	"$container_name"
 
 echo "$0: setting hostname of vsmd inner docker container to 'vsmd1'" 1>&2

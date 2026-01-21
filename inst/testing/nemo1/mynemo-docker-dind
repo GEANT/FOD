@@ -251,6 +251,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
        shift 1
        use_addon1_arg="$1" #arg
        shift 1
+       echo "$0: set use_addon1=$use_addon1 use_addon1_arg=$use_addon1_arg" 1>&2
      elif [ "$1" = "--addon_auto" ]; then #arg 
        shift 1
        shopt -s nullglob
@@ -265,6 +266,10 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      elif [ "$1" = "--vsmd_infg" -o "$1" = "--fg" ]; then #arg
        shift 1
        vsmd_args=()a
+     elif [ "$1" = "--experimental0" ]; then #arg 
+       shift 1       
+       #set -- --net_init_first --addon_auto --addon_init_early --prune-outer "$@" -q
+       set -- --net_init_first --prune-outer --copy-certs-to-hostdir "$@" -q
      elif [ "$1" = "--experimental" ]; then #arg 
        shift 1       
        #set -- --net_init_first --addon_auto --addon_init_early --prune-outer "$@" -q
@@ -277,6 +282,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    
    ##
    
+   echo "use_addon1=$use_addon1 use_addon1_arg=$use_addon1_arg args=$*" 1>&2
    echo "use_addon1=$use_addon1" > ./nemo1.env
    
    ##

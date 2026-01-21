@@ -9,9 +9,11 @@ import re
 import argparse
 import logging
 import json
+import base64
 import multiprocessing
 import configparser
 from pysros.management import connect  # Netconf
+from google.protobuf.json_format import MessageToDict  # For subscribe once of Telemetry (I miss my .get instead!)
 from pygnmi.client import gNMIclient  # Telemetry
 
 ROUTER_QUERY_SLEEP = 5
@@ -185,15 +187,10 @@ def query_router_once(router_info):
     logging.info(f"Querying router {router_info['name']}...")
     # querying CLI
     filter_data4, filter_data6 = get_router_data_from_cli(router_info)
-    
-    logging.info(f"done with Querying router {router_info['name']}...")
 
     # querying telemetry
     telemetry_data4, telemetry_data6 = telemetry_query_data_from_router(
         router_info)  # ['update']  # [0]['val']['entry']
-
-    logging.info(f"done with Querying raw telemetry data")
-
     telemetry_data4 = telemetry_data4['update']
     telemetry_data6 = telemetry_data6['update']
     logging.debug(f"Received IPv4 Telemetry from "
@@ -206,8 +203,6 @@ def query_router_once(router_info):
     for d in filter_data4:
         telemetry_updated_filter_data4.append(
             telemetry_dict_updated_stats(d, telemetry_data4))
-    
-    logging.debug(f"done with ipv4")
 
     telemetry_updated_filter_data6 = []
     for d in filter_data6:
@@ -234,12 +229,146 @@ def telemetry_query_data_from_router(router):
         target=(router['ip_address'], 57400),
         username=router['username'],
         password=router['password'],
-        insecure=True
+        path_cert=router['telemetry_path_cert'],
+        path_key=router['telemetry_path_key'],
+        path_root=router['telemetry_path_root'],
+        skip_verify=router['telemetry_skip_verify'],
+        insecure=router['telemetry_insecure']
     ) as conn:
-        logging.debug(f"telemetry_query_data_from_router: before conn.get()")
-        res = conn.get(encoding='json', path=[TELEMETRY_PATH, TELEMETRY_PATH_V6])
-        logging.debug(f"telemetry_query_data_from_router: after conn.get()")
-        return res['notification'][0], res['notification'][1]
+        # 4MB Limit: res = conn.get(encoding='json', path=[TELEMETRY_PATH, TELEMETRY_PATH_V6])
+        # 4MB Limit: return res['notification'][0], res['notification'][1]
+
+        sub = {
+            "mode": "once",
+            "encoding": "json",
+            "updates_only": False,
+            "subscription": [
+                {"path": TELEMETRY_PATH},
+                {"path": TELEMETRY_PATH_V6},
+            ],
+        }
+
+        def _elems_to_xpath(elems):
+            parts = []
+            for e in elems:
+                name = e.get("name")
+                key = e.get("key", {})
+                if key:
+                    name += "".join(f"[{k}={key[k]}]" for k in sorted(key))
+                parts.append(name)
+            return "/".join(parts)
+
+        def _full_path(prefix, path):
+            pre = _elems_to_xpath(prefix.get("elem", [])) if prefix else ""
+            pth = _elems_to_xpath(path.get("elem", [])) if path else ""
+            return "/".join([s for s in (pre, pth) if s])
+
+        def _entry_root_and_rel(full):
+            # returns ("state/.../entry[entry-id=NNN]", ...)
+            i = full.find("/entry[")
+            if i == -1:
+                return None, None
+            j = full.find("]", i)
+            if j == -1:
+                return None, None
+            root = full[: j + 1]
+            rel = full[j + 1 :].lstrip("/")
+            return root, rel
+
+        def _decode_val(val_dict):
+            # gNMI json encoding: base64 JSON in json_val :-D
+            if not isinstance(val_dict, dict):
+                return val_dict
+            if "json_val" in val_dict:
+                try:
+                    return json.loads(base64.b64decode(val_dict["json_val"]))
+                except Exception:
+                    return val_dict["json_val"]
+            # handle occasional direct string/int vals if present
+            for k in ("string_val", "int_val", "uint_val", "bool_val", "float_val", "double_val"):
+                if k in val_dict:
+                    return val_dict[k]
+            return val_dict
+
+        # Aggregators: per-family (v4/v6) map: entry-root -> {"path": root, "val": {...}}
+        v4_map, v6_map = {}, {}
+        # For building 'statistics/card' lists, keep a transient "current card" per entry
+        pending_card = {}  # entry-root -> dict being filled
+
+        logging.debug("Subscribe ONCE: %s, %s", TELEMETRY_PATH, TELEMETRY_PATH_V6)
+
+        for raw in conn.subscribe(subscribe=sub):
+            msg = raw if isinstance(raw, dict) else MessageToDict(raw, preserving_proto_field_name=True)
+            if msg.get("sync_response"):
+                logging.debug("DEBUG: sync_response=True (snapshot complete)")
+                break
+
+            upd = msg.get("update")
+            if not upd:
+                continue
+
+            prefix = upd.get("prefix", {})
+            leaves = upd.get("update", [])
+            pre_xpath = _elems_to_xpath(prefix.get("elem", []))
+
+            for u in leaves:
+                full = _full_path(prefix, u.get("path"))
+                root, rel = _entry_root_and_rel(full)
+                if not root:
+                    # nothing to aggregate
+                    continue
+
+                # Classify family by path rule
+                is_v6 = ("ipv6-filter" in full) or ("ipv6-filter" in pre_xpath)
+                bucket = v6_map if is_v6 else v4_map
+
+                entry = bucket.get(root)
+                if not entry:
+                    entry = {"path": root, "val": {}}
+                    bucket[root] = entry
+
+                val = _decode_val(u.get("val", {}))
+
+                # Assign into the aggregated dict at the relative path
+                if not rel:
+                    # Path equals the entry root and value is a full object
+                    if isinstance(val, dict):
+                        entry["val"].update(val)
+                    continue
+
+                parts = rel.split("/")
+
+                # Special handling: statistics/card -> list of dicts grouped by slot-number
+                if len(parts) >= 2 and parts[0] == "statistics" and parts[1] == "card":
+                    card = pending_card.get(root)
+                    if card is None:
+                        card = {}
+                        pending_card[root] = card
+                    leaf = parts[-1]
+                    if leaf == "slot-number":
+                        card["slot-number"] = val
+                        # append to list
+                        stats = entry["val"].setdefault("statistics", {})
+                        cards = stats.setdefault("card", [])
+                        # copy to avoid aliasing then reset pending
+                        cards.append(dict(card))
+                        pending_card[root] = {}
+                    else:
+                        card[leaf] = val
+                    continue
+
+                # Normal nested assignment
+                d = entry["val"]
+                for p in parts[:-1]:
+                    d = d.setdefault(p, {})
+                d[parts[-1]] = val
+
+        notif_v4 = {"update": list(v4_map.values())}
+        notif_v6 = {"update": list(v6_map.values())}
+        logging.debug("Telemetry received v4 entries: %s, v6 entries: %s",
+                      len(notif_v4["update"]),
+                      len(notif_v6["update"]))
+        return notif_v4, notif_v6
 
 
 def telemetry_dict_updated_stats(filter_data, telemetry_data):
@@ -398,7 +527,7 @@ def parse_nokia_port_lists(cli_text):
     return port_dict
 
 
-def value_or_none(value, nones=['n/a', 'Undefined', '0.0.0.0/0', '::/0']):
+def value_or_none(value, nones=['n/a', 'Undefined', '0.0.0.0/0', '::/0', 'Off']):
     """
     Returns None if the given value is among the specified invalid values;
     otherwise, returns the value.
@@ -494,9 +623,17 @@ def dict_to_cisco_flow(flow_data):
     # Append flow parts using the helper function
     append_flow_part('dstip', 'Dest')
     append_flow_part('srcip', 'Source')
-    append_flow_part('protocol', 'Proto', lambda x: f"={x}")
+    if "ip_version" in flow_data and flow_data["ip_version"] == 6:
+        # Keep Next Header instead of Protocol for IPv6
+        append_flow_part('protocol', 'NH', lambda x: f"={x}")
+    else:
+        append_flow_part('protocol', 'Proto', lambda x: f"={x}")
     append_flow_part('dstport', 'DPort', port_val_or_list_to_cisco_liststr)
     append_flow_part('srcport', 'SPort', port_val_or_list_to_cisco_liststr)
+
+    # Pass Fragment as-is;
+    # TODO: Change to correct Nokia and Cisco identifiers for "Fragment"
+    append_flow_part('fragment', 'Fragment', lambda x: f"={x}")
 
     # Join all parts into a single string separated by commas
     formatted_flow = ",".join(flow_parts)
@@ -534,7 +671,7 @@ def parse_cli_filter_output(text):
     return result
 
 
-def dicts_to_nokia_output(routes, results):
+def dicts_to_nokia_output(routes):
     """
     Formats a list of network flow dictionaries into a string representation
     suitable for Nokia devices.
@@ -546,11 +683,6 @@ def dicts_to_nokia_output(routes, results):
     Returns:
     str: A formatted string representing the network flows.
     """
-
-    logging.debug("dicts_to_nokia_output(): called routes="+str(routes))
-
-    global option_raw
-
     if option_raw:
         return json.dumps(list(routes))
 
@@ -571,14 +703,6 @@ def dicts_to_nokia_output(routes, results):
         output += "  Statistics                     (packets/bytes)\n"
         output += f"    Matched           :      {route.get('matched_packets', 0)}/{route.get('matched_bytes', 0)}\n"
         output += f"    Dropped           :      {route.get('dropped_packets', 0)}/{route.get('dropped_bytes', 0)}\n"
-
-        rulespec_by_params = translate_cisco_flow_id__to__generic_rulespec_by_params(route['cisco-flow'])
-        results[rulespec_by_params] = {
-          'packets' : route.get('dropped_packets', 0),
-          'bytes' : route.get('dropped_bytes', 0),
-          'matched_packets' : route.get('matched_packets', 0),
-          'matched_bytes' : route.get('matched_bytes', 0)
-        }
 
     return output
 
@@ -643,7 +767,6 @@ def parse_entry_details(entry, port_lists):
         entry_data['dstport'] = extract_port(entry,
                                              'Dest\. Port\s+:\s+(.+)',
                                              port_lists)
-        # TODO: udp support?  where in nokia?
         entry_data['protocol'] = re.search(r'Protocol\s+:\s+(\w+)', entry)
         if entry_data['protocol'] is None:
             # Apparently "Protocol" is "Next Header" for IPv6 for Nokia o_0
@@ -662,6 +785,23 @@ def parse_entry_details(entry, port_lists):
             entry_data['ip_version'] = 4
             entry_data['protocol'] = entry_data['protocol'].group(1)
             entry_data['protocol'] = value_or_none(entry_data['protocol'])
+
+        # Fragment support with Nokia appears limited. According to
+        # Unicast Routing Protocols Guide Release 22.7.R1 > BGP >
+        # BGP applications > BGP FlowSpec
+        # https://infocenter.nokia.com/public/7750SR227R1A/index.jsp?topic=%2Fcom.nokia.Unicast_Guide%2Fbgp_flowspec-ai9exj5yj3.html
+        # SR OS limitations are for
+        # IPv4: Partial. No support for matching DF bit,
+        #                first-fragment or last-fragment.
+        # IPv6: Partial. No support for matching Last Fragment.
+        # We will pass the value directly, because we don't know
+        # how it may encode the values: false, true, "first-only",
+        # "non-first-only" in CLI (from nokia-conf-combined.yang)
+        # TODO: Change to correct Nokia and Cisco identifiers for "Fragment"
+        entry_data['fragment'] = re.search(r'Fragment\s+:\s+(\w+)', entry)
+        if entry_data['fragment']:
+            entry_data['fragment'] = entry_data['fragment'].group(1)
+            entry_data['fragment'] = value_or_none(entry_data['fragment'])
 
         entry_data['matched_packets'] = 0  # TODO Placeholder
         entry_data['matched_bytes'] = 0    # TODO Placeholder
@@ -724,12 +864,8 @@ def parse_arguments():
     tuple: Contains the ipv4, debug, oneshot, telemetry, raw, and silent flags
             based on the provided command line arguments.
     """
-    logging.info(f"parse_arguments(): started")
     parser = _make_parser()
-    logging.info(f"parse_arguments(): step1 parser="+str(parser))
     args = parser.parse_args()
-    #args = parser.parse_known_args()
-    logging.info(f"parse_arguments(): step2")
 
     return args.debug, args.one_shot, args.raw, args.silent, \
         (args.host, args.port), args.conf
@@ -797,6 +933,13 @@ def load_config(file_path):
     ip_address = X
     username = user
     password = pass
+    telemetry_path_cert =
+    telemetry_path_key =
+    telemetry_path_root =
+    # insecure = false to use transport encryption tls with certificates above
+    telemetry_insecure = true
+    # skip_verify = true to skip certificate content verification like CN
+    telemetry_skip_verify = false
 
     # Configuration for router.2
     [router.2]
@@ -804,6 +947,12 @@ def load_config(file_path):
     ip_address = Y
     username = user
     password = pass
+    telemetry_path_cert = /path/to/certificate.pem
+    telemetry_path_key = /path/to/certificate.key
+    telemetry_path_root = /path/to/caroot.pem
+    telemetry_insecure = false
+    telemetry_skip_verify = true
+
     ```
 
     Args:
@@ -842,6 +991,21 @@ def load_config(file_path):
             'ip_address': config.get(router, 'ip_address'),
             'username': config.get(router, 'username'),
             'password': config.get(router, 'password'),
+            'telemetry_path_cert': config.get(router,
+                                              'telemetry_path_cert',
+                                              fallback=''),
+            'telemetry_path_key': config.get(router,
+                                             'telemetry_path_key',
+                                             fallback=''),
+            'telemetry_path_root': config.get(router,
+                                              'telemetry_path_root',
+                                              fallback=''),
+            'telemetry_insecure': config.getboolean(router,
+                                                    'telemetry_insecure',
+                                                    fallback=True),
+            'telemetry_skip_verify': config.getboolean(router,
+                                                       'telemetry_skip_verify',
+                                                       fallback=False),
         }
         router_list.append(router_details)
     return defaults, router_list
@@ -871,8 +1035,6 @@ def main():
         option_silent, \
         listen_host, \
         config_file_path = parse_arguments()
-
-    print("config_file_path="+str(config_file_path))
 
     # Load configuration from the specified file
     if os.path.exists(config_file_path):
@@ -933,8 +1095,6 @@ def main():
             _listloggers()
 
     manager = multiprocessing.Manager()
-    #import queue
-    #manager = queue
 
     # Create a dictionary of queues for inter-process communication
     message_queues = {router['name']: manager.Queue() for router in ROUTERS}
@@ -968,6 +1128,64 @@ def main():
         for process in router_processes:
             process.join()
 
+
+# def MOCK_get_router_data_from_cli(router):
+#     """
+#     Fetches data from a router's CLI using the Nokia SR OS Python SDK (pysros).
+
+#     Args:
+#     router (dict): Information about the router, such as IP address, username,
+#         and password.
+
+#     Returns:
+#     Tuple of lists or None: List of dicts: Parsed data from the CLI output or
+#         None if an error occurs.  First element is IPv4 set, second element is
+#         IPv6 set.
+#     """
+#     data = """
+# ===============================================================================
+# IP Filter
+# ===============================================================================
+# Filter Id           : fSpec-0
+# Scope               : Embedded
+# Type                : Normal
+# Shared Policer      : Off
+# Entries             : 3 (insert By Bgp)
+# Sub-Entries         : 4 (insert By Bgp)
+# Description         : IPv4 BGP FlowSpec filter for the Base router
+# -------------------------------------------------------------------------------
+# Filter Match Criteria : IP
+# -------------------------------------------------------------------------------
+# Entry               : 170
+# Origin              : Inserted by BGP FlowSpec
+# Description         : (Not Specified)
+# Log Id              : n/a
+# Src. IP             : 31.31.31.31/32
+# Src. Port           : gt 1024
+# Dest. IP            : 32.32.32.0/24
+# Dest. Port          : eq 3128
+# Protocol            : 6
+# Dscp                : Undefined
+# ICMP Type           : Undefined                    ICMP Code      : Undefined
+# Fragment            : Off                          Src Route Opt  : Off
+# Sampling            : Off                          Int. Sampling  : On
+# IP-Option           : 0/0                          Multiple Option: Off
+# Tcp-flag            : (Not Specified)
+# Option-pres         : Off
+# Egress PBR          : Disabled
+# Primary Action      : Drop
+# Ing. Matches        : 0 pkts
+# Egr. Matches        : 0 pkts
+# """
+#     return (parse_cli_filter_output(data), parse_cli_filter_output(""))
+
+
+# def MOCK_telemetry_query_data_from_router(router):
+#     return {'update': []}, {'update': []}
+
+
+# get_router_data_from_cli = MOCK_get_router_data_from_cli
+# telemetry_query_data_from_router = MOCK_telemetry_query_data_from_router
 
 if __name__ == '__main__':
     main()
