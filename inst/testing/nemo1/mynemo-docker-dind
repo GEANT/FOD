@@ -1279,20 +1279,30 @@ elif [ "$1" = "--reinitaftercontainerstart-vsmd-container" ]; then #arg # to be 
 elif [ "$1" = "--reinitaftercontainerstart" ]; then #arg # to be used after container restart 
   shift 1
 
-  #./frnet/docker-compose/freertr_disable_offload.sh
+  echo "# reinitaftercontainerstart: freertr_disable_offload:" 1>&2 
   ${nonroot_prefix_cmd} ./frnet/docker-compose/freertr_disable_offload.sh
-  #./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
 
   ##
 
   . ./nemo1.env
-
   if [ -n "$use_addon1" ]; then
+    echo "# reinitaftercontainerstart: reinit addon $use_addon1:" 1>&2 
     "$0" --addon-init-main.aftercontainerrestart "$use_addon1"
   fi
 
   ##
 
+  echo "# reinitaftercontainerstart (freertr-host2-ping-host1.bg):" 1>&2 
+  "$0" --freertr-host2-ping-host1.bg
+  echo 1>&2
+
+  echo "# reinitaftercontainerstart (freertr-host2-ping-host2.bg):" 1>&2 
+  "$0" --freertr-host1-ping-host2.bg
+  echo 1>&2
+
+  ##
+
+  echo "# reinitaftercontainerstart: reinit vsmd container:" 1>&2 
   "$0" --reinitaftercontainerstart-vsmd-container
 
 #arg
