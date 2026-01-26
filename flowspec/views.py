@@ -309,9 +309,13 @@ def build_routes_json(ivaltrees_per_version, groutes, user, is_superuser):
         rd['match'] = r.get_match()
 
         rd['then'] = r.get_then()
+        rd['bgprd'] = r.bgprd
         rd['bgpextendedcommunity'] = r.bgpextendedcommunity
+        if r.bgprd!=None:
+            rd['then'] = rd['then'] + " rd:" + r.bgprd
+
         if r.bgpextendedcommunity!=None:
-            rd['then'] = rd['then'] + " " + r.bgpextendedcommunity
+            rd['then'] = rd['then'] + " ext-cty:" + r.bgpextendedcommunity
 
         rd['status'] = r.status
         # in case there is no applier (this should not occur)

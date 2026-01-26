@@ -412,6 +412,7 @@ $(document).ready( function(){
                      {"mData":"response", "sClass" : "alignCenter","bSearchable": true,"bSortable": true,
                      "mRender": function (data, type, full) {
                              status = full.status;
+			     bgprd = full.bgprd;
 			     bgpextendedcommunity = full.bgpextendedcommunity;
                              today = Date.now();
                              expires = new Date(full.expires);

@@ -34,7 +34,14 @@ function myreloadPage() {
             <h2>{% trans 'About' %}</h2>
             {{ route.get_then }}
 	    {% comment %} %{if route.bgpextendedcommunity != None %} {% endcomment %}
+            {% if route.bgprd %}
+              {% trans 'rd '%}
+              {{ route.bgprd }}
+            {% endif %}
+            {% if route.bgpextendedcommunity %}
+              {% trans 'ext-cty '%}
               {{ route.bgpextendedcommunity }}
+            {% endif %}
 	    {% comment %} %{endif %} {% endcomment %}
             {% trans 'all'%}
             {% if route.protocol.count %}
