@@ -69,6 +69,7 @@ def clean_bgrd(value):
 
 def clean_bgpextendedcommunity(value):
     found=False
+
     for records in settings.BGP_EXTENDED_COMMUNITY_CHOICES:
       if records[0]==value:
         found=True
@@ -207,6 +208,20 @@ def clean_route_form(data):
         return _('ICMP protocol does not allow to specify ports')
     if not user.is_superuser and then[0].action not in settings.UI_USER_THEN_ACTIONS:
         return _('This action "%s" is not permitted') % (then[0].action)
+
+    bgprd = data.get('bgprd', None)
+    bgpextendedcommunity = data.get('bgpextendedcommunity', None)
+
+    idx=-1
+    for records in settings.BGP_RD_CHOICES:
+        idx=idx+1
+        if records[0]==bgprd:
+          break
+
+    if idx<0 or idx>len(settings.BGP_EXTENDED_COMMUNITY_CHOICES):
+      return _('idx '+idx+' out of range for BGP_EXTENDED_COMMUNITY_CHOICES')
+    elif settings.BGP_EXTENDED_COMMUNITY_CHOICES[idx][0]!=bgpextendedcommunity:
+      return _('BGP rd='+str(bgprd)+' and BGP extended community='+str(bgpextendedcommunity)+' value pair is not in allowed combinations (expected value='+str(settings.BGP_EXTENDED_COMMUNITY_CHOICES[idx][0])+')')
 
     return None
 
