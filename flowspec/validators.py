@@ -209,13 +209,18 @@ def clean_route_form(data):
     if not user.is_superuser and then[0].action not in settings.UI_USER_THEN_ACTIONS:
         return _('This action "%s" is not permitted') % (then[0].action)
 
-    bgprd = data.get('bgprd', None)
-    bgpextendedcommunity = data.get('bgpextendedcommunity', None)
+    bgprd = data.get('bgprd', '')
+    if bgprd==None:
+        bgprd=''
+    bgpextendedcommunity = data.get('bgpextendedcommunity', '')
+    if bgpextendedcommunity==None:
+        bgpextendedcommunity=''
 
     idx=-1
     for records in settings.BGP_RD_CHOICES:
         idx=idx+1
-        if records[0]==bgprd:
+        logger.info("BGP_RD_CHOICES: idx="+str(idx)+": "+str(records[0])+" bgprd="+str(bgprd))
+        if records[0]==str(bgprd):
           break
 
     if idx<0 or idx>len(settings.BGP_EXTENDED_COMMUNITY_CHOICES):
