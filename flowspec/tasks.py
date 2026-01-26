@@ -53,6 +53,7 @@ def add(routepk, callback=None):
     route = Route.objects.get(pk=routepk)
     #applier = PR.Applier(route_object=route)
     applier = PR.Applier(route_object=route, route_objects_all=Route.objects.all())
+    logger.info("tasks::add(): route="+str(type(route))+" route="+str(route))
     commit, response, response_lowlevel = applier.apply()
     if commit:
         route.status = "ACTIVE"

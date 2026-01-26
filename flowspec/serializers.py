@@ -188,6 +188,7 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
             'filed', 'last_updated', 
             'status', 'expires', 'response', 
             'requesters_address',
+            'bgprd',
             'bgpextendedcommunity')
         read_only_fields = (
             'id', 'requesters_address', 'filed', 'last_updated', 'response')

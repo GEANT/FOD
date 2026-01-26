@@ -63,7 +63,7 @@ THEN_CHOICES = (
     ("sample", "Sample")
 )
 
-#BGP_RT_CHOICES = (
+#BGP_RD_CHOICES = (
 #    ("", "none"),
 #    ("20965:333", "20965:333")
 #)
@@ -73,9 +73,9 @@ THEN_CHOICES = (
 #    ("target:20965:333", "20965:333")
 #)
 
-BGP_RT_CHOICES = settings.BGP_RT_CHOICES
-#BGP_RT_CHOICE_DEFAULT = ""
-BGP_RT_CHOICE_DEFAULT = settings.BGP_RT_CHOICE_DEFAULT
+BGP_RD_CHOICES = settings.BGP_RD_CHOICES
+#BGP_RD_CHOICE_DEFAULT = ""
+BGP_RD_CHOICE_DEFAULT = settings.BGP_RD_CHOICE_DEFAULT
 
 BGP_EXTENDED_COMMUNITY_CHOICES = settings.BGP_EXTENDED_COMMUNITY_CHOICES
 #BGP_EXTENDED_COMMUNITY_CHOICE_DEFAULT = ""
@@ -200,7 +200,7 @@ class Route(models.Model):
     response = models.CharField(max_length=512, blank=True, null=True, verbose_name=_("Response"))
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     requesters_address = models.CharField(max_length=255, blank=True, null=True)
-    bgprt = models.CharField(max_length=50, blank=True, null=True, choices=BGP_RT_CHOICES, default=BGP_RT_CHOICE_DEFAULT)
+    bgprd = models.CharField(max_length=50, blank=True, null=True, choices=BGP_RD_CHOICES, default=BGP_RD_CHOICE_DEFAULT)
     bgpextendedcommunity = models.CharField(max_length=50, blank=True, null=True, choices=BGP_EXTENDED_COMMUNITY_CHOICES, default=BGP_EXTENDED_COMMUNITY_CHOICE_DEFAULT)
 
     @property

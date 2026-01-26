@@ -404,6 +404,19 @@
             </div>
             </div>
 
+	    {% if settings.BGP_RD_CHOICES_ENABLED_IN_WEBUI %}
+	     {% if settings.BRANDING %} 
+                <div class="form-group {% if form.bgprd.errors %} has-error {% endif %}">
+            <label for="id_bgprd" class="col-md-2 control-label">{% trans "BGP RD" %}</label>
+            <div class="col-md-8">
+                {% render_field form.bgprd class+="form-control" %}
+                {% if form.bgprd.errors %} <span class="help-block" id="bgprd_error_id"> {{ form.bgprd.errors|join:", " }} </span>
+                {% endif %}
+            </div>
+            </div>
+	     {% endif %}
+	    {% endif %}
+
 	    {% if settings.BGP_EXTENDED_COMMUNITY_CHOICES_ENABLED_IN_WEBUI %}
 	     {% if settings.BRANDING %} 
                 <div class="form-group {% if form.bgpextendedcommunity.errors %} has-error {% endif %}">

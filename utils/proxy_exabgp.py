@@ -245,6 +245,7 @@ class Applier(object):
         protocols = route['protocol']
         fragtypes = route['fragmenttype']
         thens = route['then']
+        bgprd = route['bgprd']
         bgpextendedcommunity = route['bgpextendedcommunity']
     else:
         source = route.source
@@ -254,6 +255,7 @@ class Applier(object):
         protocols = route.protocol.all()
         fragtypes = route.fragmenttype.all()
         thens = route.then.all()
+        bgprd = route.bgprd
         bgpextendedcommunity = route.bgpextendedcommunity
 
     ret = ret + " source-ipv4 " + str(source) + " "
@@ -309,8 +311,11 @@ class Applier(object):
         logger.error("currently only rate-limit and discard supported as then action")
 
       # TODO: support bgpextendedcommunity per then action in a rule?
+      if bgprd!=None and bgprd!="":
+        ret1 = " rt " + bgprd + " " + ret1
+
       if bgpextendedcommunity!=None and bgpextendedcommunity!="":
-        ret2 = "{ " + ret2 + " " + "extended-community " + bgpextendedcommunity + " }"
+        ret2 = " { " + ret2 + " extended-community " + bgpextendedcommunity + " }"
 
       ret1 = ret1 + ret2 + " "
       logger.info("then => ret1="+str(ret1))

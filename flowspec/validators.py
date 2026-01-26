@@ -54,16 +54,16 @@ def clean_status(status):
             ', '.join(allowed_states)))
     return status
 
-# TODO: make sure BGP RT and BGP EXTENDED_COMMUNITY choice values correspond to each other (havinf same idx in BGP_RT_CHOICES and BGP_EXTENDED_COMMUNITY_CHOICES resp.)
+# TODO: make sure BGP RD and BGP EXTENDED_COMMUNITY choice values correspond to each other (havinf same idx in BGP_RD_CHOICES and BGP_EXTENDED_COMMUNITY_CHOICES resp.)
 
-def clean_bgrt(value):
+def clean_bgrd(value):
     found=False
-    for records in settings.BGP_RT_CHOICES:
+    for records in settings.BGP_RD_CHOICES:
       if records[0]==value:
         found=True
 
     if not found:
-            return _('Not allowed BGP RT value')
+            return _('Not allowed BGP RD value')
 
     return value
 
