@@ -146,7 +146,6 @@
       source = $("#id_source").val();
       destination = $("#id_destination").val();
       console.log("src change source="+source+" destination="+destination);
-
       
       is_v4 = false
       is_v6 = false
@@ -253,7 +252,25 @@
 
      reinit_any_buttons__on_address_change();
 
+     //
+
+     $('#id_bgprd').change(function () { 
+       var bgprd_elem = document.getElementById('id_bgprd');
+       var bgpextcommunity_elem = document.getElementById('id_bgpextendedcommunity');
+       bgpextcommunity_elem.selectedIndex = bgprd_elem.selectedIndex;
+       //window.alert('change test3 '+bgprd_elem.value+' '+bgprd_elem.selectedIndex);
+     });
+
+     $('#id_bgpextendedcommunity').change(function () { 
+       var bgprd_elem = document.getElementById('id_bgprd');
+       var bgpextcommunity_elem = document.getElementById('id_bgpextendedcommunity');
+       bgprd_elem.selectedIndex = bgpextcommunity_elem.selectedIndex;
+       //window.alert('change test3 '+bgprd_elem.value+' '+bgprd_elem.selectedIndex);
+     });
+
   });
+
+
 </script>
 {% endblock %}
 {% block contentplaceholder %}
