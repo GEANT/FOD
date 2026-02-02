@@ -1302,9 +1302,11 @@ elif [ "$1" = "--reinitaftercontainerstart" ]; then #arg # to be used after cont
 
   ##
 
-  if true; then
+  if false; then
     echo "# reinitaftercontainerstart: reinit vsmd container:" 1>&2 
     "$0" --reinitaftercontainerstart-vsmd-container
+  else
+    "$0" --bash-vsmd1 systemctl restart exabgp
   fi
 
 #arg
