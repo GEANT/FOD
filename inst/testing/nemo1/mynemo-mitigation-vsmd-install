@@ -412,3 +412,32 @@ if [ ! -f /services/data/vsmd/vsmd.sqlite ]; then
 fi
 
 ##############################################################################
+##############################################################################
+
+cat > /lib/systemd/system/vsmd.service <<EOF
+[Unit]
+Description=VSMD
+After=network.target
+#ConditionPathExists=/etc/exabgp/exabgp.conf
+
+[Service]
+User=root
+Group=root
+ExecStart=/bin/sh -c 'cd /nemo-all/nemo-vsmd/ && . /nemo-all/env.sh && exec ./bin/nemo-vsmd --debug'
+ExecReload=/bin/kill -USR1 $MAINPID
+Restart=always
+StandardOutput=append:/nemo-all/vsmd.log
+StandardError=append:/nemo-all/vsmd.log
+
+#CapabilityBoundingSet=CAP_NET_ADMIN
+#AmbientCapabilities=CAP_NET_ADMIN
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+
+ln -sf /lib/systemd/system/vsmd.service /etc/systemd/system/multi-user.target.wants/vsmd.service
+
+##############################################################################
+##############################################################################

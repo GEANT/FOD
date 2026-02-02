@@ -82,7 +82,8 @@ if [ "$vsmd_inbg" = 1 ]; then
   docker exec -ti "$container_name" ./mynemo-mitigation-vsmd-install-and-run --install_only
 
   echo "$0: starting vsmd (in background) inside vsmd innner container:" 1>&2
-  docker exec -d "$container_name" ./mynemo-mitigation-vsmd-install-and-run --run_only
+  #docker exec -d "$container_name" ./mynemo-mitigation-vsmd-install-and-run --run_only
+  docker exec -d "$container_name" systemctl restart vsmd
 
   echo "$0: restarting inner nemo-detection mitigated container to start/resume its trials to (re)connect to vsmd:" 1>&2
   ./mynemo-detection-restart-mitigated # make sure mitigated now tries again to connect to configured vsmd1 (before if might have given up to do so after some threshold time because of vsmd1 not being setup and ready yet)
