@@ -1302,8 +1302,10 @@ elif [ "$1" = "--reinitaftercontainerstart" ]; then #arg # to be used after cont
 
   ##
 
-  echo "# reinitaftercontainerstart: reinit vsmd container:" 1>&2 
-  "$0" --reinitaftercontainerstart-vsmd-container
+  if false; then
+    echo "# reinitaftercontainerstart: reinit vsmd container:" 1>&2 
+    "$0" --reinitaftercontainerstart-vsmd-container
+  fi
 
 #arg
 

@@ -293,10 +293,13 @@ mkdir -p /services/inst/offrampctl/bin/
 patch -R /services/inst/offrampctl/bin/exabgp_plugin.py < ./nemo-outer/nemo-mitigation/exabgp_plugin.py.patch
 chmod +x /services/inst/offrampctl/bin/exabgp_plugin.py
 
-mkdir -p /run/exabgplog
-chown exabgp: /run/exabgplog
+#mkdir -p /run/exabgplog
+mkdir -p /run/exabgp
+#chown exabgp: /run/exabgplog
+chown exabgp: /run/exabgp
 
-sed -i -e 's#^.*destination *=.*#destination = "/run/exabgplog/exabgp.log"#' -e 's#^.*level *=.*#level = DEBUG#' /etc/exabgp/exabgp.env
+#sed -i -e 's#^.*destination *=.*#destination = "/run/exabgplog/exabgp.log"#' -e 's#^.*level *=.*#level = DEBUG#' /etc/exabgp/exabgp.env
+sed -i -e 's#^.*destination *=.*#destination = "/run/exabgp/exabgp.log"#' -e 's#^.*level *=.*#level = DEBUG#' /etc/exabgp/exabgp.env
 
 #mkdir -p /run/exabgp
 #chown exabgp: /run/exabgp
@@ -310,7 +313,8 @@ systemctl enable exabgp
 systemctl restart exabgp
 systemctl status --no-pager exabgp 
 
-tail -30 /run/exabgplog/exabgp.log
+#tail -30 /run/exabgplog/exabgp.log
+tail -30 /run/exabgp/exabgp.log
 echo
 
 ##############################################################################
@@ -391,7 +395,8 @@ echo
 /opt/offrampctl/offrampctl start '"flow route source 1.1.1.1/32 destination 10.1.1.1/32 protocol 6 source-port 1 destination-port 1"'
 echo
 
-tail -30 /run/exabgplog/exabgp.log
+#tail -30 /run/exabgplog/exabgp.log
+tail -30 /run/exabgp/exabgp.log
 echo
 
 ##
