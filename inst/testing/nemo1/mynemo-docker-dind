@@ -1280,11 +1280,13 @@ elif [ "$1" = "--reinitaftercontainerstart-vsmd-container.light" ]; then #arg # 
   shift 1
 
   "$0" --bash-vsmd1 systemctl restart exabgp
+  ./mynemo-detection-restart-mitigated
 
-  while ! "$0" --bash-vsmd1 grep -a "Nemo instance .NeMoMitigationInstanceVSMD1" /nemo-all/vsmd.log; do
+  while ! "$0" --bash-vsmd1 tail -100 /nemo-all/vsmd.log | grep -a "Nemo instance .NeMoMitigationInstanceVSMD1"; do
     echo "$0: nemo detection (fishtank) not yet connected to vsmd, waiting" 1>&2
     sleep 10
     "$0" --bash-vsmd1 systemctl restart exabgp
+    ./mynemo-detection-restart-mitigated
   done
 
 elif [ "$1" = "--reinitaftercontainerstart" ]; then #arg # to be used after container restart 
