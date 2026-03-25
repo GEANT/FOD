@@ -268,11 +268,12 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
        vsmd_args=()a
      elif [ "$1" = "--experimental0" ]; then #arg 
        shift 1       
-       #set -- --net_init_first --addon_auto --addon_init_early --prune-outer "$@" -q
        set -- --net_init_first --prune-outer --copy-certs-to-hostdir "$@" -q
+     elif [ "$1" = "--experimental1" ]; then #arg 
+       shift 1       
+       set -- --net_init_first --addon_auto --addon_init_later --prune-outer --copy-certs-to-hostdir "$@" -q
      elif [ "$1" = "--experimental" ]; then #arg 
        shift 1       
-       #set -- --net_init_first --addon_auto --addon_init_early --prune-outer "$@" -q
        set -- --net_init_first --addon_auto --addon_init_early --prune-outer --copy-certs-to-hostdir "$@" -q
      else
        break
