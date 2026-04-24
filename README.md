@@ -2,6 +2,12 @@
 
 # Firewall on Demand
 
+Please note, now there is https://codeberg.org/GEANT/fod-go, an in-progress re-write of FoD written in go.
+This starts with a clean slate, based on lessons learned with FoD in the past, in order to:
+- drop outdated stuff and be more flexible and future-proof by using a modular design (don't closely couple with a specific BGP backend or router platform, also support more recent developments, e.g., go-bgp, and generally outsource device-specifics, e.g., different technologies for querying mitigation statistics)
+- allow for ease of deployment (static go binary, which also can be easily packaged, together with a clearly understandable, concise config),
+- and also reduce the long-time burden of managing ever-changing dependencies by starting with and maintaining a more light-weight design.  
+
 ## Description
 
 Firewall on Demand (hereafter FoD) is based on the [flowspy](https://github.com/grnet/flowspy) project developed by [GRNET](http://www.grnet.gr/).
@@ -69,7 +75,7 @@ You can contact us directly at fod{at}lists[dot]geant(.)org
 
 ## Copyright and license
 
-Copyright © 2017-2023 GÈANT GN4-2/GN4-3/GN5-1 Project
+Copyright © 2017-2026 GÈANT GN4-2/GN4-3/GN5-1/GN5-2 Project
 
 Copyright © 2010-2017 Greek Research and Technology Network (GRNET S.A.)
 
