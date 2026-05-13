@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -x
+
+./mynemo-docker-dind --docker restart nemo_mitigated_1; 
+echo "172.18.0.1 vmsd1" >> "/proc/$(./mynemo-docker-dind --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
+
+

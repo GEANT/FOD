@@ -1,0 +1,18 @@
+#FROM debian:latest
+#FROM debian:stable
+FROM debian:oldstable
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y systemd-sysv systemd
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y docker.io docker-compose jq pwgen gawk
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y curl lynx wget w3m
+RUN apt-get update -y -y; DEBIAN_FRONTEND="noninteractive" apt-get install -y -y git less man make gcc strace ltrace lsof file vim tshark tcpdump curl wget net-tools sudo psutils procps iptables iputils-ping iputils-tracepath hping3 iproute2 host tree
+
+RUN systemctl disable getty@tty1.service
+
+#COPY . /nemo-all
+COPY . /nemo-all
+
+RUN [ ! -f /nemo-all/etc/dfn-info/dfn-info-override.json ] || cp -f -v /nemo-all/etc/dfn-info/dfn-info-override.json /nemo-all/etc/dfn-info/dfn-info.json 1>&2
+
+WORKDIR /nemo-all
+CMD [ "/sbin/init" ]
+

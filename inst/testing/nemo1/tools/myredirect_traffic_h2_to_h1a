@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# redirect traffic from h1 to h2
+
+# veth1 - veth2
+./tools/myfreertr_cmd -3 "configure" "interface ethernet6" "vrf forward CORE"
+./tools/myfreertr_cmd -3 "configure" "interface ethernet6" "ipv4 address 13.1.1.1 255.255.255.0"
+
+./tools/myfreertr_cmd -3 "configure" "interface ethernet7" "vrf forward CORE2"
+./tools/myfreertr_cmd -3 "configure" "interface ethernet7" "ipv4 address 13.1.1.2 255.255.255.0"
+
+#
+
+./tools/myfreertr_cmd -3 "configure" "interface ethernet2" "vrf forward CORE2"
+./tools/myfreertr_cmd -3 "configure" "interface ethernet2" "ipv4 address 10.2.10.3 255.255.255.0"
+
+./tools/myfreertr_cmd -2 "configure" "ipv4 route CORE  10.2.10.0 255.255.255.0 13.1.1.2"  
+./tools/myfreertr_cmd -2 "configure" "ipv4 route CORE2 10.1.10.0 255.255.255.0 13.1.1.1"
+
+#
+
+#./tools/myexabgp_cmd neighbor 10.197.36.3 announce route 10.2.10.12/32 next-hop 10.197.36.2
+
+#./mynemo-docker-dind --bash-vsmd1 route add 10.2.10.12/32 gw 10.197.38.3
+#./mynemo-docker-dind --bash-vsmd1 route add 10.1.10.11/32 gw 10.197.36.3
+
+

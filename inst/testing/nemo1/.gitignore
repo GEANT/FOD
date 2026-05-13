@@ -1,7 +1,34 @@
 
-freertr/
+bin
+
+#
+
+etc
+secrets
+
+#
+
+freertr
 
 nemo-*
 
 Dockerfile-nemo-all
+
+#
+
+nemo1.env
+exabg-addon.py
+
+#
+
+
+
+#
+
+./mynixsde1-local.sh
+
+#
+
+
+
 

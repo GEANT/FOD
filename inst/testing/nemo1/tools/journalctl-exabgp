@@ -1,0 +1,5 @@
+#!/bin/bash
+
+exec journalctl _SYSTEMD_UNIT=exabgp.service "$@"
+
+

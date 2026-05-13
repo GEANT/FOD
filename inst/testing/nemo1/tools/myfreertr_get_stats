@@ -1,0 +1,6 @@
+#!/bin/bash
+
+{ echo "show policy-map flowspec CORE ipv4"; echo exit; } | \
+   netcat 10.197.36.3 23 | \
+   awk '/^seq / { start=1; } /^311ba8eb5ac2/ { start=0; } start { print $0; }' RS="[\n\r]+"
+

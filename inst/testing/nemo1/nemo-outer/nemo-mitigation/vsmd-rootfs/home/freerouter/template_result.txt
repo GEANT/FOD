@@ -1,0 +1,9 @@
+AFI: IPv4
+Flow :Dest:10.1.1.1/32,Source:1.1.1.1/32,Proto:=6,DPort:=1,SPort:=1
+  Actions                : discard
+  Synced:                 TRUE
+  Last Error:             0:No error
+  Match Unsupported:      None
+  Statistics                     (packets/bytes)
+   Matched           :      0/0
+  Dropped           :      0/0

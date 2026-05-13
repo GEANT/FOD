@@ -1,12 +1,14 @@
 {
   "routers": [
     {
-      "name": "test2",
+      "name": "freertr1",
+      "devicetype": "freertr",
       "ip4": "10.197.36.3",
       "samplerate": "1",
       "category": "core",
-      "latitude": "1",
-      "longitude": "1"
-    }
+      "latitude": 52.2929,
+      "longitude": 4.8336,
+      "comments" : "BGP FlowSpec-capable test router running freertr"
+    }  
   ]
 }

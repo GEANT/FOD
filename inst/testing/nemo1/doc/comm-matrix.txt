@@ -1,0 +1,44 @@
+
+
+1. using ./mynemo-docker-dind for installing / controlling nemo setup     
+...
+ 
+2. communication matrix of the fully installed nemo setup (resulting from successful run of ./mynemo-docker-dind --allx):
+
+outer containers:
+- freertr outer container : freertr router; has separate network interfaces towards host1, host2 and nemo-all containers
+- host1 outer container : connected to host2 via freertr as router
+- host2 outer container : connected to host1 via freertr as router
+- nemo-all outer container
+    nemo detection inner containers with own (nested) network namespace, but communication with other containers mainly only via shared filesystem ; created and managed by nemo setup.sh :
+    - nemo_fishtank-nginx_1 : front-end web server ; port redirections: 0.0.0.0:80->80/tcp, :::80->80/tcp, 0.0.0.0:443->443/tcp, :::443->443/tcp ; uses HTTPS certs for authn
+    - nemo_fishtank_1 : back-end web server behind the nemo_fishtank-nginx_1
+    - nemo_nemodb_1 : pg database; used by the other nemo detection inner containers by shared file system (unix socket)
+    - nemo_analyzed_1
+    - nemo_watsond_1
+    - nemo_mitigated_1
+    - nemo_exportd_1
+    - nemo_newfile_1
+    - nemo_eventd_1
+    - nemo_condensed_1
+    - nemo_dbclean_1
+    - nemo_expire_1
+    - nemo_fishtank-expire_1
+    - nemo_pureftp_1 : port redirections: 0.0.0.0:21->21/tcp, :::21->21/tcp                                          
+    nemo detection inner detection containers which share network namespace of the nemo-all outer container:
+    - nemo_nfcapd_1 : collects netflow records on interface to freertr
+    other containers which share network namespace of the nemo-all outer container:
+    - vsmd mitigation container
+        processes/components running or being installed on it:
+        - nemo-vsmd running : is contacted for communication by nemo web UI components (nemo_mitigated_1 ?)
+          - uses own local sqlite DB
+          - uses offrampctl command (and countermeasurectl command)
+        - offrampctl command : communicates with offrampctl-exabgp-plugin + ssh (to host itself to local user) for executing freertr statistic gather script 
+        - countermeasurectl command : not used here yet: using firewalling/ebgpf etc. for cleaning BGP-redirected network traffic by linux kerenel means
+        - exabgp running : BGP peering to freertr router
+          - offrampctl-exabgp-plugin running
+        - sshd running (used as a kind of local jump host by offrampctl command for connecting to the actual router, i.e., specifically freertr)
+          - local user account: can run freertr statistic gather script (which itself is using ssh to freertr router cli)
+
+
+

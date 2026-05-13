@@ -1,0 +1,68 @@
+{
+  "routers": [
+    {
+      "name": "freertr1",
+      "devicetype": "freertr",
+      "ip4": "10.197.36.3",
+      "samplerate": "1",
+      "category": "core",
+      "latitude": 52.2929,
+      "longitude": 4.8336,
+      "comments" : "test1"
+    },
+    {
+      "name": "host1",
+      "ip4": "10.10.10.10",
+      "samplerate": "1",
+      "category": "customer",
+      "latitude": 52.3929,
+      "longitude": 5.9336
+    },
+    {
+      "name": "host2",
+      "ip4": "10.10.10.10",
+      "samplerate": "1",
+      "category": "customer",
+      "latitude": 51.3929,
+      "longitude": 4.9336
+    }
+  ],
+  "lines" : [
+    {
+      "category": "core",
+      "bandwidth": "",
+      "name": "freertr1-host1",
+      "interfaces": [ 
+        {
+          "router": "freertr1",
+          "interface_name": "1",
+          "interface_number": 1
+        },      
+        {
+          "router": "host1",
+          "interface_name": "1",
+          "interface_number": 1
+        }      
+      ],
+      "tags": []
+    }, 
+    {
+      "category": "core",
+      "bandwidth": "",
+      "name": "freertr1-host2",
+      "interfaces": [ 
+        {
+          "router": "freertr1",
+          "interface_name": "2",
+          "interface_number": 2
+        },      
+        {
+          "router": "host2",
+          "interface_name": "1",
+          "interface_number": 1
+        }      
+      ],
+      "tags": []
+    } 
+  ]
+}

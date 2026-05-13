@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# to be called outside of any container on the host
+
+# debug fwd packet
+
+prefix="$1"
+shift 1
+
+set -- show ipv4 bgp 1 flowspec allroute "$prefix"
+
+docker exec -ti freertr sh -c '{ echo "'"$*"'"; echo "exit"; } | netcat 127.0.0.1 2323' | tr -d $'\r' | awk '/welcome|line ready|see you later|info userReader.cmdEnter|#exit/ { next; } { print; }' | tr -d $'\r'
