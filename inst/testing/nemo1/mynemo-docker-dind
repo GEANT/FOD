@@ -227,6 +227,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    vsmd_args=("--vsmd_inbg")
 
+   if [ $# = 0 ]; then
+     echo "$0: using default args --net_init_first --prune-outer --copy-certs-to-hostdir -q" 1>&2
+     set -- --net_init_first --prune-outer --copy-certs-to-hostdir "$@" -q
+   fi     
+
+   ##
+
    while [ $# -gt 0 ]; do #arg loop
 
      if [ "$1" = "-x" ]; then #arg 
