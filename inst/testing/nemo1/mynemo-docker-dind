@@ -427,6 +427,8 @@ elif [ "$1" = "--testnet_init" ]; then #arg
 
   ##
 
+  set -e
+
   # init frnet comprising freertr router and host1/host2 test network
   echo "# allx step$step_nr.1 (freertr-testnet-prep-and-run):" 1>&2 
   "$0" --freertr-testnet-prep-and-run
