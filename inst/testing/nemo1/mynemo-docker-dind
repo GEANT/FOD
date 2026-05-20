@@ -1386,6 +1386,14 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   docker-compose -p nemo1 -f frnet/docker-compose-freertr-ddos.yml up -d
 
+  ##
+
+  echo 1>&2
+  "$0" --network-freertr-to-other-containers-fix
+  echo 1>&2
+
+  ##
+
   #./frnet/docker-compose/freertr_disable_offload.sh
   ${nonroot_prefix_cmd} ./frnet/docker-compose/freertr_disable_offload.sh
   #./exec_in_docker_outer_netns ./frnet/docker-compose/freertr_disable_offload.sh
@@ -1698,19 +1706,99 @@ elif [ "$1" = "--network-debug-freertr-to-nemo-link" ]; then #arg
 
   exit "$fail"
 
+elif [ "$1" = "--network-freertr-to-other-containers-fix" ]; then #arg
+  mode="network-freertr-to-other-containers-fix"
+  shift 1
+
+  if ! "$0" --network-debug-freertr-to-nemo-link; then
+
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround host1 eth1     freertr eth1
+    echo 1>&2
+
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround host2 eth1     freertr eth2
+    echo 1>&2
+
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround nemo-all1 eth1 freertr eth3
+    echo 1>&2
+  
+    "$0" --network-debug-freertr-to-nemo-link
+
+  fi
+
+elif [ "$1" = "--helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround" ]; then #arg
+  mode="helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround"
+  shift 1
+  docker_container_ref="$1" #arg
+  shift 1
+  ifname_in_container_netns="$1" #arg
+  shift 1
+  freertr_container_name="$1" #arg
+  shift 1
+  correct_ifname_in_freertr_ctr="$1" #arg
+  shift 1
+
+  output0="$("$0" --helper-get-docker-network-interface-relationships "$docker_container_ref" "$ifname_in_container_netns")"
+  corresponding_ifc_in_main_netns0="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netns0="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: $ifname_in_container_netns of container $docker_container_ref: corresponding_ifc_in_main_netns0=$corresponding_ifc_in_main_netns0 corresponding_bridge_in_main_netns0=$corresponding_bridge_in_main_netns0" 1>&2
+
+  [ -n "$corresponding_bridge_in_main_netns0" ] || exit 1
+
+  for ifname_in_freertr_ctr in eth0 eth1 eth2 eth3; do
+
+    output0="$("$0" --helper-get-docker-network-interface-relationships "$freertr_container_name" "$ifname_in_freertr_ctr")"
+    corresponding_ifc_in_main_netns1="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+    corresponding_bridge_in_main_netns1="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+    echo "$0: $mode: $ifname_in_freertr_ctr of container $freertr_container_name: corresponding_ifc_in_main_netns1=$corresponding_ifc_in_main_netns1 corresponding_bridge_in_main_netns1=$corresponding_bridge_in_main_netns1" 1>&2
+
+    if [ "$corresponding_bridge_in_main_netns0" = "$corresponding_bridge_in_main_netns1" ]; then
+      echo "$0: $mode: found ifname_in_freertr_ctr=$ifname_in_freertr_ctr which associated to corresponding_bridge_in_main_netns0=$corresponding_bridge_in_main_netns0" 1>&2
+
+      if [ "$ifname_in_freertr_ctr" = "$correct_ifname_in_freertr_ctr" ]; then
+        echo "$0: $mode: ifname_in_freertr_ctr=$ifname_in_freertr_ctr is correctly named, nothing todo"
+      else
+        
+        echo "$0: $mode: fix workaround: swapping names of $ifname_in_freertr_ctr and $correct_ifname_in_freertr_ctr" 1>&2
+
+	set -x
+
+	set -e
+        docker exec "$freertr_container_name" ifconfig "$ifname_in_freertr_ctr" down
+        docker exec "$freertr_container_name" ifconfig "$correct_ifname_in_freertr_ctr" down
+
+	docker exec "$freertr_container_name" ifconfig "$ifname_in_freertr_ctr" name "${ifname_in_freertr_ctr}X"
+	docker exec "$freertr_container_name" ifconfig "$correct_ifname_in_freertr_ctr" name "${correct_ifname_in_freertr_ctr}X"
+
+	docker exec "$freertr_container_name" ifconfig "${ifname_in_freertr_ctr}X" name "$correct_ifname_in_freertr_ctr"
+	docker exec "$freertr_container_name" ifconfig "${correct_ifname_in_freertr_ctr}X" name "$ifname_in_freertr_ctr"
+
+        docker exec "$freertr_container_name" ifconfig "$ifname_in_freertr_ctr" up
+        docker exec "$freertr_container_name" ifconfig "$correct_ifname_in_freertr_ctr" up
+	set +e
+
+	set +x
+
+      fi
+	
+      break
+
+    fi    
+
+  done
+
 elif [ "$1" = "--helper-get-docker-network-interface-relationships" ]; then #arg
   mode="helper-get-docker-network-interface-relationships"
   shift 1
   docker_container_ref="$1" #arg
   shift 1
-  ifname_in_nemo_netns="$1" #arg
+  ifname_in_container_netns="$1" #arg
   shift 1
 
-  ifindex_in_ctr_netns="$(docker exec "$docker_container_ref" cat /sys/class/net/"$ifname_in_nemo_netns"/ifindex | tr -d $'\r')"
+  ifindex_in_ctr_netns="$(docker exec "$docker_container_ref" cat /sys/class/net/"$ifname_in_container_netns"/ifindex | tr -d $'\r')"
   #echo "$0: $mode: ifc eth1 in docker container netns has netns-relative ifindex=$ifindex_in_ctr_netns" 1>&2
   [ -n "$ifindex_in_ctr_netns" ] || exit 1
   
-  ifindex_in_main_netns="$(docker exec "$docker_container_ref" ip link show dev "$ifname_in_nemo_netns" | awk '/^[0-9]+/ { sub(/^.*@if/, "", $2); sub(/:$/, "", $2); print $2; }')"
+  ifindex_in_main_netns="$(docker exec "$docker_container_ref" ip link show dev "$ifname_in_container_netns" | awk '/^[0-9]+/ { sub(/^.*@if/, "", $2); sub(/:$/, "", $2); print $2; }')"
   #echo "$0: $mode: ifindex_in_main_netns=$ifindex_in_main_netns" 1>&2
 
   corresponding_ifc_in_main_netns="$(ip link show | awk '$1 == ifindex_in_main_netns ":" && $2 ~ "@if" ifindex_in_nemo_netns { ifname=$2; sub(/@.*/, "", ifname); print ifname; }' ifindex_in_ctr_netns="$ifindex_in_ctr_netns" ifindex_in_main_netns="$ifindex_in_main_netns")"
