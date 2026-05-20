@@ -438,7 +438,7 @@ elif [ "$1" = "--testnet_init" ]; then #arg
 
   # init frnet comprising freertr router and host1/host2 test network
   echo "# allx step$step_nr.1 (freertr-testnet-prep-and-run):" 1>&2 
-  "$0" --freertr-testnet-prep-and-run
+  "$0" --freertr-testnet-prep-and-run || "$0" --freertr-testnet-prep-and-run
   echo 1>&2
 
   echo "# allx step$step_nr.2 (freertr-host2-ping-host1.bg):" 1>&2 
@@ -1631,6 +1631,98 @@ elif [ "$1" = "--network-inner-connections-check" ]; then #arg # enter freertr c
   echo "# nemo-all container: OS interface to freertr (arp):"
   "$0" --exec arp -a -n -i eth1
   echo
+
+elif [ "$1" = "--network-debug-freertr-to-nemo-link" ]; then #arg
+  mode="network-debug-freertr-to-nemo-link"
+  shift 1
+
+  fail=0
+  
+  output0="$("$0" --helper-get-docker-network-interface-relationships host1 eth1)"
+  corresponding_ifc_in_main_netns1h="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netns1h="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: eth1 of container host1: corresponding_ifc_in_main_netns1h=$corresponding_ifc_in_main_netns1h corresponding_bridge_in_main_netns1h=$corresponding_bridge_in_main_netns1h" 1>&2
+
+  output0="$("$0" --helper-get-docker-network-interface-relationships "freertr" eth1)"
+  corresponding_ifc_in_main_netns1="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netns1="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: eth1 (should connect to host1) of container freertr: corresponding_ifc_in_main_netns1=$corresponding_ifc_in_main_netns1 corresponding_bridge_in_main_netns1=$corresponding_bridge_in_main_netns1" 1>&2
+
+  if [ "$corresponding_bridge_in_main_netns1h" = "$corresponding_bridge_in_main_netns1" ]; then
+    echo "$0: $mode: corresponding_bridge_in_main_netns 1h and 1 match, so both containers are wired correctly together" 1>&2
+  else
+    echo "$0: $mode: corresponding_bridge_in_main_netns1h=$corresponding_bridge_in_main_netns1h and corresponding_bridge_in_main_netns1=$corresponding_bridge_in_main_netns1 dont match, so docker compose or docker create failed to correctly set-up the container connections, expect failure" 1>&2
+    fail=1
+  fi
+  echo 1>&2
+  
+  ##
+
+  output0="$("$0" --helper-get-docker-network-interface-relationships host2 eth1)"
+  corresponding_ifc_in_main_netns2h="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netns2h="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: eth1 of container host2: corresponding_ifc_in_main_netns1h=$corresponding_ifc_in_main_netns2h corresponding_bridge_in_main_netns2h=$corresponding_bridge_in_main_netns2h" 1>&2
+
+  output0="$("$0" --helper-get-docker-network-interface-relationships "freertr" eth2)"
+  corresponding_ifc_in_main_netns2="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netns2="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: eth1 (should connect to host2) of container freertr: corresponding_ifc_in_main_netns2=$corresponding_ifc_in_main_netns2 corresponding_bridge_in_main_netns2=$corresponding_bridge_in_main_netns2" 1>&2
+
+  if [ "$corresponding_bridge_in_main_netns2h" = "$corresponding_bridge_in_main_netns2" ]; then
+    echo "$0: $mode: corresponding_bridge_in_main_netns 2h and 2 match, so both containers are wired correctly together" 1>&2
+  else
+    echo "$0: $mode: corresponding_bridge_in_main_netns2h=$corresponding_bridge_in_main_netns2h and corresponding_bridge_in_main_netns2=$corresponding_bridge_in_main_netns2 dont match, so docker compose or docker create failed to correctly set-up the container connections, expect failure" 1>&2
+    fail=1
+  fi
+  echo 1>&2
+  
+  ##
+
+  output0="$("$0" --helper-get-docker-network-interface-relationships "$docker_outer__container_name" eth1)"
+  corresponding_ifc_in_main_netnsN="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netnsN="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: eth1 of container $docker_outer__container_name: corresponding_ifc_in_main_netnsN=$corresponding_ifc_in_main_netnsN corresponding_bridge_in_main_netnsN=$corresponding_bridge_in_main_netnsN" 1>&2
+
+  output0="$("$0" --helper-get-docker-network-interface-relationships "freertr" eth3)"
+  corresponding_ifc_in_main_netns3="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+  corresponding_bridge_in_main_netns3="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+  echo "$0: $mode: eth3 (should connect to nemo-all) of container freertr: corresponding_ifc_in_main_netns3=$corresponding_ifc_in_main_netns3 corresponding_bridge_in_main_netns3=$corresponding_bridge_in_main_netns3" 1>&2
+
+  if [ "$corresponding_bridge_in_main_netnsN" = "$corresponding_bridge_in_main_netns3" ]; then
+    echo "$0: $mode: corresponding_bridge_in_main_netns N and 3 match, so both containers are wired correctly together" 1>&2
+    true
+  else
+    echo "$0: $mode: corresponding_bridge_in_main_netnsN=$corresponding_bridge_in_main_netnsN and corresponding_bridge_in_main_netns3=$corresponding_bridge_in_main_netns3 dont match, so docker compose or docker create failed to correctly set-up the container connections, expect failure" 1>&2
+    fail=1
+  fi
+
+  exit "$fail"
+
+elif [ "$1" = "--helper-get-docker-network-interface-relationships" ]; then #arg
+  mode="helper-get-docker-network-interface-relationships"
+  shift 1
+  docker_container_ref="$1" #arg
+  shift 1
+  ifname_in_nemo_netns="$1" #arg
+  shift 1
+
+  ifindex_in_ctr_netns="$(docker exec "$docker_container_ref" cat /sys/class/net/"$ifname_in_nemo_netns"/ifindex | tr -d $'\r')"
+  #echo "$0: $mode: ifc eth1 in docker container netns has netns-relative ifindex=$ifindex_in_ctr_netns" 1>&2
+  [ -n "$ifindex_in_ctr_netns" ] || exit 1
+  
+  ifindex_in_main_netns="$(docker exec "$docker_container_ref" ip link show dev "$ifname_in_nemo_netns" | awk '/^[0-9]+/ { sub(/^.*@if/, "", $2); sub(/:$/, "", $2); print $2; }')"
+  #echo "$0: $mode: ifindex_in_main_netns=$ifindex_in_main_netns" 1>&2
+
+  corresponding_ifc_in_main_netns="$(ip link show | awk '$1 == ifindex_in_main_netns ":" && $2 ~ "@if" ifindex_in_nemo_netns { ifname=$2; sub(/@.*/, "", ifname); print ifname; }' ifindex_in_ctr_netns="$ifindex_in_ctr_netns" ifindex_in_main_netns="$ifindex_in_main_netns")"
+  #echo "$0: $mode: corresponding_ifc_in_main_netns=$corresponding_ifc_in_main_netns" 1>&2
+  [ -n "$corresponding_ifc_in_main_netns" ] || exit 1
+  
+  connecting_bridge_in_main_netns="$(ip link show dev "$corresponding_ifc_in_main_netns" | grep -Eo 'master \S+' | sed -e 's/^master //')"
+  #echo "$0: $mode: connecting_bridge_in_main_netns=$connecting_bridge_in_main_netns" 1>&2
+
+  #brctl show "$connecting_bridge_in_main_netns"
+
+  echo "$corresponding_ifc_in_main_netns $connecting_bridge_in_main_netns $ifindex_in_main_netns $ifindex_in_ctr_netns"
 
 elif [ "$1" = "--network-inner-connections-test" ]; then #arg # enter freertr console and run ping nemo all container
   shift 1

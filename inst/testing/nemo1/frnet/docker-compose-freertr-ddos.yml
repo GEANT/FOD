@@ -16,18 +16,30 @@ services:
     networks:
       # order of theX interfaces inside freertr container will be depending on the alphanumeric string order of network names where ethX are attached to, so make sure that resulting order is: mgmt <= nhost1 <= nhost1 <= xnemo-flow-input
       mgmt:
+              priority: 2000 # eth0
+              #interface_name: eth0
       nhost1:
+              priority: 100 # eth1
+              #interface_name: eth1
               ipv4_address: 10.1.10.3
       nhost2:
+              priority: 90 # eth2
+              #interface_name: eth2
               ipv4_address: 10.2.10.3
       xnemo-flow-input:
+              priority: 80 # eth3
+              #interface_name: eth3
               ipv4_address: 10.197.36.3
               #depends_on:
               #- fod
-      xnemo-trafficin:
-              ipv4_address: 10.197.37.3
-      xnemo-trafficout:
-              ipv4_address: 10.197.38.3
+      #xnemo-trafficin:
+      #        priority: 70 # eth4
+      #        #interface_name: eth4
+      #        ipv4_address: 10.197.37.3
+      #xnemo-trafficout:
+      #        priority: 60 # eth5
+      #        #interface_name: eth5
+      #        ipv4_address: 10.197.38.3
 
     volumes:
         - freertr:/opt
