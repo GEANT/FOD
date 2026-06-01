@@ -301,6 +301,12 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    #  "$0" --addon-init-run "$use_addon1" --only_verify_dep_sys_cmds_avail || exit 1
    #fi
    check_dep_sys_cmds_avail || exit 1
+
+   ##
+
+   echo "# try to pre-create default HTTPS cert file:" 1>&2
+   "$0" --https-cert-precreate
+   echo 1>&2
  
    ##
    
@@ -575,6 +581,7 @@ elif [ "$1" = "--build-and-setup" -o "$1" = "--all" -o "$1" = "--docker-build--a
   echo "$0: build-and-setup: build=$build run=$run args=$*" 1>&2
 
   set -e
+
 
   [ "$build" = 0 ] || "$0" --docker-build "${pass_args1[@]}"
 
@@ -1832,6 +1839,32 @@ elif [ "$1" = "--helper-get-docker-network-interface-relationships" ]; then #arg
   #brctl show "$connecting_bridge_in_main_netns"
 
   echo "$corresponding_ifc_in_main_netns $connecting_bridge_in_main_netns $ifindex_in_main_netns $ifindex_in_ctr_netns"
+
+elif [ "$1" = "--https-cert-precreate" ]; then #arg # enter freertr console and run ping nemo all container
+
+   ADMIN_NAME_FILE=./secrets/CA/admin
+  
+   if [ -f "$ADMIN_NAME_FILE.p12" ]; then 
+     echo "HTTPS cert file $ADMIN_NAME_FILE.p12 already exists, nothing todo" 1>&2
+   else  
+
+     source ./nemo-docker/lib/bash/nemo-container-ctrl/functions/common.sh
+        #ask_var ADMIN_MAIL "Please enter the email of the admin:"
+        #ask_var ADMIN_NAME "Please enter the name of the admin:"
+        # Create an certificate for an admin user
+        openssl genrsa -out "$ADMIN_NAME_FILE.key" 2048
+	# C = LO, ST = Local, L = Local, O = NeMo, OU = NeMo Test Instance, CN = localhost
+        openssl req -new -key "$ADMIN_NAME_FILE.key" -out "$ADMIN_NAME_FILE.csr" -subj "/C=LO/ST=Local/L=Local/O=NeMo/OU=NeMo Test Instance/CN=localhost/emailAddress=${ADMIN_MAIL}"
+        openssl ca -cert ./secrets/CA/CA.pem -keyfile ./secrets/CA/CA.key -in "$ADMIN_NAME_FILE.csr" -out "$ADMIN_NAME_FILE.crt"
+        openssl x509 -sha256 -req -in "$ADMIN_NAME_FILE.csr" -out "$ADMIN_NAME_FILE.crt" -CA ./secrets/CA/CA.pem -CAkey ./secrets/CA/CA.key \
+          -CAcreateserial -days 1095
+        echo ""
+	echo "Your certificate is exported into a .p12 which can be imported into the browser (password='')"
+        echo "The exported file is password protected"
+        openssl pkcs12 -export -password 'pass:' -out "$ADMIN_NAME_FILE.p12" -inkey "$ADMIN_NAME_FILE.key" -in "$ADMIN_NAME_FILE.crt"
+        echo "Please import $(realpath $ADMIN_NAME_FILE.p12) into your browser!"
+
+    fi
 
 elif [ "$1" = "--network-inner-connections-test" ]; then #arg # enter freertr console and run ping nemo all container
   shift 1
