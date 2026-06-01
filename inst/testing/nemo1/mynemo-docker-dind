@@ -438,7 +438,7 @@ elif [ "$1" = "--testnet_init" ]; then #arg
 
   # init frnet comprising freertr router and host1/host2 test network
   echo "# allx step$step_nr.1 (freertr-testnet-prep-and-run):" 1>&2 
-  "$0" --freertr-testnet-prep-and-run || "$0" --freertr-testnet-prep-and-run
+  "$0" --freertr-testnet-prep-and-run #|| "$0" --freertr-testnet-prep-and-run
   echo 1>&2
 
   echo "# allx step$step_nr.2 (freertr-host2-ping-host1.bg):" 1>&2 
@@ -1710,15 +1710,31 @@ elif [ "$1" = "--network-freertr-to-other-containers-fix" ]; then #arg
   mode="network-freertr-to-other-containers-fix"
   shift 1
 
-  if ! "$0" --network-debug-freertr-to-nemo-link; then
+  if true || ! "$0" --network-debug-freertr-to-nemo-link; then
 
-    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround host1 eth1     freertr eth1
+    docker_bridge_mgmtnet="$(ifconfig | awk '/^[a-z]/ { ifcname=$1; sub(/:$/, "", ifcname); } /^\s*inet 11.11.11.1/ { print ifcname; exit; }')" # ugly, but seems to be the only way to somehow identify the relevant host bridge
+    echo "$0: $mode: docker_bridge_mgmtnet=$docker_bridge_mgmtnet" 1>&2
+
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround "" "" "$docker_bridge_mgmtnet" host1 eth0
+    docker exec host1 route add -net 10.0.0.0/8 gw 10.1.10.3 # UGLY
     echo 1>&2
 
-    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround host2 eth1     freertr eth2
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround "" "" "$docker_bridge_mgmtnet" host2 eth0
+    docker exec host2 route add -net 10.0.0.0/8 gw 10.2.10.3 # UGLY
     echo 1>&2
 
-    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround nemo-all1 eth1 freertr eth3
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround "" "" "$docker_bridge_mgmtnet" freertr eth0
+    echo 1>&2
+    echo 1>&2
+    
+    echo 1>&2
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround host1 eth1 ""      freertr eth1
+    echo 1>&2
+
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround host2 eth1 ""      freertr eth2
+    echo 1>&2
+
+    "$0" --helper-get-docker-network-interface-relationships-for-freertrcontainer-fix-workaround nemo-all1 eth1 ""  freertr eth3
     echo 1>&2
   
     "$0" --network-debug-freertr-to-nemo-link
@@ -1732,15 +1748,20 @@ elif [ "$1" = "--helper-get-docker-network-interface-relationships-for-freertrco
   shift 1
   ifname_in_container_netns="$1" #arg
   shift 1
+  corresponding_bridge_in_main_netns0="$1" #arg # may be "" or otherise is an alternative to specified docker_container_ref+ifname_in_container_netns
+  shift 1
   freertr_container_name="$1" #arg
   shift 1
   correct_ifname_in_freertr_ctr="$1" #arg
   shift 1
 
-  output0="$("$0" --helper-get-docker-network-interface-relationships "$docker_container_ref" "$ifname_in_container_netns")"
-  corresponding_ifc_in_main_netns0="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
-  corresponding_bridge_in_main_netns0="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
-  echo "$0: $mode: $ifname_in_container_netns of container $docker_container_ref: corresponding_ifc_in_main_netns0=$corresponding_ifc_in_main_netns0 corresponding_bridge_in_main_netns0=$corresponding_bridge_in_main_netns0" 1>&2
+  if [ -z "$corresponding_bridge_in_main_netns0" ]; then
+
+    output0="$("$0" --helper-get-docker-network-interface-relationships "$docker_container_ref" "$ifname_in_container_netns")"
+    corresponding_ifc_in_main_netns0="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+    corresponding_bridge_in_main_netns0="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+    echo "$0: $mode: $ifname_in_container_netns of container $docker_container_ref: corresponding_ifc_in_main_netns0=$corresponding_ifc_in_main_netns0 corresponding_bridge_in_main_netns0=$corresponding_bridge_in_main_netns0" 1>&2
+  fi
 
   [ -n "$corresponding_bridge_in_main_netns0" ] || exit 1
 
