@@ -1842,11 +1842,13 @@ elif [ "$1" = "--helper-get-docker-network-interface-relationships" ]; then #arg
 
 elif [ "$1" = "--https-cert-precreate" ]; then #arg # enter freertr console and run ping nemo all container
 
-   ADMIN_NAME_FILE=./secrets/CA/admin
+   ADMIN_NAME_FILE=./secrets/admin
   
    if [ -f "$ADMIN_NAME_FILE.p12" ]; then 
      echo "HTTPS cert file $ADMIN_NAME_FILE.p12 already exists, nothing todo" 1>&2
    else  
+
+     mkdir -p secrets/
 
      source ./nemo-docker/lib/bash/nemo-container-ctrl/functions/common.sh
         #ask_var ADMIN_MAIL "Please enter the email of the admin:"
@@ -1855,8 +1857,8 @@ elif [ "$1" = "--https-cert-precreate" ]; then #arg # enter freertr console and 
         openssl genrsa -out "$ADMIN_NAME_FILE.key" 2048
 	# C = LO, ST = Local, L = Local, O = NeMo, OU = NeMo Test Instance, CN = localhost
         openssl req -new -key "$ADMIN_NAME_FILE.key" -out "$ADMIN_NAME_FILE.csr" -subj "/C=LO/ST=Local/L=Local/O=NeMo/OU=NeMo Test Instance/CN=localhost/emailAddress=${ADMIN_MAIL}"
-        openssl ca -cert ./secrets/CA/CA.pem -keyfile ./secrets/CA/CA.key -in "$ADMIN_NAME_FILE.csr" -out "$ADMIN_NAME_FILE.crt"
-        openssl x509 -sha256 -req -in "$ADMIN_NAME_FILE.csr" -out "$ADMIN_NAME_FILE.crt" -CA ./secrets/CA/CA.pem -CAkey ./secrets/CA/CA.key \
+        openssl ca -cert ./secrets/CA.pem -keyfile ./secrets/CA.key -in "$ADMIN_NAME_FILE.csr" -out "$ADMIN_NAME_FILE.crt"
+        openssl x509 -sha256 -req -in "$ADMIN_NAME_FILE.csr" -out "$ADMIN_NAME_FILE.crt" -CA ./secrets/CA.pem -CAkey ./secrets/CA.key \
           -CAcreateserial -days 1095
         echo ""
 	echo "Your certificate is exported into a .p12 which can be imported into the browser (password='')"
