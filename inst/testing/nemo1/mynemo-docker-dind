@@ -301,12 +301,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    #  "$0" --addon-init-run "$use_addon1" --only_verify_dep_sys_cmds_avail || exit 1
    #fi
    check_dep_sys_cmds_avail || exit 1
+   echo 1>&2
 
    ##
 
-   echo "# try to pre-create default HTTPS cert file:" 1>&2
-   "$0" --https-cert-precreate
-   echo 1>&2
+   #echo "# try to pre-create default HTTPS cert file:" 1>&2
+   #"$0" --https-cert-precreate
+   #echo 1>&2
  
    ##
    
