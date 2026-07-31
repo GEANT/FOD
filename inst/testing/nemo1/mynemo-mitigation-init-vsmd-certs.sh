@@ -2,18 +2,25 @@
 
 # to be called within /nemo-all/ as cwd in outer nemo-all container
 
-#if false; then
+##
+
+[ -n "$MYNEMO_DOCKER_INNER_INST_DIR" ] || MYNEMO_DOCKER_INNER_INST_DIR="/nemo-all"
+
+##
 
 if docker info >/dev/null; then # make sure docker is running
 
   (
-    cd /nemo-all/secrets/ || exit 1
+    #cd /nemo-all/secrets/ || exit 1
+    cd "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/" || exit 1
     rm vmsd1.*
-    CERT_HOSTNAME_FULL=vmsd1 make -f /nemo-all/nemo-outer/Makefile.vsmdcert vmsd1.site.crt.pem
+
+    # ./nemo-outer/Makefile.vsmdcert
+    CERT_HOSTNAME_FULL=vmsd1 make -f "$MYNEMO_DOCKER_INNER_INST_DIR/nemo-outer/Makefile.vsmdcert" vmsd1.site.crt.pem
   )
   
-  chmod ugo+r /nemo-all/secrets/vmsd1.*
-  cp -v /nemo-all/secrets/vmsd1.* /nemo-all/etc/nemo-erkennung/mitigated/
+  chmod ugo+r "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/"vmsd1.*
+  cp -v "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/"vmsd1.* "$MYNEMO_DOCKER_INNER_INST_DIR/etc/nemo-erkennung/mitigated/"
   
   #
   
@@ -24,20 +31,22 @@ if docker info >/dev/null; then # make sure docker is running
   echo "$0: nemo mitigated inner dockerpid=$dockerpid" 1>&2
   
   set -xv
-  cat /nemo-all/secrets/vmsd1.ca.crt.pem >> "/proc/$dockerpid/root/etc/ssl/certs/ca-certificates.crt"
+  cat "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/vmsd1.ca.crt.pem" >> "/proc/$dockerpid/root/etc/ssl/certs/ca-certificates.crt"
 
-  echo "172.18.0.1 vmsd1" >> "/proc/$dockerpid/root/etc/hosts"
+  #echo "172.18.0.1 vmsd1" >> "/proc/$dockerpid/root/etc/hosts"
+  echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
+  echo "$MYNEMO_DOCKER_INNER_IP vmsd1" >> "/proc/$dockerpid/root/etc/hosts"
   
   #
   
-  cert_fingerprint="$(openssl x509 -in /nemo-all/secrets/vmsd1.site.crt.pem -fingerprint -noout | sed -e 's/^.*=//' -e 's/://g')"
+  cert_fingerprint="$(openssl x509 -in "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/vmsd1.site.crt.pem" -fingerprint -noout | sed -e 's/^.*=//' -e 's/://g')"
   echo "$0: vsmd cert_fingerprint=$cert_fingerprint" 1>&2
   
   # ./nemo.conf.vsmd
   sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /services/etc/nemo/nemo.conf
   
-  cp /nemo-all/nemo-outer/nemo-mitigation/nemo.conf.vsmd /nemo-all/nemo-outer/nemo-mitigation/nemo.conf.vsmd.use
-  sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" /nemo-all/nemo-outer/nemo-mitigation/nemo.conf.vsmd.use
+  cp "$MYNEMO_DOCKER_INNER_INST_DIR/nemo-outer/nemo-mitigation/nemo.conf.vsmd" "$MYNEMO_DOCKER_INNER_INST_DIR/nemo-outer/nemo-mitigation/nemo.conf.vsmd.use"
+  sed -i "s/\(^__FINGERPRINT__\)\(.*$\)/\\1\\2\\n$cert_fingerprint\\2/" "$MYNEMO_DOCKER_INNER_INST_DIR/nemo-outer/nemo-mitigation/nemo.conf.vsmd.use"
 
 else
 

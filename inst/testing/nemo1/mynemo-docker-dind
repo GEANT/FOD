@@ -80,7 +80,10 @@ DEP_SYS_COMMANDS=(docker docker-compose)
 ##
 
 docker_outer__image_name="nemo-all1"
+
 docker_outer__container_name="nemo-all1"
+#docker_outer__container_name=""
+
 docker_outer_volume_forinnerdockerdir="dind1"
 
 docker_inner_detection_container_label_format_sep="_"
@@ -155,7 +158,27 @@ else
   export nonroot_prefix_cmd=""
 fi
 
-#
+####
+
+if [ -n "$docker_outer__container_name" ]; then
+  use_docker_outer=1
+  export USE_DOCKER_OUTER=1
+  export DOCKER_OUTER__CONTAINER_NAME
+  export MYNEMO_DOCKER_INNER_INST_DIR="/nemo-all"
+  export MYNEMO_DOCKER_INNER_IP="172.18.0.1" # really inner docker
+
+  MYDOCKER_OUTER_EXEC=(docker exec "$docker_outer__container_name")
+  MYDOCKER_OUTER_EXEC__TI=(docker exec -ti "$docker_outer__container_name")
+else
+  use_docker_outer=0
+  export USE_DOCKER_OUTER=0
+  export MYNEMO_DOCKER_INNER_INST_DIR="$PWD"
+  export DOCKER_OUTER__CONTAINER_NAME=""
+  export MYNEMO_DOCKER_INNER_IP="172.17.0.1" # actually the outer(=only) docker
+
+  MYDOCKER_OUTER_EXEC=()
+  MYDOCKER_OUTER_EXEC__TI=()
+fi
 
 ####
 
@@ -640,54 +663,58 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   ##
 
-  if [ "$use_docker_outer_clean" = 1 ]; then
-    echo "# clean outer docker container:" 1>&2
-    (set -x; "$0" --docker-outer-clean-container)
+  if [ "$use_docker_outer" = 1 ]; then
+
+    if [ "$use_docker_outer_clean" = 1 ]; then
+      echo "# clean outer docker container:" 1>&2
+      (set -x; "$0" --docker-outer-clean-container)
+      echo 1>&2
+    elif [ "$use_docker_outer_clean" = 2 ]; then
+      echo "# clean outer docker container:" 1>&2
+      (set -x; "$0" --docker-outer-clean-container)
+      echo 1>&2
+      echo "# clean outer docker volume:" 1>&2
+      (set -x; "$0" --docker-outer-clean-volume)
+      echo 1>&2
+    fi
+
+    set -e
+
+    echo "# prepare Dockerfile for debian-docker-in-docker ${args1[@]}:" 1>&2
+    (set -x; "$0" --dockerfile-output "${args1[@]}" > "$docker_outer__docker_file_name")
     echo 1>&2
-  elif [ "$use_docker_outer_clean" = 2 ]; then
-    echo "# clean outer docker container:" 1>&2
-    (set -x; "$0" --docker-outer-clean-container)
+
+    echo "# build debian-docker-in-docker image:" 1>&2
+    (set -x; docker build -f "$docker_outer__docker_file_name" -t "$docker_outer__image_name" .)
     echo 1>&2
-    echo "# clean outer docker volume:" 1>&2
-    (set -x; "$0" --docker-outer-clean-volume)
+
+    ##
+
+    echo "# stopping potentially running old debian-docker-in-docker container:" 1>&2
+    (set -x; docker stop "$docker_outer__container_name") || true
     echo 1>&2
-  fi
 
-  set -e
+    echo "# removing old debian-docker-in-docker container:" 1>&2
+    (set -x; docker rm "$docker_outer__container_name") || true
+    echo 1>&2
 
-  echo "# prepare Dockerfile for debian-docker-in-docker ${args1[@]}:" 1>&2
-  (set -x; "$0" --dockerfile-output "${args1[@]}" > "$docker_outer__docker_file_name")
-  echo 1>&2
+    echo "# check for old debian-docker-in-docker container:" 1>&2
+    (set -x; docker ps -a "$docker_outer__container_name") || true
+    echo 1>&2
 
-  echo "# build debian-docker-in-docker image:" 1>&2
-  (set -x; docker build -f "$docker_outer__docker_file_name" -t "$docker_outer__image_name" .)
-  echo 1>&2
+    ##
 
-  ##
+    outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
+    echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
+    (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
+    (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/containers/"*) || true
+    echo 1>&2
 
-  echo "# stopping potentially running old debian-docker-in-docker container:" 1>&2
-  (set -x; docker stop "$docker_outer__container_name") || true
-  echo 1>&2
+    if ${nonroot_prefix_cmd} find "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" -type f | grep -q .; then
+      echo "$0: pruning containers before inner docker daemon is started failed, aborting" 1>&2
+      exit 1
+    fi
 
-  echo "# removing old debian-docker-in-docker container:" 1>&2
-  (set -x; docker rm "$docker_outer__container_name") || true
-  echo 1>&2
-
-  echo "# check for old debian-docker-in-docker container:" 1>&2
-  (set -x; docker ps -a "$docker_outer__container_name") || true
-  echo 1>&2
-
-  ##
-
-  outer_docker_space_dir="$(docker info | grep "Docker Root Dir:" | awk '{ print $(NF); }')"
-  echo "# pruning inner containers before inner docker daemon is started (outer_docker_space_dir=$outer_docker_space_dir):" 1>&2
-  (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/"*) || true
-  (set -x; ${nonroot_prefix_cmd} rm -rf "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/containers/"*) || true
-  echo 1>&2
-
-  if ${nonroot_prefix_cmd} find "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" "$outer_docker_space_dir/volumes/$docker_outer_volume_forinnerdockerdir/_data/containers/" -type f | grep -q .; then
-    echo "$0: pruning containers before inner docker daemon is started failed, aborting" 1>&2
-    exit 1
   fi
 
   ##
@@ -697,74 +724,86 @@ elif [ "$1" = "--docker-build" ]; then #arg
   echo 1>&2
 
   ## 
+ 
+  if [ "$use_docker_outer" = 1 ]; then
 
-  echo "# starting new outer nemo-all docker container as a debian docker-in-docker container:" 1>&2
-  (set -x; docker run -d $docker_outer_privilege_opts "${docker_outer__sshauth_volume__args[@]}" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
-  echo 1>&2
+    echo "# starting new outer nemo-all docker container as a debian docker-in-docker container:" 1>&2
+    (set -x; docker run -d $docker_outer_privilege_opts "${docker_outer__sshauth_volume__args[@]}" --volume "$docker_outer_volume_forinnerdockerdir:/var/lib/docker/" --hostname "$docker_outer_hostname" --name "$docker_outer__container_name" -t -p "$outer_https_port:443" "${extra_port_redirection_args[@]}" "$docker_outer__image_name")
+    echo 1>&2
+
+  fi
+
+  ##
 
   echo "# attaching outer nemo-all docker container to extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
   "$0" --docker-outer-network-attach
   echo 1>&2
 
-  # does not work: breaks inner fishtank?:
-  #echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
-  #(set -x; docker exec -ti "$docker_outer__container_name" hostname "nemo-all1")
-  #echo 1>&2
-  
-  echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" sh -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
-  echo 1>&2
+  ##
+
+  if [ "$use_docker_outer" = 1 ]; then
+
+    # does not work: breaks inner fishtank?:
+    #echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
+    #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" hostname "nemo-all1")
+    #echo 1>&2
     
-  echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
-  (set -x; docker exec -ti "$docker_outer__container_name" sh -c "sleep 1; while ! docker ps >/dev/null; do sleep 1; done; echo docker-inside running")
-  echo 1>&2
+    echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
+    echo 1>&2
+      
+    echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "sleep 1; while ! docker ps >/dev/null; do sleep 1; done; echo docker-inside running")
+    echo 1>&2
  
-  #echo "# check test1:" 1>&2 
-  #(set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
-  #echo 1>&2
+    #echo "# check test1:" 1>&2 
+    #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
+    #echo 1>&2
 
-  if [ "$use_prune_all" = 1 ]; then #arg opt
+    if [ "$use_prune_all" = 1 ]; then #arg opt
 
-    echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )")
+      echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )")
+      echo 1>&2
+
+      echo "# inside debian-docker-in-docker container: remove any docker-inside containers:" 1>&2
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker rm \$(docker ps -a | awk 'NR>1 { print \$1; }' )") || true
+      echo 1>&2
+
+      echo "# inside debian-docker-in-docker container: remove any running docker-inside images:" 1>&2
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker rmi \$(docker images | awk 'NR>1 { print \$3; }' )") || true
+      echo 1>&2
+       
+      echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker system prune -f)
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker volume prune -f)
+      echo 1>&2
+
+    elif [ "$use_prune" = 1 ]; then #arg opt
+
+      echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )") || true
+      echo 1>&2
+      
+      echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker system prune -f)
+      (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker volume prune -f)
+      echo 1>&2
+    fi
+      
+    echo "# inside debian-docker-in-docker container: showing existing docker-inside volumes:" 1>&2
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker volume ls)
     echo 1>&2
 
-    echo "# inside debian-docker-in-docker container: remove any docker-inside containers:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker rm \$(docker ps -a | awk 'NR>1 { print \$1; }' )") || true
+    echo "# inside debian-docker-in-docker container: showing existing docker-inside images:" 1>&2
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker images)
     echo 1>&2
 
-    echo "# inside debian-docker-in-docker container: remove any running docker-inside images:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker rmi \$(docker images | awk 'NR>1 { print \$3; }' )") || true
-    echo 1>&2
-     
-    echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" docker system prune -f)
-    (set -x; docker exec -ti "$docker_outer__container_name" docker volume prune -f)
+    echo "# inside debian-docker-in-docker container: showing existing docker-inside containers:" 1>&2
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker ps -a)
     echo 1>&2
 
-  elif [ "$use_prune" = 1 ]; then #arg opt
-
-    echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )") || true
-    echo 1>&2
-    
-    echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" docker system prune -f)
-    (set -x; docker exec -ti "$docker_outer__container_name" docker volume prune -f)
-    echo 1>&2
   fi
-    
-  echo "# inside debian-docker-in-docker container: showing existing docker-inside volumes:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" docker volume ls)
-  echo 1>&2
-
-  echo "# inside debian-docker-in-docker container: showing existing docker-inside images:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" docker images)
-  echo 1>&2
-
-  echo "# inside debian-docker-in-docker container: showing existing docker-inside containers:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" docker ps -a)
-  echo 1>&2
 
 #arg  
 
@@ -853,7 +892,7 @@ elif [ "$1" = "--dockerc_inner_pid_inner" ]; then #arg
     echo "$0: docker: /.dockerenv exists, assuming to run inside nemo-all outer container" 1>&2
     docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
   else
-    docker exec "$docker_outer__container_name" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
+    "${MYDOCKER_OUTER_EXEC[@]}" docker inspect "$id" | grep '"Pid"' | tr -d , | tr -s ' ' | cut -d ' ' -f 3
   fi
 
 elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
@@ -870,7 +909,7 @@ elif [ "$1" = "--dockerc_inner_pid" ]; then #arg
 elif [ "$1" = "--docker.containerids" ]; then #arg
   shift 1
 
-  exec docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$1; }'"
+  exec "${MYDOCKER_OUTER_EXEC[@]}" sh -c "docker ps | awk 'NR>1 { print \$1; }'"
 
 #arg  
 
@@ -892,9 +931,13 @@ elif [ "$1" = "--docker-outer-clean-volume" ]; then #arg
 elif [ "$1" = "--docker-inner-clean" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker image prune -a -f')
-  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
-  (set -x; docker exec "$docker_outer__container_name" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
+  if [ "$use_docker_outer" = 1 ]; then
+
+    (set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker image prune -a -f')
+    (set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
+    (set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
+
+  fi
 
 #arg
 
@@ -905,7 +948,7 @@ elif [ "$1" = "--docker" -o "$1" = "--docker-inner" ]; then #arg # generic docke
     echo "$0: docker: /.dockerenv exists, assuming to run inside nemo-all outer container" 1>&2
     (set -x; docker "$@")
   else
-    (set -x; docker exec -ti "$docker_outer__container_name" docker "$@")
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker "$@")
   fi
 
 #arg  
@@ -915,19 +958,19 @@ elif [ "$1" = "--exec" ]; then #arg # generic exec in outer nemo-all container
   
   [ $# = 0 ] && set -- bash -i #arg defaults
 
-  (set -x; docker exec -ti "$docker_outer__container_name" "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" "$@")
 
 elif [ "$1" = "--exec.notty" ]; then #arg # generic exec in outer nemo-all container
   shift 1
   
-  (set -x; docker exec "$docker_outer__container_name" "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" "$@")
 
 elif [ "$1" = "--bash" ]; then #arg # generic bash in outer nemo-all container
   shift 1
 
   [ $# = 0 ] && set -- -i #arg defaults
   
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c "$docker_outer__bashc_precmd_str"'exec bash "$@"' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'exec bash "$@"' -- "$@")
 
 elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg # generic bash into vsmd(=nemo mitigation) inner container
   shift 1
@@ -993,19 +1036,19 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   if [ -n "$pre_setup_script_code" ]; then #arg opt
     echo "# inside debian-docker-in-docker running pre_setup_script_code=$pre_setup_script_code:" 1>&2
-    (set -x; docker exec -ti "$docker_outer__container_name" bash -c "${docker_outer__bashc_precmd_str}cd /nemo-all; $pre_setup_script_code") 
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "${docker_outer__bashc_precmd_str}cd /nemo-all; $pre_setup_script_code") 
   fi
 
   ##
 
   echo "# inside debian-docker-in-docker status of /nemo-all dir prior to running setup.sh:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
   
   echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
   status1="$?"
   echo "$0: setup.sh: exit status=$status1" 1>&2
   echo 1>&2
@@ -1019,8 +1062,8 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
 
   #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
-  ##(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
-  #(set -x; docker exec -ti "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
+  ##(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
+  #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
   #echo 1>&2
 
   if [ "$use_test__access1" = "w3m" ]; then
@@ -1056,7 +1099,8 @@ elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access 
   shift 1
 
   echo "# inside debian-docker-in-docker container: test access to UI via curl+lynx (assumes empty password for the client certificate):" 1>&2
-  (set -x; docker exec "$docker_outer__container_name" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 "https://localhost/$url_part" | lynx -stdin -dump)
+  #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 "https://localhost/$url_part" | lynx -stdin -dump)
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" curl -vvv -k --cert-type p12 --cert "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.p12" "https://localhost/$url_part" | lynx -stdin -dump)
   status1="$?"
 
   echo 1>&2
@@ -1069,7 +1113,8 @@ elif [ "$1" = "--wget" -o "$1" = "--inside-run-wget" ]; then #arg # test access 
   shift 1
 
   echo "# inside debian-docker-in-docker container: test access to UI via wget (assumes empty password for the client certificate):" 1>&2
-  (set -x; docker exec "$docker_outer__container_name" wget --no-check-certificate --certificate=/nemo-all/secrets/CA/admin.crt --private-key=/nemo-all/secrets/CA/admin.key https://localhost/)
+  #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" wget --no-check-certificate --certificate=/nemo-all/secrets/CA/admin.crt --private-key=/nemo-all/secrets/CA/admin.key https://localhost/)
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" wget --no-check-certificate --certificate="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.crt" --private-key="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.key" https://localhost/)
   status1="$?"
 
   echo 1>&2
@@ -1082,7 +1127,8 @@ elif [ "$1" = "--w3m" -o "$1" = "--inside-run-w3m" ]; then #arg # test access to
   shift 1
 
   echo "# inside debian-docker-in-docker container: test access to UI via w3m (assumes empty password for the client certificate):" 1>&2
-  (set -x; docker exec -ti "$docker_outer__container_name" w3m -o ssl_verify_server=false -o ssl_cert_file=/nemo-all/secrets/CA/admin.crt -o ssl_key_file=/nemo-all/secrets/CA/admin.key https://localhost/)
+  #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" w3m -o ssl_verify_server=false -o ssl_cert_file=/nemo-all/secrets/CA/admin.crt -o ssl_key_file=/nemo-all/secrets/CA/admin.key https://localhost/)
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" w3m -o ssl_verify_server=false -o ssl_cert_file="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.crt" -o ssl_key_file="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.key" https://localhost/)
   status1="$?"
 
   echo 1>&2
@@ -1095,36 +1141,36 @@ elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all 
   shift 1
 
   echo "# inside debian-docker-in-docker container: all docker logs :" 1>&2
-  (set -x; docker exec "$docker_outer__container_name" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
   echo 1>&2
 
 elif [ "$1" = "--logsall2" ]; then #arg # determine all active log files in nemo container
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$(docker inspect "$docker_outer__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')/root")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$(docker inspect "$docker_outer__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')/root")
 
 elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log files in nemo container
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" \$(NF); }' | sort -u)")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" \$(NF); }' | sort -u)")
 
 #
 
 elif [ "$1" = "--logsall2vsmd" ]; then #arg # determine all active log files in nemo container
   shift 1
 
-  pid1_vsmd_inner="$(docker exec "$docker_outer__container_name" docker inspect vsmd1 | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')"
+  pid1_vsmd_inner="$("${MYDOCKER_OUTER_EXEC[@]}" docker inspect vsmd1 | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')"
   echo "$0: vsmd1 => inner pid $pid1_vsmd_inner" 1>&2
 
   [ -n "$pid1_vsmd_inner" ] && pid1_vsmd_outer="$(grep -E -h "^NSpid:\\s*[0-9]+\\s*$pid1_vsmd_inner" /proc/*/status | awk 'NR==1 { print $2; }')"
   echo "$0: vsmd1 => outer pid $pid1_vsmd_outer" 1>&2
 
-  (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid1_vsmd_outer/root")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker exec vsmd1 sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid1_vsmd_outer/root")
 
 elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active log files in nemo container
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
 #
 
@@ -1132,14 +1178,14 @@ elif [ "$1" = "--logs0" -o "$1" = "--get-nemo-logs0" ]; then #arg # get nemo_fis
   shift 1
 
   echo "# inside debian-docker-in-docker container: docker logs ${docker_log_prefix}fishtank-nginx$docker_log_postfix :" 1>&2
-  (set -x; docker exec "$docker_outer__container_name" docker logs "${docker_log_prefix}fishtank-nginx$docker_log_postfix")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "${docker_log_prefix}fishtank-nginx$docker_log_postfix")
   echo 1>&2
 
 elif [ "$1" = "--logs1" -o "$1" = "--get-nemo-logs1" ]; then #arg # get nemo_fishtank_1 logs
   shift 1
 
   echo "# inside debian-docker-in-docker container: docker logs ${docker_log_prefix}fishtank$docker_log_postfix :" 1>&2
-  (set -x; docker exec "$docker_outer__container_name" docker logs "${docker_log_prefix}fishtank$docker_log_postfix")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "${docker_log_prefix}fishtank$docker_log_postfix")
   echo 1>&2
 
 #
@@ -1177,47 +1223,47 @@ elif [ "$1" = "--logs-main-tail" ]; then #arg
 elif [ "$1" = "--logs-nfcapd" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}nfcapd${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}nfcapd${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-exportd" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}exportd${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}exportd${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-condensed" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}condensed${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}condensed${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-newfile" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}newfile${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}newfile${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-eventd" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}eventd${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}eventd${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-watsond" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}watsond${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}watsond${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-analyzed" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}analyzed${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}analyzed${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-fishtank" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}fishtank${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}fishtank${docker_log_postfix}") 2>&1
 
 elif [ "$1" = "--logs-fishtanknginx" ]; then #arg
   shift 1
 
-  (set -x; docker exec "$docker_outer__container_name" docker logs "$@" "${docker_log_prefix}fishtank-nginx${docker_log_postfix}") 2>&1
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "$@" "${docker_log_prefix}fishtank-nginx${docker_log_postfix}") 2>&1
 
 #arg nemo-specific:
 
@@ -1239,7 +1285,7 @@ elif [ "$1" = "--nfcap-files-inotify" ]; then #arg
   [ ! -e ./nemo1.env ] || . ./nemo1.env
 
   # inotifywait -m -r /var/lib/docker/volumes/dind1/_data/volumes/nemo_nfcapd_data/_data/freertr1/ 
-  (set -x; docker exec "$docker_outer__container_name" bash -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/{freertr1,$main_router_name}/ ")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c "type inotifywait || apt-get install -y inotify-tools && inotifywait -m -r /var/lib/docker/volumes/nemo_nfcapd_data/_data/{freertr1,$main_router_name}/ ")
 
 #arg nemo-specific:
 
@@ -1349,7 +1395,7 @@ elif [ "$1" = "--reinitaftercontainerstart" ]; then #arg # to be used after cont
 elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
 
-  exec docker exec -ti "$docker_outer__container_name" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
+  exec "${MYDOCKER_OUTER_EXEC__TI[@]}" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
 
 #arg
 
@@ -1369,12 +1415,20 @@ elif [ "$1" = "--nemo-db-dump" ]; then #arg # nemo db dump
 elif [ "$1" = "--nemo-get-filename-of-certfile" ]; then #arg # show filename of client certificate filename (as seen from outside of outer nemo d-in-d container)
   shift 1
 
-  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/secrets/CA/admin.p12"
+  if [ -n "$docker_outer__container_name" ]; then
+    echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/secrets/CA/admin.p12"
+  else
+    echo "$PWD/secrets/CA/admin.p12"
+  fi	
 
 elif [ "$1" = "--nemo-get-dirname-onhost" ]; then #arg # show dirname of inside container dir /nemo-all/ as seen from outside on the host
   shift 1
 
-  echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
+  if [ -n "$docker_outer__container_name" ]; then
+    echo "/proc/$(docker inspect "$docker_outer__container_name" | awk ' /"Pid":/ { sub(/,$/, ""); print $2; }')/root/nemo-all/"
+  else
+    echo "$PWD"
+  fi
 
 elif [ "$1" = "--nemo-certs-copy-tohostdir" ]; then #arg 
 
@@ -1396,9 +1450,11 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   ##
 
-  echo 1>&2
-  "$0" --network-freertr-to-other-containers-fix
-  echo 1>&2
+  if [ "$use_docker_outer" = 1 ]; then # TODO
+    echo 1>&2
+    "$0" --network-freertr-to-other-containers-fix
+    echo 1>&2
+  fi
 
   ##
 
@@ -1413,6 +1469,8 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker exec freertr hostname freertr
   docker exec host1 hostname host1
   docker exec host2 hostname host2
+  
+  if [ "$use_docker_outer" = 1 ]; then # TODO
 
   echo "# initial ping - give freertr router time to init routing" 1>&2
   #docker exec -ti host1 ping -c 1 -W 5 10.2.10.12 &>/dev/null || true # give freertr time for routing init etc.
@@ -1428,6 +1486,8 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   #docker exec -ti host2 ping -c 3 10.1.10.11 || (docker logs freertr; false)
   docker exec -ti host2 ping -c 3 "$attacker_ip" || (docker logs freertr; false)
   echo 1>&2
+
+  fi
 
 #arg short cuts  
 

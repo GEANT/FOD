@@ -59,13 +59,15 @@ if [ "$reuse_container" = 0 ]; then
   echo "$0: stopping and removing potentially leftover previously running vsmd inner docker container" 1>&2
   docker stop "$container_name"
   docker rm "$container_name"
+
+  [ -n "$MYNEMO_DOCKER_INNER_INST_DIR" ] || MYNEMO_DOCKER_INNER_INST_DIR="/nemo-all"
   
-  echo "$0: starting new running vsmd inner docker container" 1>&2
+  echo "$0: starting new running vsmd inner docker container (MYNEMO_DOCKER_INNER_INST_DIR=$MYNEMO_DOCKER_INNER_INST_DIR)" 1>&2
   docker run -d \
   	--privileged --network host \
   	--name "$container_name" \
-  	--mount type=bind,source=/nemo-all/etc/,target=/nemo-all/etc/ \
-  	--mount type=bind,source=/nemo-all/secrets/,target=/nemo-all/secrets/ \
+  	--mount type=bind,source="$MYNEMO_DOCKER_INNER_INST_DIR/etc/,target=/nemo-all/etc/" \
+  	--mount type=bind,source="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/,target=/nemo-all/secrets/" \
   	--restart unless-stopped \
   	"$container_name"
   

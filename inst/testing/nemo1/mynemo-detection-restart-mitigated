@@ -1,8 +1,52 @@
 #!/bin/bash
 
+# to be assumed to be run in nemo outer container
+
+#############################################################################
+
+#[ -n "$MYNEMO_DOCKER_INNER_IP" ] || MYNEMO_DOCKER_INNER_IP="172.18.0.1"
+MYNEMO_DOCKER_INNER_IP0="$(ip -4 a s dev docker0 | grep -Eo 'inet 172.[0-9]+.0.1' | sed -e 's/^inet //')"
+echo "$0: using MYNEMO_DOCKER_INNER_IP0=$MYNEMO_DOCKER_INNER_IP0" 1>&2
+if [ -z "$MYNEMO_DOCKER_INNER_IP0" ]; then
+  echo "$0: could not determine MYNEMO_DOCKER_INNER_IP0 (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
+  exit 1
+fi
+
+##
+
+if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then
+
+  echo "$0: using to run inside docker" 1>&2
+
+  MYNEMO_DOCKER_INNER_IP="$MYNEMO_DOCKER_INNER_IP0"
+  MYNEMO_MITIGATION_JUMPHOST_IP="$MYNEMO_DOCKER_INNER_IP"
+  echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+
+else
+  
+  echo "$0: using to run directly on host" 1>&2
+
+  MYNEMO_DOCKER_INNER_IP="$(ip -4 a s dev nemo-docker | grep -Eo 'inet [0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -e 's/^inet //')"
+  echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
+  if [ -z "$MYNEMO_DOCKER_INNER_IP" ]; then
+    echo "$0: could not determine MYNEMO_DOCKER_INNER_IP (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
+    exit 1
+  fi
+
+  MYNEMO_MITIGATION_JUMPHOST_IP="off"
+  echo "$0: TODO using MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+
+fi
+
+#############################################################################
+
+#
+
 set -x
 
 ./mynemo-docker-dind --docker restart nemo_mitigated_1; 
-echo "172.18.0.1 vmsd1" >> "/proc/$(./mynemo-docker-dind --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
+echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
+#echo "172.18.0.1 vmsd1" >> "/proc/$(./mynemo-docker-dind --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
+echo "$MYNEMO_DOCKER_INNER_IP vmsd1" >> "/proc/$(./mynemo-docker-dind --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
 
 

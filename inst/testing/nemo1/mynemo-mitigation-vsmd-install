@@ -3,6 +3,42 @@
 # to be called within /nemo-all/ as cwd in inner vsmd(=nemo-mitigation) container
 
 #############################################################################
+
+#[ -n "$MYNEMO_DOCKER_INNER_IP" ] || MYNEMO_DOCKER_INNER_IP="172.18.0.1"
+MYNEMO_DOCKER_INNER_IP0="$(ip -4 a s dev docker0 | grep -Eo 'inet 172.[0-9]+.0.1' | sed -e 's/^inet //')"
+echo "$0: using MYNEMO_DOCKER_INNER_IP0=$MYNEMO_DOCKER_INNER_IP0" 1>&2
+if [ -z "$MYNEMO_DOCKER_INNER_IP0" ]; then
+  echo "$0: could not determine MYNEMO_DOCKER_INNER_IP0 (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
+  exit 1
+fi
+
+##
+
+if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then
+
+  echo "$0: using to run inside docker" 1>&2
+
+  MYNEMO_DOCKER_INNER_IP="$MYNEMO_DOCKER_INNER_IP0"
+  MYNEMO_MITIGATION_JUMPHOST_IP="$MYNEMO_DOCKER_INNER_IP"
+  echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+
+else
+  
+  echo "$0: using to run directly on host" 1>&2
+
+  MYNEMO_DOCKER_INNER_IP="$(ip -4 a s dev nemo-docker | grep -Eo 'inet [0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -e 's/^inet //')"
+  echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
+  if [ -z "$MYNEMO_DOCKER_INNER_IP" ]; then
+    echo "$0: could not determine MYNEMO_DOCKER_INNER_IP (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
+    exit 1
+  fi
+
+  MYNEMO_MITIGATION_JUMPHOST_IP="off"
+  echo "$0: TODO using MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+
+fi
+
+#############################################################################
 # vsmd deps0 (taks long time to run, not depending on python)
 
 ./mynemo-mitigation-vsmd-install-deps0
@@ -128,10 +164,12 @@ echo "PATH=/home/freerouter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bi
 chown freerouter: /home/freerouter/.ssh/environment
 
 # import ssh host key
-ssh -o "StrictHostKeyChecking=no" freerouter@172.18.0.1 true
+#ssh -o "StrictHostKeyChecking=no" freerouter@172.18.0.1 true
+ssh -o "StrictHostKeyChecking=no" "freerouter@$MYNEMO_MITIGATION_JUMPHOST_IP" true
 
 #ssh -y freerouter@172.18.0.1 ./test1
-ssh -y freerouter@172.18.0.1 test1
+#ssh -y freerouter@172.18.0.1 test1
+ssh -y "freerouter@$MYNEMO_MITIGATION_JUMPHOST_IP" test1
 echo
 
 #################################################################################################
@@ -146,9 +184,14 @@ if [ ! -f /services/etc/nemo/nemo.conf -o /nemo-all/nemo.conf.vsmd -nt /services
 
   # ./nemo-outer/nemo-mitigation/nemo.conf.vsmd
   if [ -f ./nemo-outer/nemo-mitigation/nemo.conf.vsmd.use ]; then
-    echo "using existing /nemo-all/nemo.conf.vsmd.use for /services/etc/nemo/nemo.conf; so also assuming vsmd cerst already inited" 1>&2
+
+    echo "using existing /nemo-all/nemo.conf.vsmd.use for /services/etc/nemo/nemo.conf; so also assuming vsmd cert already initalized" 1>&2
     cp -vf ./nemo-outer/nemo-mitigation/nemo.conf.vsmd.use /services/etc/nemo/nemo.conf
+    sed -i -e "s/172.18.0.1/$MYNEMO_DOCKER_INNER_IP/g" /services/etc/nemo/nemo.conf
+    sed -i -e "s/__NEMO_JUMPHOST1_IP__/$MYNEMO_MITIGATION_JUMPHOST_IP/g" /services/etc/nemo/nemo.conf
+
   else
+
     #touch /services/etc/nemo/nemo.conf
     #echo "[vsmd]" >> /services/etc/nemo/nemo.conf
     #
@@ -157,9 +200,11 @@ if [ ! -f /services/etc/nemo/nemo.conf -o /nemo-all/nemo.conf.vsmd -nt /services
     # ./nemo.conf.vsmd
     echo "using default /nemo-all/nemo.conf.vsmd for /services/etc/nemo/nemo.conf" 1>&2
     cp -vf ./nemo-outer/nemo-mitigation/nemo.conf.vsmd /services/etc/nemo/nemo.conf
+    sed -i -e "s/172.18.0.1/$MYNEMO_DOCKER_INNER_IP/g" /services/etc/nemo/nemo.conf
+    sed -i -e "s/__NEMO_JUMPHOST1_IP__/$MYNEMO_MITIGATION_JUMPHOST_IP/g" /services/etc/nemo/nemo.conf
 
     if [ ! -f /nemo-all/secrets/vmsd1.site.crt.pem ]; then
-      echo "initing vsmd certs and related conf" 1>&2
+      echo "initializing vsmd certs and related conf" 1>&2
       ./mynemo-mitigation-init-vsmd-certs.sh
     fi
 
@@ -401,7 +446,8 @@ echo
 
 ##
 
-ssh -y freerouter@172.18.0.1 rare
+#ssh -y freerouter@172.18.0.1 rare
+ssh -y "freerouter@$MYNEMO_MITIGATION_JUMPHOST_IP" rare
 echo
 
 /opt/offrampctl/offrampctl statistics

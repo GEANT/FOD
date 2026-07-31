@@ -13,7 +13,11 @@ victim_network1="10.2.10.0/24"
 DIDCLFS="_"
 
 main_router_name="freertr1"
-[ ! -f /nemo-all/nemo1.env ] || . /nemo-all/nemo1.env
+
+[ -n "$MYNEMO_DOCKER_INNER_INST_DIR" ] || MYNEMO_DOCKER_INNER_INST_DIR="/nemo-all"
+
+#[ ! -f /nemo-all/nemo1.env ] || . /nemo-all/nemo1.env
+[ ! -f "$MYNEMO_DOCKER_INNER_INST_DIR/nemo1.env" ] || . "$MYNEMO_DOCKER_INNER_INST_DIR/nemo1.env"
 
 echo "$0: using attacker_network1='$attacker_network1' victim_network1='$victim_network1' main_router_name='$main_router_name'" 1>&2
 
@@ -62,7 +66,8 @@ done
 
 
 #cat /nemo-all/nemo-initial-detectors1.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
-cat /nemo-all/nemo-initial-*.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
+#cat /nemo-all/nemo-initial-*.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
+cat "$MYNEMO_DOCKER_INNER_INST_DIR/"nemo-initial-*.sql | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo nemo
 
 #
 
