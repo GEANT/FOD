@@ -937,6 +937,13 @@ elif [ "$1" = "--docker-inner-clean" ]; then #arg
     (set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
     (set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
 
+  else
+
+    docker ps | awk '/nemo/ || /vsmd/ { print $1; }' | xargs docker rm -f
+    #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker image prune -a -f')
+    #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
+    #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
+ 
   fi
 
 #arg
@@ -1048,7 +1055,8 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
-  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd "$MYNEMO_DOCKER_INNER_INST_DIR/nemo-docker" && ./setup.sh "$@"' -- "$@")
   status1="$?"
   echo "$0: setup.sh: exit status=$status1" 1>&2
   echo 1>&2
