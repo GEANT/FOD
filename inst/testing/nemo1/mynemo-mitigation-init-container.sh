@@ -8,6 +8,26 @@
 reuse_container=0
 vsmd_inbg=0
 
+docker_network_vsmd="host"
+docker_network_vsmd2=""
+docker_network_vsmd3=""
+if [ "$1" = "--docker_network_vsmd" ]; then #for user_docker_outer = false
+  shift 1
+  docker_network_vsmd="$1"
+  shift 1
+fi
+if [ "$1" = "--docker_network_vsmd2" ]; then #for user_docker_outer = false
+  shift 1
+  docker_network_vsmd2="$1"
+  shift 1
+fi
+if [ "$1" = "--docker_network_vsmd3" ]; then #for user_docker_outer = false
+  shift 1
+  docker_network_vsmd3="$1"
+  shift 1
+fi
+
+echo "$0: docker_network_vsmd=$docker_network_vsmd docker_network_vsmd2=$docker_network_vsmd2 docker_network_vsmd3=$docker_network_vsmd3" 1>&2
 
 if [ "$1" = "--reuse_container" ]; then 
   shift 1
@@ -64,12 +84,19 @@ if [ "$reuse_container" = 0 ]; then
   
   echo "$0: starting new running vsmd inner docker container (MYNEMO_DOCKER_INNER_INST_DIR=$MYNEMO_DOCKER_INNER_INST_DIR)" 1>&2
   docker run -d \
-  	--privileged --network host \
+  	--privileged --network "$docker_network_vsmd" \
   	--name "$container_name" \
   	--mount type=bind,source="$MYNEMO_DOCKER_INNER_INST_DIR/etc/,target=/nemo-all/etc/" \
   	--mount type=bind,source="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/,target=/nemo-all/secrets/" \
   	--restart unless-stopped \
   	"$container_name"
+ 
+  if [ -n "$docker_network_vsmd2" ]; then
+    docker network connect "$docker_network_vsmd2" "$container_name"
+  fi
+  if [ -n "$docker_network_vsmd3" ]; then
+    docker network connect "$docker_network_vsmd3" "$container_name"
+  fi
   
   echo "$0: setting hostname of vsmd inner docker container to 'vsmd1'" 1>&2
   docker exec -ti "$container_name" hostname vsmd1

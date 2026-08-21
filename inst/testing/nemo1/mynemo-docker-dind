@@ -81,8 +81,31 @@ DEP_SYS_COMMANDS=(docker docker-compose)
 
 docker_outer__image_name="nemo-all1"
 
-docker_outer__container_name="nemo-all1"
-#docker_outer__container_name=""
+#set -x
+
+if [ "$1" = "--no_docker_outer" ]; then 
+  shift 1
+  export USE_DOCKER_OUTER=0
+elif [ "$1" = "--no_docker_outer2" ]; then 
+  shift 1
+  export USE_DOCKER_OUTER=0
+  export USE_DOCKER_NFCAPD_NO_HOST_NETWORK=1 #TODO
+  export USE_DOCKER_VSMD1_NO_HOST_NETWORK=1 #TODO
+else
+  if [ -z "$USE_DOCKER_OUTER" ]; then
+    export USE_DOCKER_OUTER=1	
+  fi
+fi
+
+echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
+
+#
+
+if [ "$USE_DOCKER_OUTER" = 0 ]; then
+  docker_outer__container_name=""
+else
+  docker_outer__container_name="nemo-all1"
+fi
 
 docker_outer_volume_forinnerdockerdir="dind1"
 
@@ -160,7 +183,8 @@ fi
 
 ####
 
-if [ -n "$docker_outer__container_name" ]; then
+#if [ -n "$docker_outer__container_name" ]; then
+if [ "$USE_DOCKER_OUTER" = 1 ]; then
   use_docker_outer=1
   export USE_DOCKER_OUTER=1
   export DOCKER_OUTER__CONTAINER_NAME
@@ -169,7 +193,9 @@ if [ -n "$docker_outer__container_name" ]; then
 
   MYDOCKER_OUTER_EXEC=(docker exec "$docker_outer__container_name")
   MYDOCKER_OUTER_EXEC__TI=(docker exec -ti "$docker_outer__container_name")
-else
+
+elif [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 0 ]; then
+
   use_docker_outer=0
   export USE_DOCKER_OUTER=0
   export MYNEMO_DOCKER_INNER_INST_DIR="$PWD"
@@ -178,6 +204,18 @@ else
 
   MYDOCKER_OUTER_EXEC=()
   MYDOCKER_OUTER_EXEC__TI=()
+
+else
+
+  use_docker_outer=0
+  export USE_DOCKER_OUTER=0
+  export MYNEMO_DOCKER_INNER_INST_DIR="$PWD"
+  export DOCKER_OUTER__CONTAINER_NAME=""
+  export MYNEMO_DOCKER_INNER_IP="172.17.0.1" # actually the outer(=only) docker
+
+  MYDOCKER_OUTER_EXEC=()
+  MYDOCKER_OUTER_EXEC__TI=()
+
 fi
 
 ####
@@ -847,7 +885,15 @@ elif [ "$1" = "--docker-outer-network-create" ]; then #arg
   #(set -x; docker network inspect "freertr_nhost1" || docker network create -d bridge --subnet 10.1.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost1")
   #(set -x; docker network inspect "freertr_nhost2" || docker network create -d bridge --subnet 10.2.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost2")
   #(set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.198.36.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
-  (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
+  if [ "$use_docker_outer" = 1 ]; then
+    (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
+  else
+    (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
+    #set -x
+    #bridge_interface_name="br-$(docker network ls | grep "$network1_name" | cut -d ' ' -f 1,1)"
+    #ifconfig "$bridge_interface_name" 10.197.36.2/24
+    #set +x
+  fi
 
   if [ "$enable_network2" = 1 ]; then
     echo "# setting up extra docker network for $network2_name:" 1>&2
@@ -1053,6 +1099,14 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   
   echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
+
+  ##
+
+  if [ "$USE_DOCKER_OUTER" = 0 ]; then
+    "$0" --hack-nfcapd-container-network-name
+  fi
+
+  ##
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
@@ -1325,10 +1379,28 @@ elif [ "$1" = "--setup-db-contents" ]; then #arg # init some data in nemo db reg
 
   exec "$0" --exec ./mynemo-mitigation-init-db-final.sh
 
+#arg adaptions for USE_DOCKER_OUTER=0
+
+elif [ "$1" = "--hack-nfcapd-container-network-name" ]; then # has to be run before setup.sh is run
+
+  if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then # TODO is not revertible in automated manner, currently !
+    sed -i -e 's/network_mode: "host"/network_mode: "nemo1_xnemo-flow-input"/' nemo-docker/docker-compose-catcher.yaml 
+  fi
+
 #arg
 
 elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner docker container, setup everything for and in it, run vsmd in foreground; requires setup and running outer nemo-all container
   shift 1
+
+  if [ "$use_docker_outer" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
+    docker_network_vsmd="nemo1_mgmt"
+    docker_network_vsmd1="$network1_name"
+    docker_network_vsmd3="nemo_default"
+    echo "$0: setup-and-run-vsmd-container: use_docker_outer=$use_docker_outer => overriding docker_network_vsmd=$docker_network_vsmd docker_network_vsmd2=$docker_network_vsmd2 docker_network_vsmd3=$docker_network_vsmd3" 1>&2	  
+    set --  --docker_network_vsmd "$docker_network_vsmd" --docker_network_vsmd2 "$docker_network_vsmd2" --docker_network_vsmd3 "$docker_network_vsmd3"
+  fi
+
+  echo "$0: setup-and-run-vsmd-container: args=$*" 1>&2
 
   # build and init and "wire" vsmd inner container within nemo outer container
   exec "$0" --exec ./mynemo-mitigation-init-container.sh "$@"
@@ -1461,6 +1533,10 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   if [ "$use_docker_outer" = 1 ]; then # TODO
     echo 1>&2
     "$0" --network-freertr-to-other-containers-fix
+    echo 1>&2
+  else    
+    echo 1>&2
+    "$0" --network-freertr-to-other-containers-fix || true
     echo 1>&2
   fi
 
