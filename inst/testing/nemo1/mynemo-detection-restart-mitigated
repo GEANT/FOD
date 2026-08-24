@@ -14,6 +14,7 @@ fi
 
 ##
 
+mode_adds=()
 if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then
 
   echo "$0: using to run inside docker" 1>&2
@@ -21,20 +22,41 @@ if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then
   MYNEMO_DOCKER_INNER_IP="$MYNEMO_DOCKER_INNER_IP0"
   MYNEMO_MITIGATION_JUMPHOST_IP="$MYNEMO_DOCKER_INNER_IP"
   echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+  
+  mode_adds=()
 
-else
+elif [ "$MYNEMO_DOCKER_INNER_IP0" = "172.17.0.1" ]; then
   
   echo "$0: using to run directly on host" 1>&2
 
-  MYNEMO_DOCKER_INNER_IP="$(ip -4 a s dev nemo-docker | grep -Eo 'inet [0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -e 's/^inet //')"
-  echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
-  if [ -z "$MYNEMO_DOCKER_INNER_IP" ]; then
-    echo "$0: could not determine MYNEMO_DOCKER_INNER_IP (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
-    exit 1
-  fi
+  if docker exec vsmd1 ifconfig | grep -q docker0; then
+  
+    echo "$0: vsmd1 container seems to have shared network namespace with host" 1>&2
 
-  MYNEMO_MITIGATION_JUMPHOST_IP="off"
-  echo "$0: TODO using MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+    MYNEMO_DOCKER_INNER_IP="$(ip -4 a s dev nemo-docker | grep -Eo 'inet [0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -e 's/^inet //')"
+    echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
+    if [ -z "$MYNEMO_DOCKER_INNER_IP" ]; then
+      echo "$0: could not determine MYNEMO_DOCKER_INNER_IP (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
+      exit 1
+    fi
+
+    MYNEMO_MITIGATION_JUMPHOST_IP="off"
+    echo "$0: TODO using MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+  
+    mode_adds=("--no_docker_outer")
+
+  else
+
+    echo "$0: vsmd1 container seems NOT to have shared network namespace with host" 1>&2
+
+    MYNEMO_DOCKER_INNER_IP="$(docker inspect vsmd1 | grep IPAddress | grep -Eo '192.168.123.[0-9]+')"
+    echo "$0: vsmd1 container: ip address in nemo network=$MYNEMO_DOCKER_INNER_IP" 1>&2
+
+    MYNEMO_MITIGATION_JUMPHOST_IP="$MYNEMO_DOCKER_INNER_IP"
+    
+    mode_adds=("--no_docker_outer2")
+
+  fi
 
 fi
 
@@ -44,9 +66,9 @@ fi
 
 set -x
 
-./mynemo-docker-dind --docker restart nemo_mitigated_1; 
+./mynemo-docker-dind "${mode_adds[@]}" --docker restart nemo_mitigated_1; 
 echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
 #echo "172.18.0.1 vmsd1" >> "/proc/$(./mynemo-docker-dind --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
-echo "$MYNEMO_DOCKER_INNER_IP vmsd1" >> "/proc/$(./mynemo-docker-dind --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
+echo "$MYNEMO_DOCKER_INNER_IP vmsd1" >> "/proc/$(./mynemo-docker-dind "${mode_adds[@]}" --dockerc_inner_pid nemo_mitigated_1)/root/etc/hosts"
 
 

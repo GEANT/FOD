@@ -7,24 +7,24 @@
 #[ -n "$MYNEMO_DOCKER_INNER_IP" ] || MYNEMO_DOCKER_INNER_IP="172.18.0.1"
 MYNEMO_DOCKER_INNER_IP0="$(ip -4 a s dev docker0 | grep -Eo 'inet 172.[0-9]+.0.1' | sed -e 's/^inet //')"
 echo "$0: using MYNEMO_DOCKER_INNER_IP0=$MYNEMO_DOCKER_INNER_IP0" 1>&2
-if [ -z "$MYNEMO_DOCKER_INNER_IP0" ]; then
-  echo "$0: could not determine MYNEMO_DOCKER_INNER_IP0 (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
-  exit 1
-fi
+#if [ -z "$MYNEMO_DOCKER_INNER_IP0" ]; then
+#  echo "$0: could not determine MYNEMO_DOCKER_INNER_IP0 (assuming to be running in vsmd container, but sharing network namespace of nemo outer container); aborting" 1>&2
+#  exit 1
+#fi
 
 ##
 
-if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then
+if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then # used if USE_DOCKER_OUTER=1
 
-  echo "$0: using to run inside docker" 1>&2
+  echo "$0: using to run inside docker (but sharing network namespace of outer countainer)" 1>&2
 
   MYNEMO_DOCKER_INNER_IP="$MYNEMO_DOCKER_INNER_IP0"
   MYNEMO_MITIGATION_JUMPHOST_IP="$MYNEMO_DOCKER_INNER_IP"
   echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
 
-else
+elif [ "$MYNEMO_DOCKER_INNER_IP0" = "172.17.0.1" ]; then # used if USE_DOCKER_OUTER=0 and USE_DOCKER_VSMD1_NO_HOST_NETWORK=0
   
-  echo "$0: using to run directly on host" 1>&2
+  echo "$0: using to run directly on host (assuming to run inside an outer container, but sharing outer host network namespace)" 1>&2
 
   MYNEMO_DOCKER_INNER_IP="$(ip -4 a s dev nemo-docker | grep -Eo 'inet [0-9]+.[0-9]+.[0-9]+.[0-9]+' | sed -e 's/^inet //')"
   echo "$0: using MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
@@ -35,6 +35,19 @@ else
 
   MYNEMO_MITIGATION_JUMPHOST_IP="off"
   echo "$0: TODO using MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
+
+else # used if USE_DOCKER_OUTER=0 and USE_DOCKER_VSMD1_NO_HOST_NETWORK=1 
+  
+  #MYNEMO_DOCKER_INNER_IP="192.168.123.1" 
+  #MYNEMO_DOCKER_INNER_IP="$(docker inspect vsmd1 | grep IPAddress | grep -Eo '192.168.123.[0-9]+')"
+  
+  MYNEMO_DOCKER_INNER_IP__freertr="$(ip a | grep -Eo "^ +inet 10.197.36.[0-9]+" | sed -e 's/^ *inet //')"
+  MYNEMO_DOCKER_INNER_IP__nemonetwork="$(ip a | grep -Eo "^ +inet 192.168.123.[0-9]+" | sed -e 's/^ *inet //')"
+  echo "$0 MYNEMO_DOCKER_INNER_IP__nemonetwork=$MYNEMO_DOCKER_INNER_IP__nemonetwork MYNEMO_DOCKER_INNER_IP__freertr=$MYNEMO_DOCKER_INNER_IP__freertr" 1>&2
+
+  MYNEMO_DOCKER_INNER_IP="$MYNEMO_DOCKER_INNER_IP__nemonetwork"
+  MYNEMO_MITIGATION_JUMPHOST_IP="$MYNEMO_DOCKER_INNER_IP__nemonetwork"
+  echo "$0: MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
 
 fi
 

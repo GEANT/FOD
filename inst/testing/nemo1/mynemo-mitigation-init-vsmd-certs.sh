@@ -8,6 +8,19 @@
 
 ##
 
+if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" ]; then
+
+  MYNEMO_DOCKER_INNER_IP="$(docker inspect vsmd1 | grep IPAddress | grep -Eo '192.168.123.[0-9]+')"
+  echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK: determining in vsmd container nemo network ip=$MYNEMO_DOCKER_INNER_IP" 1>&2
+
+else
+
+  echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK: using pre-set MYNEMO_DOCKER_INNER_IP=$MYNEMO_DOCKER_INNER_IP" 1>&2
+
+fi
+
+##
+
 if docker info >/dev/null; then # make sure docker is running
 
   (
