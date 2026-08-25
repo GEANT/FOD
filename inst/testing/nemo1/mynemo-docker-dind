@@ -1407,14 +1407,18 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
     MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
     echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
 
-    sed -i -e "s/^ neighbor 10.197.36.2/ neighbor $MYNEMO_DOCKER_INNER_IP_vsmd_freertr/" "${files_to_adapt[@]}"
+    if [ -n "$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" ]; then
+      sed -i -e "s/^ neighbor 10.197.36.2/ neighbor $MYNEMO_DOCKER_INNER_IP_vsmd_freertr/" "${files_to_adapt[@]}"
+    fi
   fi
 
   if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
     MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$("$0" --docker exec nemo_nfcapd_1 ip -4 a s dev eth0 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
     echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
 
-    sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.\\[0-9\\]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
+    if [ -n "$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" ]; then
+      sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.\\[0-9\\]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
+    fi
   fi
 
 #arg
