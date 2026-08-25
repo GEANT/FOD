@@ -333,7 +333,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
        vsmd_args=("--vsmd_inbg")
      elif [ "$1" = "--vsmd_infg" -o "$1" = "--fg" ]; then #arg
        shift 1
-       vsmd_args=()a
+       vsmd_args=()
      elif [ "$1" = "--experimental0" ]; then #arg 
        shift 1       
        set -- --net_init_first --prune-outer --copy-certs-to-hostdir "$@" -q
@@ -1431,7 +1431,7 @@ elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner do
     docker_network_vsmd2="$network1_name"
     docker_network_vsmd3="nemo_default"
     echo "$0: setup-and-run-vsmd-container: use_docker_outer=$use_docker_outer => overriding docker_network_vsmd=$docker_network_vsmd docker_network_vsmd2=$docker_network_vsmd2 docker_network_vsmd3=$docker_network_vsmd3" 1>&2	  
-    set --  --docker_network_vsmd "$docker_network_vsmd" --docker_network_vsmd2 "$docker_network_vsmd2" --docker_network_vsmd3 "$docker_network_vsmd3"
+    set --  --docker_network_vsmd "$docker_network_vsmd" --docker_network_vsmd2 "$docker_network_vsmd2" --docker_network_vsmd3 "$docker_network_vsmd3" "$@"
   fi
 
   echo "$0: setup-and-run-vsmd-container: args=$*" 1>&2
