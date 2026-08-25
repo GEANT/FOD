@@ -1684,6 +1684,9 @@ elif [ "$1" = "--nemo-ping-freertr" ]; then #arg # enter nemo all container and 
 elif [ "$1" = "--freertr-ping-nemo" ]; then #arg # enter freertr console and run ping nemo all container
   shift 1
 
+  MYNEMO_DOCKER_INNER_IP_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+  echo "MYNEMO_DOCKER_INNER_IP_freertr=$MYNEMO_DOCKER_INNER_IP_freertr" 1>&2
+
   exec docker exec -ti freertr bash -c '{ echo -e "ping 10.197.36.2 vrf CORE"; sleep 1; echo "exit"; } | netcat 127.0.0.1 2323'
 
 elif [ "$1" = "--network-mgmt-connections-check" ]; then #arg # enter freertr console and run ping nemo all container

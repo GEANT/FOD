@@ -12,6 +12,10 @@ echo "$0: using MYNEMO_DOCKER_INNER_IP0=$MYNEMO_DOCKER_INNER_IP0" 1>&2
 #  exit 1
 #fi
 
+MYNEMO_DOCKER_INNER_IP_freertr="10.197.36.2"
+#MYNEMO_DOCKER_INNER_IP_freertr="$(ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+#echo "$0: MYNEMO_DOCKER_INNER_IP_freertr=$MYNEMO_DOCKER_INNER_IP_freertr" 1>&2
+
 ##
 
 if [ "$MYNEMO_DOCKER_INNER_IP0" = "172.18.0.1" ]; then # used if USE_DOCKER_OUTER=1
@@ -251,7 +255,8 @@ fi
 cat >> /etc/exabgp/exabgp.conf <<EOF
 neighbor 10.197.36.3 {
   router-id  10.197.36.3;
-  local-address 10.197.36.2;
+  #local-address 10.197.36.2;
+  local-address $MYNEMO_DOCKER_INNER_IP__freertr;
   local-as 1001;
   peer-as 2001;
 	  
