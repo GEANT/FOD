@@ -1387,6 +1387,36 @@ elif [ "$1" = "--hack-nfcapd-container-network-name" ]; then # has to be run bef
     sed -i -e 's/network_mode: "host"/network_mode: "nemo1_xnemo-flow-input"/' nemo-docker/docker-compose-catcher.yaml 
   fi
 
+elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg # enter nemo all container and run ping freertr
+  shift 1
+
+  if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 \) ]; then
+    files_to_adapt=(docker-compose/freertr.cfg frnet/docker-compose/freertr.cfg frnet/docker-compose/rtr-sw.failback.txt frnet/freertr/run/conf/rtr-sw.txt)
+    for file1 in "${files_to_adapt[@]}"; do
+      if [ ! -f "$file1.orig" ]; then
+        cp -fv "$file1" "$file1.orig" 1>&2
+      else
+        cp -fv "$file1.orig" "$file1" 1>&2
+      fi
+    done
+  fi
+
+  #
+
+  if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
+    MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
+
+    sed -i -e "s/^ neighbor 10.197.36.2/ neighbor $MYNEMO_DOCKER_INNER_IP_vsmd_freertr/" "${files_to_adapt[@]}"
+  fi
+
+  if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
+    MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$("$0" --docker exec nemo_nfcapd_1 ip -4 a s dev eth0 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
+
+    sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.\\[0-9\\]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
+  fi
+
 #arg
 
 elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner docker container, setup everything for and in it, run vsmd in foreground; requires setup and running outer nemo-all container
