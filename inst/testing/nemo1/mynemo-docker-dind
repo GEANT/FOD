@@ -348,6 +348,15 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      fi
 
    done
+
+   ##
+   
+   if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+     if [ "$net_init_first" = 1 ]; then
+       net_init_first=-1
+       echo "$0: forcing net_init_first=$net_init_first (delayed at end), because of USE_DOCKER_OUTER" 1>&2
+     fi
+   fi
    
    ##
    
@@ -407,12 +416,21 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    set -e 
    #set -x
-
-   if [ "$net_init_first" = 0 ]; then
+   
+   if [ "$net_init_first" = -1 ]; then # needed for USE_DOCKER_OUTER
      # build and init nemo-outer container and build and init and run all detection container inside
    
      "$0" --all1x 1 1 "$@"
      echo 1>&2
+
+     # build and init and "wire" vsmd inner container within nemo outer container
+     #vsmd_args=("--vsmd_inbg") 
+     "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
+     echo 1>&2
+
+     if [ "$USE_DOCKER_OUTER" = 1 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+       "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
+     fi
 
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
      echo 1>&2
@@ -420,7 +438,32 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1"
 
-   else
+     ###
+ 
+   elif [ "$net_init_first" = 0 ]; then
+     # build and init nemo-outer container and build and init and run all detection container inside
+   
+     "$0" --all1x 1 1 "$@"
+     echo 1>&2
+
+     if [ "$USE_DOCKER_OUTER" = 1 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+       "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
+     fi
+
+     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
+     echo 1>&2
+     
+     [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
+     [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1"
+
+     ###
+ 
+     # build and init and "wire" vsmd inner container within nemo outer container
+     echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
+     "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
+     echo 1>&2
+
+   elif [ "$net_init_first" = 1 ]; then
 
      "$0" --all1x 1 0 --build-only "$@"
      echo 1>&2
@@ -435,14 +478,14 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1"
 
+     ###
+ 
+     # build and init and "wire" vsmd inner container within nemo outer container
+     echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
+     "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
+     echo 1>&2
+
    fi
-
-   ###
-
-   # build and init and "wire" vsmd inner container within nemo outer container
-   echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
-   "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
-   echo 1>&2
 
    ###
 
