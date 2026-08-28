@@ -417,7 +417,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    set -e 
    #set -x
    
-   if [ "$net_init_first" = -1 ]; then # needed for USE_DOCKER_OUTER
+   if [ "$net_init_first" = -1 ]; then # needed for USE_DOCKER_OUTER=0
      # build and init nemo-outer container and build and init and run all detection container inside
    
      "$0" --all1x 1 1 "$@"
@@ -428,7 +428,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
      echo 1>&2
 
-     if [ "$USE_DOCKER_OUTER" = 1 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+     if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
        "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
      fi
 
@@ -440,13 +440,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
      ###
  
-   elif [ "$net_init_first" = 0 ]; then
+   elif [ "$net_init_first" = 0 ]; then # default: build nemo containers first then test net
      # build and init nemo-outer container and build and init and run all detection container inside
    
      "$0" --all1x 1 1 "$@"
      echo 1>&2
 
-     if [ "$USE_DOCKER_OUTER" = 1 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+     if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
        "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
      fi
 
@@ -1153,7 +1153,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
   #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
-  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd "$MYNEMO_DOCKER_INNER_INST_DIR/nemo-docker" && ./setup.sh "$@"' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd "'"$MYNEMO_DOCKER_INNER_INST_DIR"'/nemo-docker" && ./setup.sh "$@"' -- "$@")
   status1="$?"
   echo "$0: setup.sh: exit status=$status1" 1>&2
   echo 1>&2
