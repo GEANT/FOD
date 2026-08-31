@@ -1145,9 +1145,9 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   ##
 
-  if [ "$USE_DOCKER_OUTER" = 0 ]; then
+  #if [ "$USE_DOCKER_OUTER" = 0 ]; then
     "$0" --adapt-nemo-detection-stuff-before-setup-with-NOTUSE_DOCKER_OUTER
-  fi
+  #fi
 
   ##
 
@@ -1442,6 +1442,10 @@ elif [ "$1" = "--hack-nfcapd-container-network-name" ]; then # has to be run bef
   if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then # TODO is not revertible in automated manner, currently !
 
     sed -i -e 's/network_mode: "host"/network_mode: "nemo1_xnemo-flow-input"/' nemo-docker/docker-compose-catcher.yaml 
+
+  else  
+    
+    sed -i -e 's/network_mode: "nemo1_xnemo-flow-input"/network_mode: "host"/' nemo-docker/docker-compose-catcher.yaml 
 
   fi
 
