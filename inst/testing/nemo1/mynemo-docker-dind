@@ -428,9 +428,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
      echo 1>&2
 
-     if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
-       "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
-     fi
+     #if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
+     #fi
 
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
      echo 1>&2
@@ -446,9 +446,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --all1x 1 1 "$@"
      echo 1>&2
 
-     if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
-       "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
-     fi
+     #if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
+     #fi
 
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
      echo 1>&2
@@ -1448,8 +1448,9 @@ elif [ "$1" = "--hack-nfcapd-container-network-name" ]; then # has to be run bef
 elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg # enter nemo all container and run ping freertr
   shift 1
 
-  if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 \) ]; then
-    files_to_adapt=(docker-compose/freertr.cfg frnet/docker-compose/freertr.cfg frnet/docker-compose/rtr-sw.failback.txt frnet/freertr/run/conf/rtr-sw.txt)
+  files_to_adapt=(docker-compose/freertr.cfg frnet/docker-compose/freertr.cfg frnet/docker-compose/rtr-sw.failback.txt frnet/freertr/run/conf/rtr-sw.txt)
+
+  if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 \) ]; then
     for file1 in "${files_to_adapt[@]}"; do
       if [ ! -f "$file1.orig" ]; then
         cp -fv "$file1" "$file1.orig" 1>&2
@@ -1461,7 +1462,7 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
 
   #
 
-  if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
+  if [ -f docker-compose/freertr.cfg -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
     MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
     echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
 
@@ -1470,7 +1471,7 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
     fi
   fi
 
-  if [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
+  if [ -f docker-compose/freertr.cfg -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
     MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$("$0" --docker exec nemo_nfcapd_1 ip -4 a s dev eth0 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
     echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
 
