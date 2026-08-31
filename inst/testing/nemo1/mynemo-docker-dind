@@ -1565,10 +1565,25 @@ elif [ "$1" = "--reinitaftercontainerstart" ]; then #arg # to be used after cont
 
 #arg
 
+elif [ "$1" = "--nemo-tshark" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
+  shift 1
+
+  if [ "$USE_DOCKER_OUTER" = 1 ]; then
+    exec "${MYDOCKER_OUTER_EXEC__TI[@]}" tshark -i eth1 "$@" 
+  else
+    ifc="$(ip a | awk '/^[0-9]+:/ { ifc=$2; sub(/:$/, "", ifc); } /^ +inet 10.197.36.[0-9]+/ { print ifc; }')"
+    exec tshark -i "$ifc" "$@" 
+  fi
+
 elif [ "$1" = "--nemo-tshark-netflow" ]; then #arg # enter (outer) nemo d-in-d container and run tshark on eth1, in order to monitor netconf traffic from freertr container
   shift 1
 
-  exec "${MYDOCKER_OUTER_EXEC__TI[@]}" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
+  if [ "$USE_DOCKER_OUTER" = 1 ]; then
+    exec "${MYDOCKER_OUTER_EXEC__TI[@]}" tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i eth1 "$@" 
+  else
+    ifc="$(ip a | awk '/^[0-9]+:/ { ifc=$2; sub(/:$/, "", ifc); } /^ +inet 10.197.36.[0-9]+/ { print ifc; }')"
+    exec tshark -T text -V -f 'port 9995' -d udp.port==9995,cflow -i "$ifc" "$@"
+  fi
 
 #arg
 
