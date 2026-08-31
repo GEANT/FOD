@@ -1476,7 +1476,7 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
     echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
 
     if [ -n "$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" ]; then
-      sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.\\[0-9\\]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
+      sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.[0-9]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
     fi
   fi
 
