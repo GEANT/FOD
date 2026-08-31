@@ -12,9 +12,9 @@ echo "$0: using MYNEMO_DOCKER_INNER_IP0=$MYNEMO_DOCKER_INNER_IP0" 1>&2
 #  exit 1
 #fi
 
-MYNEMO_DOCKER_INNER_IP_freertr="10.197.36.2"
-#MYNEMO_DOCKER_INNER_IP_freertr="$(ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
-#echo "$0: MYNEMO_DOCKER_INNER_IP_freertr=$MYNEMO_DOCKER_INNER_IP_freertr" 1>&2
+MYNEMO_DOCKER_INNER_IP__freertr="10.197.36.2"
+#MYNEMO_DOCKER_INNER_IP__freertr="$(ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+#echo "$0: MYNEMO_DOCKER_INNER_IP__freertr=$MYNEMO_DOCKER_INNER_IP__freertr" 1>&2
 
 ##
 
