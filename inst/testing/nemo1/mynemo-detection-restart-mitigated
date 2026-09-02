@@ -43,7 +43,7 @@ elif [ "$MYNEMO_DOCKER_INNER_IP0" = "172.17.0.1" ]; then
     MYNEMO_MITIGATION_JUMPHOST_IP="off"
     echo "$0: TODO using MYNEMO_MITIGATION_JUMPHOST_IP=$MYNEMO_MITIGATION_JUMPHOST_IP" 1>&2
   
-    mode_adds=("--no_docker_outer")
+    mode_adds=("--no_docker_outer1")
 
   else
 

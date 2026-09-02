@@ -83,10 +83,10 @@ docker_outer__image_name="nemo-all1"
 
 #set -x
 
-if [ "$1" = "--no_docker_outer" ]; then #arg opt
+if [ "$1" = "--no_docker_outer1" ]; then #arg opt
   shift 1
   export USE_DOCKER_OUTER=0
-elif [ "$1" = "--no_docker_outer2" ]; then #arg opt
+elif [ "$1" = "--no_docker_outer" -o "$1" = "--no_docker_outer2" ]; then #arg opt
   shift 1
   export USE_DOCKER_OUTER=0
   export USE_DOCKER_NFCAPD_NO_HOST_NETWORK=1 #TODO
