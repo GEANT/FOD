@@ -419,6 +419,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    
    if [ "$net_init_first" = -1 ]; then # needed for USE_DOCKER_OUTER=0
      # build and init nemo-outer container and build and init and run all detection container inside
+     
+     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" # TODO: we have to start the testnet initially before all1x to get allocated and locked the ip for freertr and to avoid nfcapd or vsmd will steal that, even if we later have unfortunatelly to restart the testnet again after fixing the freertr startup config with correct nfcapd and vsmd ip addresses
+     echo 1>&2
    
      "$0" --all1x 1 1 "$@"
      echo 1>&2
