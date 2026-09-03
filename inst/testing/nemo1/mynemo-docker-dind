@@ -1316,7 +1316,7 @@ elif [ "$1" = "--logsall2" ]; then #arg # determine all active log files in nemo
       (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid/root")
     fi
   else
-      (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\" | sort -u") | grep -E "(/var/lib/docker/containers.*json.log)|(exabgp/exabgp.log)|(nemo-all/vsmd.log)"
+      (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\" | sort -u | grep -E '(/var/lib/docker/containers.*json.log)|(exabgp/exabgp.log)|(nemo-all/vsmd.log)'")
   fi
 
 elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log files in nemo container
@@ -1325,7 +1325,7 @@ elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log fi
   if [ "$USE_DOCKER_OUTER" = 1 ]; then
     (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" \$(NF); }' | sort -u)")
   else
-    (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" \$(NF); }' | sort -u)") | grep -E "(/var/lib/docker/containers.*json.log)|(exabgp/exabgp.log)|(nemo-all/vsmd.log)"
+    (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" \$(NF); }' | sort -u | grep -E '(/var/lib/docker/containers.*json.log)|(exabgp/exabgp.log)|(nemo-all/vsmd.log)')") 
   fi
 
 #
