@@ -86,25 +86,30 @@ docker_outer__image_name="nemo-all1"
 if [ "$1" = "--no_docker_outer1" ]; then #arg opt
   shift 1
   export USE_DOCKER_OUTER=0
+  echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
 elif [ "$1" = "--no_docker_outer" -o "$1" = "--no_docker_outer2" ]; then #arg opt
   shift 1
   export USE_DOCKER_OUTER=0
   export USE_DOCKER_NFCAPD_NO_HOST_NETWORK=1 #TODO
   export USE_DOCKER_VSMD1_NO_HOST_NETWORK=1 #TODO
+  echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
 else
   if [ -z "$USE_DOCKER_OUTER" ]; then
     export USE_DOCKER_OUTER=1	
+    echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
   fi
 fi
 
-echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
+#echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
 
 #
 
 if [ "$USE_DOCKER_OUTER" = 0 ]; then
   docker_outer__container_name=""
+  run_on_outer_container_msg_prefix="directly on host"
 else
   docker_outer__container_name="nemo-all1"
+  run_on_outer_container_msg_prefix="inside debian-docker-in-docker container"
 fi
 
 docker_outer_volume_forinnerdockerdir="dind1"
@@ -148,13 +153,18 @@ docker_outer__bashc_precmd_str=''
 #
 
 #network1_name="freertr_xnemo-flow-input"
-network1_name="nemo1_xnemo-flow-input"
+network1_name="nemo1_xnemo-flow-input" # currently used for all traffic nemo detection/mitigation <-> freertr router
+network1_subnet="10.197.36.0/24"
 
+# currently not used:
 network2_name="nemo1_xnemo-trafficin"
+network2_subnet="10.197.37.0/24"
 #enable_network2=1
 enable_network2=0
 
+# currently not used:
 network3_name="nemo1_xnemo-trafficout"
+network2_subnet="10.197.38.0/24"
 #enable_network3=1
 enable_network3=0
 
@@ -417,9 +427,17 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
    set -e 
    #set -x
    
+   if [ "$USE_DOCKER_OUTER" ]; then
+     "$0" --no_docker_outer --docker-inner-clean
+   fi
+
+   ##
+
    if [ "$net_init_first" = -1 ]; then # needed for USE_DOCKER_OUTER=0
      # build and init nemo-outer container and build and init and run all detection container inside
      
+     
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --initial
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" # TODO: we have to start the testnet initially before all1x to get allocated and locked the ip for freertr and to avoid nfcapd or vsmd will steal that, even if we later have unfortunatelly to restart the testnet again after fixing the freertr startup config with correct nfcapd and vsmd ip addresses
      echo 1>&2
    
@@ -819,71 +837,66 @@ elif [ "$1" = "--docker-build" ]; then #arg
 
   ##
 
-  echo "# attaching outer nemo-all docker container to extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
-  "$0" --docker-outer-network-attach
-  echo 1>&2
+  if [ "$use_docker_outer" = 1 ]; then
+
+    echo "# attaching outer nemo-all docker container to extra docker network ($network1_name) for coupling with freertr testnet dockercompose container set:" 1>&2
+    "$0" --docker-outer-network-attach
+    echo 1>&2
+
+  fi
 
   ##
 
   if [ "$use_docker_outer" = 1 ]; then
 
-    # does not work: breaks inner fishtank?:
-    #echo "# inside debian-docker-in-docker container: setting hostname to 'nemo-all1'" 1>&2 
-    #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" hostname "nemo-all1")
-    #echo 1>&2
-    
-    echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
+    echo "# $run_on_outer_container_msg_prefix: show hostname; debian OS version, docker version and docker-compose version:" 1>&2
     (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
     echo 1>&2
       
-    echo "# inside debian-docker-in-docker container: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
+    echo "# $run_on_outer_container_msg_prefix: making sure docker has fully start-up and is reachable" 1>&2 # TODO: add timeout ?
     (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "sleep 1; while ! docker ps >/dev/null; do sleep 1; done; echo docker-inside running")
     echo 1>&2
  
-    #echo "# check test1:" 1>&2 
-    #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
-    #echo 1>&2
-
     if [ "$use_prune_all" = 1 ]; then #arg opt
 
-      echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
+      echo "# $run_on_outer_container_msg_prefix: stop any running docker-inside container:" 1>&2
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )")
       echo 1>&2
 
-      echo "# inside debian-docker-in-docker container: remove any docker-inside containers:" 1>&2
+      echo "# $run_on_outer_container_msg_prefix: remove any docker-inside containers:" 1>&2
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker rm \$(docker ps -a | awk 'NR>1 { print \$1; }' )") || true
       echo 1>&2
 
-      echo "# inside debian-docker-in-docker container: remove any running docker-inside images:" 1>&2
+      echo "# $run_on_outer_container_msg_prefix: remove any running docker-inside images:" 1>&2
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker rmi \$(docker images | awk 'NR>1 { print \$3; }' )") || true
       echo 1>&2
        
-      echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
+      echo "# $run_on_outer_container_msg_prefix: pruning inner docker environment:" 1>&2
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker system prune -f)
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker volume prune -f)
       echo 1>&2
 
     elif [ "$use_prune" = 1 ]; then #arg opt
 
-      echo "# inside debian-docker-in-docker container: stop any running docker-inside container:" 1>&2
+      echo "# $run_on_outer_container_msg_prefix: stop any running docker-inside container:" 1>&2
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" sh -c "docker stop \$(docker ps | awk 'NR>1 { print \$1; }' )") || true
       echo 1>&2
       
-      echo "# inside debian-docker-in-docker container: pruning inner docker environment:" 1>&2
+      echo "# $run_on_outer_container_msg_prefix: pruning inner docker environment:" 1>&2
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker system prune -f)
       (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker volume prune -f)
       echo 1>&2
     fi
       
-    echo "# inside debian-docker-in-docker container: showing existing docker-inside volumes:" 1>&2
+    echo "# $run_on_outer_container_msg_prefix: showing existing docker-inside volumes:" 1>&2
     (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker volume ls)
     echo 1>&2
 
-    echo "# inside debian-docker-in-docker container: showing existing docker-inside images:" 1>&2
+    echo "# $run_on_outer_container_msg_prefix: showing existing docker-inside images:" 1>&2
     (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker images)
     echo 1>&2
 
-    echo "# inside debian-docker-in-docker container: showing existing docker-inside containers:" 1>&2
+    echo "# $run_on_outer_container_msg_prefix: showing existing docker-inside containers:" 1>&2
     (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" docker ps -a)
     echo 1>&2
 
@@ -926,42 +939,34 @@ EOF
 elif [ "$1" = "--docker-outer-network-create" ]; then #arg
   shift 1	
 
-  #(set -x; docker network inspect dind-mgmt || docker network create -d bridge dind-mgmt)
-  #(set -x; docker network inspect nemo-flow-input || docker network create -d bridge nemo-flow-input)
-  #(set -x; docker network inspect "freertr_nhost1" || docker network create -d bridge --subnet 10.1.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost1")
-  #(set -x; docker network inspect "freertr_nhost2" || docker network create -d bridge --subnet 10.2.10.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "freertr_nhost2")
-  #(set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.198.36.0/24 -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
-  if [ "$use_docker_outer" = 1 ]; then
-    (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
-  else
-    (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet 10.197.36.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
-    #set -x
-    #bridge_interface_name="br-$(docker network ls | grep "$network1_name" | cut -d ' ' -f 1,1)"
-    #ifconfig "$bridge_interface_name" 10.197.36.2/24
-    #set +x
-  fi
+  echo "# setting up docker testnet network '$network1_name':" 1>&2
+  (set -x; docker network inspect "$network1_name" || docker network create -d bridge --subnet "$network1_subnet" --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network1_name")
 
   if [ "$enable_network2" = 1 ]; then
-    echo "# setting up extra docker network for $network2_name:" 1>&2
-    (set -x; docker network inspect "$network2_name" || docker network create -d bridge --subnet 10.197.37.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network2_name")
+    echo "# setting up extra docker testnet network '$network2_name':" 1>&2
+    (set -x; docker network inspect "$network2_name" || docker network create -d bridge --subnet "$network2_subnet" --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network2_name")
   fi
 
   if [ "$enable_network3" = 1 ]; then
-    echo "# setting up extra docker network for $network3_name:" 1>&2
-    (set -x; docker network inspect "$network3_name" || docker network create -d bridge --subnet 10.197.38.0/24 --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network3_name")
+    echo "# setting up extra docker testnet network '$network3_name':" 1>&2
+    (set -x; docker network inspect "$network3_name" || docker network create -d bridge --subnet "$network3_subnet" --attachable -o com.docker.network.bridge.enable_ip_masquerade="false" "$network3_name")
   fi
 
 elif [ "$1" = "--docker-outer-network-attach" ]; then #arg
   shift 1	
 
-  docker network connect "$network1_name" "$docker_outer__container_name"
+  if [ "$USE_DOCKER_OUTER" != 0 ]; then
 
-  if [ "$enable_network2" = 1 ]; then
-    docker network connect "$network2_name" "$docker_outer__container_name"
-  fi
+    docker network connect "$network1_name" "$docker_outer__container_name"
+  
+    if [ "$enable_network2" = 1 ]; then
+      docker network connect "$network2_name" "$docker_outer__container_name"
+    fi
+  
+    if [ "$enable_network3" = 1 ]; then
+      docker network connect "$network3_name" "$docker_outer__container_name"
+    fi
 
-  if [ "$enable_network3" = 1 ]; then
-    docker network connect "$network3_name" "$docker_outer__container_name"
   fi
 
 #arg outer and inner docker generic functions:
@@ -1135,13 +1140,13 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   if [ -n "$pre_setup_script_code" ]; then #arg opt
     echo "# inside debian-docker-in-docker running pre_setup_script_code=$pre_setup_script_code:" 1>&2
-    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "${docker_outer__bashc_precmd_str}cd /nemo-all; $pre_setup_script_code") 
+    (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "${docker_outer__bashc_precmd_str}cd \"$MYNEMO_DOCKER_INNER_INST_DIR\"; $pre_setup_script_code") 
   fi
 
   ##
 
   echo "# inside debian-docker-in-docker status of /nemo-all dir prior to running setup.sh:" 1>&2
-  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l /nemo-all; tree -d /nemo-all/etc; find /nemo-all/etc' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l \"$MYNEMO_DOCKER_INNER_INST_DIR\"; tree -d \"$MYNEMO_DOCKER_INNER_INST_DIR\"/etc; find \"$MYNEMO_DOCKER_INNER_INST_DIR\"/etc' -- "$@")
   
   echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
@@ -1154,7 +1159,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   ##
 
-  echo "# inside debian-docker-in-docker container: run setup.sh :" 1>&2
+  echo "# $run_on_outer_container_msg_prefix: run setup.sh :" 1>&2
   #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd "'"$MYNEMO_DOCKER_INNER_INST_DIR"'/nemo-docker" && ./setup.sh "$@"' -- "$@")
   status1="$?"
@@ -1169,7 +1174,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
 
   #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
 
-  #echo "# inside debian-docker-in-docker container: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
+  #echo "# $run_on_outer_container_msg_prefix: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
   ##(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
   #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
   #echo 1>&2
@@ -1206,8 +1211,7 @@ elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access 
   url_part="$1"
   shift 1
 
-  echo "# inside debian-docker-in-docker container: test access to UI via curl+lynx (assumes empty password for the client certificate):" 1>&2
-  #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 "https://localhost/$url_part" | lynx -stdin -dump)
+  echo "# $run_on_outer_container_msg_prefix: test access to UI via curl+lynx (assumes empty password for the client certificate):" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC[@]}" curl -vvv -k --cert-type p12 --cert "$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.p12" "https://localhost/$url_part" | lynx -stdin -dump)
   status1="$?"
 
@@ -1220,8 +1224,7 @@ elif [ "$1" = "--curl" -o "$1" = "--inside-run-curl" ]; then #arg # test access 
 elif [ "$1" = "--wget" -o "$1" = "--inside-run-wget" ]; then #arg # test access to web UI with wget (assumes empty client cert pwd)$
   shift 1
 
-  echo "# inside debian-docker-in-docker container: test access to UI via wget (assumes empty password for the client certificate):" 1>&2
-  #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" wget --no-check-certificate --certificate=/nemo-all/secrets/CA/admin.crt --private-key=/nemo-all/secrets/CA/admin.key https://localhost/)
+  echo "# $run_on_outer_container_msg_prefix: test access to UI via wget (assumes empty password for the client certificate):" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC[@]}" wget --no-check-certificate --certificate="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.crt" --private-key="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.key" https://localhost/)
   status1="$?"
 
@@ -1234,8 +1237,7 @@ elif [ "$1" = "--wget" -o "$1" = "--inside-run-wget" ]; then #arg # test access 
 elif [ "$1" = "--w3m" -o "$1" = "--inside-run-w3m" ]; then #arg # test access to web UI with interactive w3m (assumes empty client cert pwd)$
   shift 1
 
-  echo "# inside debian-docker-in-docker container: test access to UI via w3m (assumes empty password for the client certificate):" 1>&2
-  #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" w3m -o ssl_verify_server=false -o ssl_cert_file=/nemo-all/secrets/CA/admin.crt -o ssl_key_file=/nemo-all/secrets/CA/admin.key https://localhost/)
+  echo "# $run_on_outer_container_msg_prefix: test access to UI via w3m (assumes empty password for the client certificate):" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" w3m -o ssl_verify_server=false -o ssl_cert_file="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.crt" -o ssl_key_file="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/CA/admin.key" https://localhost/)
   status1="$?"
 
@@ -1248,7 +1250,7 @@ elif [ "$1" = "--w3m" -o "$1" = "--inside-run-w3m" ]; then #arg # test access to
 elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all nemo_*logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: all docker logs :" 1>&2
+  echo "# $run_on_outer_container_msg_prefix: all docker logs :" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "docker ps | awk 'NR>1 { print \$0; }' | while read id rest; do echo \"#\$id \$rest\"; docker logs \"\$id\"; echo; done")
   echo 1>&2
 
@@ -1285,14 +1287,14 @@ elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active lo
 elif [ "$1" = "--logs0" -o "$1" = "--get-nemo-logs0" ]; then #arg # get nemo_fishtank-nginx_1 logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: docker logs ${docker_log_prefix}fishtank-nginx$docker_log_postfix :" 1>&2
+  echo "# $run_on_outer_container_msg_prefix: docker logs ${docker_log_prefix}fishtank-nginx$docker_log_postfix :" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "${docker_log_prefix}fishtank-nginx$docker_log_postfix")
   echo 1>&2
 
 elif [ "$1" = "--logs1" -o "$1" = "--get-nemo-logs1" ]; then #arg # get nemo_fishtank_1 logs
   shift 1
 
-  echo "# inside debian-docker-in-docker container: docker logs ${docker_log_prefix}fishtank$docker_log_postfix :" 1>&2
+  echo "# $run_on_outer_container_msg_prefix: docker logs ${docker_log_prefix}fishtank$docker_log_postfix :" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker logs "${docker_log_prefix}fishtank$docker_log_postfix")
   echo 1>&2
 
@@ -1455,6 +1457,24 @@ elif [ "$1" = "--hack-nfcapd-container-network-name" ]; then # has to be run bef
 elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg # enter nemo all container and run ping freertr
   shift 1
 
+  is_initial=0
+  if [ "$1" = "--initial" ]; then
+    is_initial=1
+  fi 
+
+  ##  
+
+  if [ "$is_initial" = 1 ]; then
+    if [ "$USE_DOCKER_OUTER" = 1 ]; then
+      MYNEMO_DOCKER_INNER_IP_initial="10.197.36.2"
+    else
+      MYNEMO_DOCKER_INNER_IP_initial="10.197.36.1"
+    fi
+  fi
+
+
+  ##
+
   files_to_adapt=(docker-compose/freertr.cfg frnet/docker-compose/freertr.cfg frnet/docker-compose/rtr-sw.failback.txt frnet/freertr/run/conf/rtr-sw.txt)
 
   if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 \) ]; then
@@ -1470,8 +1490,13 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
   #
 
   if [ -f docker-compose/freertr.cfg -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
-    MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
-    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
+
+    if [ "$is_initial" = 1 ]; then
+      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$MYNEMO_DOCKER_INNER_IP_initial"	    
+    else	    
+      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+    fi
+    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: ($is_initial) MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
 
     if [ -n "$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" ]; then
       sed -i -e "s/^ neighbor 10.197.36.2/ neighbor $MYNEMO_DOCKER_INNER_IP_vsmd_freertr/" "${files_to_adapt[@]}"
@@ -1479,8 +1504,13 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
   fi
 
   if [ -f docker-compose/freertr.cfg -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
-    MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$("$0" --docker exec nemo_nfcapd_1 ip -4 a s dev eth0 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
-    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
+
+    if [ "$is_initial" = 1 ]; then
+      MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$MYNEMO_DOCKER_INNER_IP_initial"	    
+    else	    
+      MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$("$0" --docker exec nemo_nfcapd_1 ip -4 a s dev eth0 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+    fi
+    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: ($is_initial) MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
 
     if [ -n "$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" ]; then
       sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.[0-9]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
@@ -1494,10 +1524,13 @@ elif [ "$1" = "--setup-and-run-vsmd-container" ]; then #arg # prep vsmd inner do
 
   if [ "$use_docker_outer" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
     docker_network_vsmd="nemo1_mgmt"
+    docker_network_vsmd_ip=""
     docker_network_vsmd2="$network1_name"
+    docker_network_vsmd2_ip="10.197.36.4"
     docker_network_vsmd3="nemo_default"
-    echo "$0: setup-and-run-vsmd-container: use_docker_outer=$use_docker_outer => overriding docker_network_vsmd=$docker_network_vsmd docker_network_vsmd2=$docker_network_vsmd2 docker_network_vsmd3=$docker_network_vsmd3" 1>&2	  
-    set --  --docker_network_vsmd "$docker_network_vsmd" --docker_network_vsmd2 "$docker_network_vsmd2" --docker_network_vsmd3 "$docker_network_vsmd3" "$@"
+    docker_network_vsmd3_ip=""
+    echo "$0: setup-and-run-vsmd-container: use_docker_outer=$use_docker_outer => overriding docker_network_vsmd=$docker_network_vsmd ($docker_network_vsmd_ip) docker_network_vsmd2=$docker_network_vsmd2 ($docker_network_vsmd2_ip) docker_network_vsmd3=$docker_network_vsmd3 ($docker_network_vsmd3_ip)" 1>&2	  
+    set --  --docker_network_vsmd "$docker_network_vsmd" "$docker_network_vsmd_ip" --docker_network_vsmd2 "$docker_network_vsmd2" "$docker_network_vsmd2_ip" --docker_network_vsmd3 "$docker_network_vsmd3" "$docker_network_vsmd3_ip" "$@"
   fi
 
   echo "$0: setup-and-run-vsmd-container: args=$*" 1>&2
@@ -1645,15 +1678,9 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
 
   ##
 
-  if [ "$use_docker_outer" = 1 ]; then # TODO
-    echo 1>&2
-    "$0" --network-freertr-to-other-containers-fix
-    echo 1>&2
-  else    
-    echo 1>&2
-    "$0" --network-freertr-to-other-containers-fix || true
-    echo 1>&2
-  fi
+  echo 1>&2
+  "$0" --network-freertr-to-other-containers-fix
+  echo 1>&2
 
   ##
 
@@ -1668,25 +1695,20 @@ elif [ "$1" = "--freertr-testnet-prep-and-run" ]; then #arg # prep and run docke
   docker exec freertr hostname freertr
   docker exec host1 hostname host1
   docker exec host2 hostname host2
-  
-  if [ "$use_docker_outer" = 1 ]; then # TODO
 
+  ##
+  
   echo "# initial ping - give freertr router time to init routing" 1>&2
-  #docker exec -ti host1 ping -c 1 -W 5 10.2.10.12 &>/dev/null || true # give freertr time for routing init etc.
   docker exec -ti host1 ping -c 1 -W 5 "$victim_ip" &>/dev/null || true # give freertr time for routing init etc.
   echo 1>&2
 
   echo "# test ping host1 -> host2 (via freertr):" 1>&2
-  #docker exec -ti host1 ping -c 3 10.2.10.12 || (docker logs freertr; false)
   docker exec -ti host1 ping -c 3 "$victim_ip" || (docker logs freertr; false)
   echo 1>&2
 
   echo "# test ping host2 -> host1 (via freertr):" 1>&2
-  #docker exec -ti host2 ping -c 3 10.1.10.11 || (docker logs freertr; false)
   docker exec -ti host2 ping -c 3 "$attacker_ip" || (docker logs freertr; false)
   echo 1>&2
-
-  fi
 
 #arg short cuts  
 
@@ -1956,22 +1978,31 @@ elif [ "$1" = "--network-debug-freertr-to-nemo-link" ]; then #arg
   
   ##
 
-  output0="$("$0" --helper-get-docker-network-interface-relationships "$docker_outer__container_name" eth1)"
-  corresponding_ifc_in_main_netnsN="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
-  corresponding_bridge_in_main_netnsN="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
-  echo "$0: $mode: eth1 of container $docker_outer__container_name: corresponding_ifc_in_main_netnsN=$corresponding_ifc_in_main_netnsN corresponding_bridge_in_main_netnsN=$corresponding_bridge_in_main_netnsN" 1>&2
+  if [ "$USE_DOCKER_OUTER" = 1 ]; then
 
-  output0="$("$0" --helper-get-docker-network-interface-relationships "freertr" eth3)"
-  corresponding_ifc_in_main_netns3="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
-  corresponding_bridge_in_main_netns3="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
-  echo "$0: $mode: eth3 (should connect to nemo-all) of container freertr: corresponding_ifc_in_main_netns3=$corresponding_ifc_in_main_netns3 corresponding_bridge_in_main_netns3=$corresponding_bridge_in_main_netns3" 1>&2
+    output0="$("$0" --helper-get-docker-network-interface-relationships "$docker_outer__container_name" eth1)"
+    corresponding_ifc_in_main_netnsN="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+    corresponding_bridge_in_main_netnsN="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+    echo "$0: $mode: eth1 of container $docker_outer__container_name: corresponding_ifc_in_main_netnsN=$corresponding_ifc_in_main_netnsN corresponding_bridge_in_main_netnsN=$corresponding_bridge_in_main_netnsN" 1>&2
 
-  if [ "$corresponding_bridge_in_main_netnsN" = "$corresponding_bridge_in_main_netns3" ]; then
-    echo "$0: $mode: corresponding_bridge_in_main_netns N and 3 match, so both containers are wired correctly together" 1>&2
-    true
+    output0="$("$0" --helper-get-docker-network-interface-relationships "freertr" eth3)"
+    corresponding_ifc_in_main_netns3="$(printf "%s" "$output0" | cut -d ' ' -f 1,1)"
+    corresponding_bridge_in_main_netns3="$(printf "%s" "$output0" | cut -d ' ' -f 2,2)"
+    echo "$0: $mode: eth3 (should connect to nemo-all) of container freertr: corresponding_ifc_in_main_netns3=$corresponding_ifc_in_main_netns3 corresponding_bridge_in_main_netns3=$corresponding_bridge_in_main_netns3" 1>&2
+
+    if [ "$corresponding_bridge_in_main_netnsN" = "$corresponding_bridge_in_main_netns3" ]; then
+      echo "$0: $mode: corresponding_bridge_in_main_netns N and 3 match, so both containers are wired correctly together" 1>&2
+      true
+    else
+      echo "$0: $mode: corresponding_bridge_in_main_netnsN=$corresponding_bridge_in_main_netnsN and corresponding_bridge_in_main_netns3=$corresponding_bridge_in_main_netns3 dont match, so docker compose or docker create failed to correctly set-up the container connections, expect failure" 1>&2
+      fail=1
+    fi
+
   else
-    echo "$0: $mode: corresponding_bridge_in_main_netnsN=$corresponding_bridge_in_main_netnsN and corresponding_bridge_in_main_netns3=$corresponding_bridge_in_main_netns3 dont match, so docker compose or docker create failed to correctly set-up the container connections, expect failure" 1>&2
-    fail=1
+
+    # TODO
+    :
+
   fi
 
   exit "$fail"
