@@ -424,54 +424,89 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    #
 
-   set -e 
-   #set -x
-   
    if [ "$USE_DOCKER_OUTER" ]; then
      "$0" --no_docker_outer --docker-inner-clean
    fi
 
    ##
-
+   
+   set -e 
+  
    if [ "$net_init_first" = -1 ]; then # needed for USE_DOCKER_OUTER=0
      # build and init nemo-outer container and build and init and run all detection container inside
      
-     
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --initial
-     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" # TODO: we have to start the testnet initially before all1x to get allocated and locked the ip for freertr and to avoid nfcapd or vsmd will steal that, even if we later have unfortunatelly to restart the testnet again after fixing the freertr startup config with correct nfcapd and vsmd ip addresses
+     #initial_testnet__ue_docker_bridge_ifc_address=1
+     initial_testnet__ue_docker_bridge_ifc_address=0
+
+     if [ "$initial_testnet__use_docker_bridge_ifc_address" = 1 ]; then
+       "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --initial || true
+     else
+       "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --use_default_ips_for_nodockermode || true # hope that nemo docker containers will end up later corresponding with these defaults, otherwise we will have to adapt freertr config and rebuild testnet later
+     fi
+
+     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" "$initial_testnet__use_docker_bridge_ifc_address" # TODO: we have to start the testnet initially before all1x to get allocated and locked the ip for freertr and to avoid nfcapd or vsmd will steal that, even if we later have unfortunatelly to restart the testnet again after fixing the freertr startup config with correct nfcapd and vsmd ip addresses
      echo 1>&2
    
      "$0" --all1x 1 1 "$@"
      echo 1>&2
+
+     ##
+
+     set +e
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --dynamic_nfcapd__default_vsmd # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !     
+     adaption_was_required="$?"     
+     echo "$0: adaption_was_required=$adaption_was_required" 1>&2
+     set -e
+
+     if [ "$adaption_was_required" = 1 ]; then
+       "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
+       echo 1>&2
+     else
+       echo "# allx (nemo-tshark-netflow):" 1>&2 
+       "$0" --nemo-tshark-netflow-check-flows
+       echo 1>&2
+     fi
+
+     ##
 
      # build and init and "wire" vsmd inner container within nemo outer container
      #vsmd_args=("--vsmd_inbg") 
      "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
      echo 1>&2
 
-     #if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
-     #fi
+     ##
 
-     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
-     echo 1>&2
+     set +e
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --dynamic_nfcapd__dynamic_vsmd # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !     
+     adaption_was_required="$?"     
+     echo "$0: adaption_was_required=$adaption_was_required" 1>&2
+     set -e
+
+     if [ "$adaption_was_required" = 1 ]; then
+       "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
+       echo 1>&2
+     else
+       :
+       #echo "# allx (nemo-tshark-netflow):" 1>&2 
+       #"$0" --nemo-tshark-netflow-check-flows
+       #echo 1>&2
+     fi
+
+     ##
      
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-nemodetection-adapt "$use_addon1"
 
      ###
  
-   elif [ "$net_init_first" = 0 ]; then # default: build nemo containers first then test net
+  elif [ "$net_init_first" = 0 ]; then # default: build nemo containers first then test net (used for $USE_DOCKER_OUTER=1)
      # build and init nemo-outer container and build and init and run all detection container inside
    
      "$0" --all1x 1 1 "$@"
      echo 1>&2
 
-     #if [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # needs --all1x to be run before, as all nemo detection+mitigation container need to be started and have assigned their dynamic containter ip addresses !
-     #fi
-
-     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early"
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
+     "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
      echo 1>&2
      
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
@@ -484,12 +519,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
      echo 1>&2
 
-   elif [ "$net_init_first" = 1 ]; then
+   elif [ "$net_init_first" = 1 ]; then # build test net containers, then nemo containers (alternative used for $USE_DOCKER_OUTER=1)
 
      "$0" --all1x 1 0 --build-only "$@"
      echo 1>&2
 
-     "$0" --testnet_init 2 "$use_addon1" "$addon_init_early"
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
+     "$0" --testnet_init 2 "$use_addon1" "$addon_init_early" 1
      echo 1>&2
      
      [ -z "$use_addon1" -o "$addon_init_early" = 0 ] || "$0" --addon-init-main "$use_addon1"
@@ -555,14 +591,20 @@ elif [ "$1" = "--all1x" ]; then #arg
 
 elif [ "$1" = "--testnet_init" ]; then #arg
   shift 1
-  step_nr="$1"
+  step_nr="$1" # used just for informational purposes
   shift 1	
   use_addon1="$1"
   shift 1
   addon_init_early="$1"
   shift 1
 
-  echo "$0: testnet_init: use_addon1=$use_addon1 addon_init_early=$addon_init_early" 1>&2
+  check_netflow_tshark="$1" 
+  # flow check makes only sense if the netflow receiver ip address configured in freertr is already available, i.e., is responding to arp requests (not the case if USE_DOCKER_OUTER=1 + USE_DOCKER_VSMD1_NO_HOST_NETWORK=1 and (nemo was not started yet OR the receiver ip address configured in freertr does not match the dynamic ip address nemo_nfcapd container got assigned on the nemo inout/output testnet interface); 
+  # as workaround, an initialy started testnet (to be torn down afterwards and to be replaced by a correct testnet after nemo is started) can use the docker bridge ip address as test-wise receiver; 
+  # another workaround for initial flow receiver testing would be to use proxy arp entries on the nemo input/output testnet docker bridge)
+  shift 1
+
+  echo "$0: testnet_init: use_addon1=$use_addon1 addon_init_early=$addon_init_early check_netflow_tshark=$check_netflow_tshark" 1>&2
 
   ##
 
@@ -581,13 +623,14 @@ elif [ "$1" = "--testnet_init" ]; then #arg
   "$0" --freertr-host1-ping-host2.bg
   echo 1>&2
 
-  step_nr=$(( $step_nr + 1 ))
+  if [ "$check_netflow_tshark" = 1 ]; then
+    step_nr=$(( $step_nr + 1 ))
 
-  # test tshark
-  echo "# allx step$step_nr (nemo-tshark-netflow):" 1>&2 
-  #"$0" --nemo-tshark-netflow -a duration:20
-  "$0" --nemo-tshark-netflow-check-flows
-  echo 1>&2
+    # test tshark
+    echo "# allx step$step_nr (nemo-tshark-netflow):" 1>&2 
+    "$0" --nemo-tshark-netflow-check-flows
+    echo 1>&2
+  fi
 
 #arg
 
@@ -1457,65 +1500,103 @@ elif [ "$1" = "--hack-nfcapd-container-network-name" ]; then # has to be run bef
 elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg # enter nemo all container and run ping freertr
   shift 1
 
-  is_initial=0
-  if [ "$1" = "--initial" ]; then
-    is_initial=1
-  fi 
+  MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=
+  MYNEMO_DOCKER_INNER_IP_vsmd_freertr=
 
-  ##  
+  ##
 
-  if [ "$is_initial" = 1 ]; then
+  if [ "$1" = "--initial" ]; then #arg opt
+
     if [ "$USE_DOCKER_OUTER" = 1 ]; then
-      MYNEMO_DOCKER_INNER_IP_initial="10.197.36.2"
+      MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="10.197.36.2"
+      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="10.197.36.2"
     else
-      MYNEMO_DOCKER_INNER_IP_initial="10.197.36.1"
+      MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="10.197.36.1"
+      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="10.197.36.1"
     fi
-  fi
 
+  elif [ "$1" = "--use_default_ips_for_nodockermode" ]; then #arg opt
+
+    MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="10.197.36.2"
+    MYNEMO_DOCKER_INNER_IP_vsmd_freertr="10.197.36.4"
+
+  elif [ "$1" = "--dynamic_nfcapd__default_vsmd" ]; then #arg opt
+
+    MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=
+    MYNEMO_DOCKER_INNER_IP_vsmd_freertr="10.197.36.4"
+
+  elif [ "$1" = "--dynamic_nfcapd__dynamic_vsmd" ]; then #arg opt # default mode
+
+    MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=
+    MYNEMO_DOCKER_INNER_IP_vsmd_freertr=
+
+  fi 
 
   ##
 
   files_to_adapt=(docker-compose/freertr.cfg frnet/docker-compose/freertr.cfg frnet/docker-compose/rtr-sw.failback.txt frnet/freertr/run/conf/rtr-sw.txt)
 
-  if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 \) ]; then
+  if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
     for file1 in "${files_to_adapt[@]}"; do
+	    
+      cp -fv "$file1" "$file1.prev" 1>&2 # copy previous state
+
+      # create initial orig files OR if orig already exists reset file to orig file
       if [ ! -f "$file1.orig" ]; then
         cp -fv "$file1" "$file1.orig" 1>&2
       else
         cp -fv "$file1.orig" "$file1" 1>&2
       fi
+
     done
   fi
 
   #
 
-  if [ -f docker-compose/freertr.cfg -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
-
-    if [ "$is_initial" = 1 ]; then
-      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$MYNEMO_DOCKER_INNER_IP_initial"	    
-    else	    
-      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
-    fi
-    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: ($is_initial) MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
-
-    if [ -n "$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" ]; then
-      sed -i -e "s/^ neighbor 10.197.36.2/ neighbor $MYNEMO_DOCKER_INNER_IP_vsmd_freertr/" "${files_to_adapt[@]}"
-    fi
-  fi
-
-  if [ -f docker-compose/freertr.cfg -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
-
-    if [ "$is_initial" = 1 ]; then
-      MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$MYNEMO_DOCKER_INNER_IP_initial"	    
-    else	    
+  adaption_performed=0
+ 
+  if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 ]; then
+    
+    if [ -n "$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" ]; then
+      echo "adapt-freertr-configuration-for-nemo-dynamic-ips: preset MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
+    else
       MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="$("$0" --docker exec nemo_nfcapd_1 ip -4 a s dev eth0 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+      echo "adapt-freertr-configuration-for-nemo-dynamic-ips: dynamic MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
     fi
-    echo "adapt-freertr-configuration-for-nemo-dynamic-ips: ($is_initial) MYNEMO_DOCKER_INNER_IP_nfcapd_freertr=$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" 1>&2
 
     if [ -n "$MYNEMO_DOCKER_INNER_IP_nfcapd_freertr" ]; then
       sed -i -e "s/^ipv4 flow CORE export inet 10.197.36.[0-9]* 9995/ipv4 flow CORE export inet $MYNEMO_DOCKER_INNER_IP_nfcapd_freertr 9995/" "${files_to_adapt[@]}"
     fi
+
+    adaption_performed=1
   fi
+
+  if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 ]; then
+
+    if [ -n "$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" ]; then
+      echo "adapt-freertr-configuration-for-nemo-dynamic-ips: preset MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
+    else
+      MYNEMO_DOCKER_INNER_IP_vsmd_freertr="$("$0" --bash-vsmd1 ip -4 a s dev eth1 | grep -Eo 'inet 10.197.36.[0-9]+' | sed -e 's/^inet //')"
+      echo "adapt-freertr-configuration-for-nemo-dynamic-ips: dynamic MYNEMO_DOCKER_INNER_IP_vsmd_freertr=$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" 1>&2
+    fi
+
+    if [ -n "$MYNEMO_DOCKER_INNER_IP_vsmd_freertr" ]; then
+      sed -i -e "s/^ neighbor 10.197.36.2/ neighbor $MYNEMO_DOCKER_INNER_IP_vsmd_freertr/" "${files_to_adapt[@]}"
+    fi
+
+    adaption_performed=1
+  fi
+
+  adaption_was_required=0
+  if [ "$adaption_performed" = 1 ]; then
+    for file1 in "${files_to_adapt[@]}"; do
+      if ! diff -q "$file1" "$file1.prev" 1>&2; then
+        adaption_was_required=1
+      fi
+    done
+  fi
+
+  [ "$adaption_was_required" = 0 ] # exit/return status, true if !adaption_was_required
 
 #arg
 
