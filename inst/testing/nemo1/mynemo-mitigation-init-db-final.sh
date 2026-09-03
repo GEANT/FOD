@@ -2,7 +2,7 @@
 
 # to be run inside nemo-all1 outer container
 
-set -x
+#set -x
 
 #
 
@@ -41,7 +41,7 @@ done
 #
 
 #docker exec -ti "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo -c "INSERT INTO router_nets (router_id, net_id) VALUES (1, 1), (1, 2), (2, 2), (3, 1)"
-set -x
+#set -x
 num=1
 echo "select id, name from router;" | docker exec -i "nemo${DIDCLFS}nemodb${DIDCLFS}1" psql -U nemo -t | while read id sep1 name; do
   echo "loop id=$id <-> name=$name" 1>&2
