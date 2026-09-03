@@ -1111,8 +1111,8 @@ elif [ "$1" = "--docker-inner-clean" ]; then #arg
   else
 
     echo 1>&2
-    docker ps | awk '/nemo/ || /vsmd/ { print $1; }' | while read dockerid rest; do 
-      echo "# removing outer docker container '$dockerid'" 1>&2
+    docker ps | awk '/nemo/ || /vsmd/ { print $1 " " $(NF); }' | while read dockerid dockerlabel rest; do 
+    echo "# removing outer docker container '$dockerid' ($dockerlabel)" 1>&2
       docker rm -f "$dockerid" >/dev/null
     done
     echo 1>&2
