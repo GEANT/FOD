@@ -462,7 +462,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
        "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
        echo 1>&2
      else
-       echo "# allx (nemo-tshark-netflow):" 1>&2 
+       echo "# allx: check nemo-tshark-netflow:" 1>&2 
        "$0" --nemo-tshark-netflow-check-flows
        echo 1>&2
      fi
@@ -485,12 +485,14 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      if [ "$adaption_was_required" = 1 ]; then
        "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
        echo 1>&2
-     else
-       :
-       #echo "# allx (nemo-tshark-netflow):" 1>&2 
-       #"$0" --nemo-tshark-netflow-check-flows
-       #echo 1>&2
      fi
+
+     ##
+
+     echo 1>&2
+     echo "# allx: final check: status-bgp-and-flowspec:" 1>&2 
+     "$0" --status-bgp-and-flowspec
+     echo 1>&2
 
      ##
      
@@ -519,6 +521,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
      echo 1>&2
 
+     ##
+
+     echo 1>&2
+     echo "# allx: step6 final check: status-bgp-and-flowspec:" 1>&2 
+     "$0" --status-bgp-and-flowspec
+     echo 1>&2
+
    elif [ "$net_init_first" = 1 ]; then # build test net containers, then nemo containers (alternative used for $USE_DOCKER_OUTER=1)
 
      "$0" --all1x 1 0 --build-only "$@"
@@ -540,6 +549,13 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      # build and init and "wire" vsmd inner container within nemo outer container
      echo "# allx step5 (setup-and-run-vsmd-container):" 1>&2 
      "$0" --setup-and-run-vsmd-container "${vsmd_args[@]}"
+     echo 1>&2
+
+     ##
+
+     echo 1>&2
+     echo "# allx: step6 final check: status-bgp-and-flowspec:" 1>&2 
+     "$0" --status-bgp-and-flowspec
      echo 1>&2
 
    fi
@@ -1182,16 +1198,16 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   ##
 
   if [ -n "$pre_setup_script_code" ]; then #arg opt
-    echo "# inside debian-docker-in-docker running pre_setup_script_code=$pre_setup_script_code:" 1>&2
+    echo "# $run_on_outer_container_msg_prefix: running pre_setup_script_code=$pre_setup_script_code:" 1>&2
     (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "${docker_outer__bashc_precmd_str}cd \"$MYNEMO_DOCKER_INNER_INST_DIR\"; $pre_setup_script_code") 
   fi
 
   ##
 
-  echo "# inside debian-docker-in-docker status of /nemo-all dir prior to running setup.sh:" 1>&2
-  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l \"$MYNEMO_DOCKER_INNER_INST_DIR\"; tree -d \"$MYNEMO_DOCKER_INNER_INST_DIR\"/etc; find \"$MYNEMO_DOCKER_INNER_INST_DIR\"/etc' -- "$@")
+  echo "# $run_on_outer_container_msg_prefix: status of /nemo-all dir prior to running setup.sh:" 1>&2
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l "$MYNEMO_DOCKER_INNER_INST_DIR"; tree -d "$MYNEMO_DOCKER_INNER_INST_DIR/etc"; find "$MYNEMO_DOCKER_INNER_INST_DIR/etc"' -- "$@")
   
-  echo "# inside debian-docker-in-docker show hostname; debian OS version, docker version and docker-compose version:" 1>&2
+  echo "# $run_on_outer_container_msg_prefix: show hostname; debian OS version, docker version and docker-compose version:" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
 
   ##
@@ -1203,7 +1219,6 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   ##
 
   echo "# $run_on_outer_container_msg_prefix: run setup.sh :" 1>&2
-  #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd /nemo-all/nemo-docker && ./setup.sh "$@"' -- "$@")
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd "'"$MYNEMO_DOCKER_INNER_INST_DIR"'/nemo-docker" && ./setup.sh "$@"' -- "$@")
   status1="$?"
   echo "$0: setup.sh: exit status=$status1" 1>&2
@@ -1216,11 +1231,6 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   fi
 
   #[ "$status1" = 0 ] || echo "./setup.sh failed, aborting" 1>&2 && exit 1
-
-  #echo "# $run_on_outer_container_msg_prefix: test access to UI via curl (assumes empty password for the client certificate):" 1>&2
-  ##(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/)
-  #(set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" curl -vvv -k --cert-type p12 --cert /nemo-all/secrets/CA/admin.p12 https://localhost/ | lynx -stdin -dump)
-  #echo 1>&2
 
   if [ "$use_test__access1" = "w3m" ]; then
     "$0" --inside-run-w3m 
@@ -1300,7 +1310,12 @@ elif [ "$1" = "--logsall" -o "$1" = "--get-nemo-logsall" ]; then #arg # get all 
 elif [ "$1" = "--logsall2" ]; then #arg # determine all active log files in nemo container
   shift 1
 
-  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$(docker inspect "$docker_outer__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')/root")
+  if [ "$USE_DOCKER_OUTER" = 1 ]; then
+    pid="$(docker inspect "$docker_outer__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')"
+    if [ -n "$pid" ]; then
+      (set -x; "${MYDOCKER_OUTER_EXEC[@]}" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \"/proc/\" \$2 \"/root\" dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid/root")
+    fi
+  fi
 
 elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log files in nemo container
   shift 1
@@ -1713,6 +1728,11 @@ elif [ "$1" = "--nemo-tshark-netflow-check-flows" ]; then #arg # enter (outer) n
 
   #"$0" --nemo-tshark-netflow -a duration:20 | awk '{ print; } /^[1-9][0-9]* packet captured/ { ok=1; } END { exit(1-ok); }'
   "$0" --nemo-tshark-netflow -a duration:20 | awk '{ print; } /^[1-9][0-9]* packets? captured/ { ok=1; } END { if (!ok) { print "WARNING: no netflow packets were captured"; } exit(0); }'
+
+elif [ "$1" = "--status-bgp-and-flowspec" ]; then #arg
+  shift 1
+
+  ./tools/mynemo_flowspecinfo  
 
 #arg nemo-specific:
 
