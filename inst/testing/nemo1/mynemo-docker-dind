@@ -385,6 +385,12 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    ##
 
+   #if [ "$USE_DOCKER_OUTER" = 0 ]; then
+     "$0" --adapt-nemo-detection-stuff-before-setup-with-NOTUSE_DOCKER_OUTER
+   #fi
+
+   ##
+
    #echo "# try to pre-create default HTTPS cert file:" 1>&2
    #"$0" --https-cert-precreate
    #echo 1>&2
@@ -1194,6 +1200,12 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
     fi
 
   done #arg loop
+ 
+  ##
+
+  ##if [ "$USE_DOCKER_OUTER" = 0 ]; then
+  #  "$0" --adapt-nemo-detection-stuff-before-setup-with-NOTUSE_DOCKER_OUTER
+  ##fi
 
   ##
 
@@ -1211,10 +1223,6 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
 
   ##
-
-  #if [ "$USE_DOCKER_OUTER" = 0 ]; then
-    "$0" --adapt-nemo-detection-stuff-before-setup-with-NOTUSE_DOCKER_OUTER
-  #fi
 
   ##
 
