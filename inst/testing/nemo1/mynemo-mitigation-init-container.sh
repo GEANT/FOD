@@ -9,25 +9,35 @@ reuse_container=0
 vsmd_inbg=0
 
 docker_network_vsmd="host"
+docker_network_vsmd_ip=""
 docker_network_vsmd2=""
+docker_network_vsmd2_ip=""
 docker_network_vsmd3=""
+docker_network_vsmd3_ip=""
+
 if [ "$1" = "--docker_network_vsmd" ]; then #for user_docker_outer = false
   shift 1
   docker_network_vsmd="$1"
+  shift 1
+  docker_network_vsmd_ip="$1"
   shift 1
 fi
 if [ "$1" = "--docker_network_vsmd2" ]; then #for user_docker_outer = false
   shift 1
   docker_network_vsmd2="$1"
   shift 1
+  docker_network_vsmd2_ip="$1"
+  shift 1
 fi
 if [ "$1" = "--docker_network_vsmd3" ]; then #for user_docker_outer = false
   shift 1
   docker_network_vsmd3="$1"
   shift 1
+  docker_network_vsmd3_ip="$1"
+  shift 1
 fi
 
-echo "$0: docker_network_vsmd=$docker_network_vsmd docker_network_vsmd2=$docker_network_vsmd2 docker_network_vsmd3=$docker_network_vsmd3" 1>&2
+echo "$0: docker_network_vsmd=$docker_network_vsmd ($docker_network_vsmd_ip) docker_network_vsmd2=$docker_network_vsmd2 ($docker_network_vsmd2_ip) docker_network_vsmd3=$docker_network_vsmd3 ($docker_network_vsmd3_ip)" 1>&2
 
 if [ "$1" = "--reuse_container" ]; then 
   shift 1
@@ -81,10 +91,16 @@ if [ "$reuse_container" = 0 ]; then
   docker rm "$container_name"
 
   [ -n "$MYNEMO_DOCKER_INNER_INST_DIR" ] || MYNEMO_DOCKER_INNER_INST_DIR="/nemo-all"
+
+  add_ip_args=()
+  if [ -n "$docker_network_vsmd_ip" ]; then
+    add_ip_args=(--ip "$docker_network_vsmd_ip")
+  fi
   
   echo "$0: starting new running vsmd inner docker container (MYNEMO_DOCKER_INNER_INST_DIR=$MYNEMO_DOCKER_INNER_INST_DIR)" 1>&2
   docker run -d \
-  	--privileged --network "$docker_network_vsmd" \
+  	--privileged \
+	--network "$docker_network_vsmd" "${add_ip_args[@]}"\
   	--name "$container_name" \
   	--mount type=bind,source="$MYNEMO_DOCKER_INNER_INST_DIR/etc/,target=/nemo-all/etc/" \
   	--mount type=bind,source="$MYNEMO_DOCKER_INNER_INST_DIR/secrets/,target=/nemo-all/secrets/" \
@@ -92,10 +108,18 @@ if [ "$reuse_container" = 0 ]; then
   	"$container_name"
  
   if [ -n "$docker_network_vsmd2" ]; then
-    docker network connect "$docker_network_vsmd2" "$container_name"
+    add_ip_args=()
+    if [ -n "$docker_network_vsmd2_ip" ]; then
+      add_ip_args=(--ip "$docker_network_vsmd2_ip")
+    fi
+    docker network connect "${add_ip_args[@]}" "$docker_network_vsmd2" "$container_name"
   fi
   if [ -n "$docker_network_vsmd3" ]; then
-    docker network connect "$docker_network_vsmd3" "$container_name"
+    add_ip_args=()
+    if [ -n "$docker_network_vsmd3_ip" ]; then
+      add_ip_args=(--ip "$docker_network_vsmd3_ip")
+    fi
+    docker network connect "${add_ip_args[@]}" "$docker_network_vsmd3" "$container_name"
   fi
   
   echo "$0: setting hostname of vsmd inner docker container to 'vsmd1'" 1>&2
