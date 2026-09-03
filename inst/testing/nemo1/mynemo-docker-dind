@@ -81,8 +81,6 @@ DEP_SYS_COMMANDS=(docker docker-compose)
 
 docker_outer__image_name="nemo-all1"
 
-#set -x
-
 if [ "$1" = "--no_docker_outer1" ]; then #arg opt
   shift 1
   export USE_DOCKER_OUTER=0
@@ -90,9 +88,13 @@ if [ "$1" = "--no_docker_outer1" ]; then #arg opt
 elif [ "$1" = "--no_docker_outer" -o "$1" = "--no_docker_outer2" ]; then #arg opt
   shift 1
   export USE_DOCKER_OUTER=0
-  export USE_DOCKER_NFCAPD_NO_HOST_NETWORK=1 #TODO
-  export USE_DOCKER_VSMD1_NO_HOST_NETWORK=1 #TODO
-  echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
+  export USE_DOCKER_NFCAPD_NO_HOST_NETWORK=1 
+  export USE_DOCKER_VSMD1_NO_HOST_NETWORK=1 
+  if [ "$1" = "--quiet" ]; then
+    shift 1
+  else
+    echo "$0: USE_DOCKER_OUTER=$USE_DOCKER_OUTER USE_DOCKER_VSMD1_NO_HOST_NETWORK=$USE_DOCKER_VSMD1_NO_HOST_NETWORK" 1>&2
+  fi
 else
   if [ -z "$USE_DOCKER_OUTER" ]; then
     export USE_DOCKER_OUTER=1	
@@ -430,9 +432,9 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
 
    #
 
-   if [ "$USE_DOCKER_OUTER" ]; then
-     "$0" --no_docker_outer --docker-inner-clean
-   fi
+   #if [ "$USE_DOCKER_OUTER" = 0 ]; then
+     "$0" --no_docker_outer --quiet --docker-inner-clean
+   #fi
 
    ##
    
@@ -1101,7 +1103,10 @@ elif [ "$1" = "--docker-inner-clean" ]; then #arg
 
   else
 
-    docker ps | awk '/nemo/ || /vsmd/ { print $1; }' | xargs docker rm -f
+    docker ps | awk '/nemo/ || /vsmd/ { print $1; }' | while read dockerid rest; do 
+      docker rm -f "$dockerid"
+    done
+
     #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker image prune -a -f')
     #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
     #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker images -a --filter=dangling=true -q | tee >(awk "{ print \"image \" \$0; }" > /dev/tty) | xargs docker rmi')
