@@ -1222,7 +1222,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   ##
 
   echo "# $run_on_outer_container_msg_prefix: status of /nemo-all dir prior to running setup.sh:" 1>&2
-  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; ls -l "$MYNEMO_DOCKER_INNER_INST_DIR"; tree -d "$MYNEMO_DOCKER_INNER_INST_DIR/etc"; find "$MYNEMO_DOCKER_INNER_INST_DIR/etc"' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'MYNEMO_DOCKER_INNER_INST_DIR="$1"; shift 1; set -x; ls -l "$MYNEMO_DOCKER_INNER_INST_DIR"; tree -d "$MYNEMO_DOCKER_INNER_INST_DIR/etc"; find "$MYNEMO_DOCKER_INNER_INST_DIR/etc"' -- "$MYNEMO_DOCKER_INNER_INST_DIR" "$@")
   
   echo "# $run_on_outer_container_msg_prefix: show hostname; debian OS version, docker version and docker-compose version:" 1>&2
   (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c 'set -x; hostname; cat /etc/debian_version; docker --version; docker-compose --version')
@@ -1232,7 +1232,7 @@ elif [ "$1" = "--setup" -o "$1" = "--run-setup-inside" ]; then #arg # run setup.
   ##
 
   echo "# $run_on_outer_container_msg_prefix: run setup.sh :" 1>&2
-  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="'"$NEMO_SERVER_NAME"'"; export ADMIN_MAIL="'"$ADMIN_MAIL"'"; export ADMIN_NAME="'"$ADMIN_NAME"'"; cd "'"$MYNEMO_DOCKER_INNER_INST_DIR"'/nemo-docker" && ./setup.sh "$@"' -- "$@")
+  (set -x; "${MYDOCKER_OUTER_EXEC__TI[@]}" bash -c "$docker_outer__bashc_precmd_str"'export NEMO_SERVER_NAME="$1"; export ADMIN_MAIL="$2"; export ADMIN_NAME="$3"; dir="$4"; shift 4; cd "$dir/nemo-docker" && ./setup.sh "$@"' -- "$NEMO_SERVER_NAME" "$ADMIN_NAME" "$ADMIN_NAME" "$MYNEMO_DOCKER_INNER_INST_DIR" "$@")
   status1="$?"
   echo "$0: setup.sh: exit status=$status1" 1>&2
   echo 1>&2
