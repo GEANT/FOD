@@ -75,7 +75,10 @@ fi
 
 ####
 
-DEP_SYS_COMMANDS=(docker docker-compose)
+DEP_SYS_COMMANDS__USE_OUTERCONTAINER=(docker docker-compose)
+
+# incomplete list:
+DEP_SYS_COMMANDS__USE_NO_OUTERCONTAINER=("${DEP_SYS_COMMANDS__USE_OUTERCONTAINER[@]}" grep gawk sed)
 
 ##
 
@@ -109,10 +112,14 @@ fi
 if [ "$USE_DOCKER_OUTER" = 0 ]; then
   docker_outer__container_name=""
   run_on_outer_container_msg_prefix="directly on host"
+  DEP_SYS_COMMANDS=("${DEP_SYS_COMMANDS__USE_NO_OUTERCONTAINER[@]}")
 else
   docker_outer__container_name="nemo-all1"
   run_on_outer_container_msg_prefix="inside debian-docker-in-docker container"
+  DEP_SYS_COMMANDS=("${DEP_SYS_COMMANDS__USE_OUTERCONTAINER[@]}")
 fi
+
+#echo "$0: DEP_SYS_COMMANDS=${DEP_SYS_COMMANDS[*]}" 1>&2
 
 docker_outer_volume_forinnerdockerdir="dind1"
 
@@ -1103,9 +1110,12 @@ elif [ "$1" = "--docker-inner-clean" ]; then #arg
 
   else
 
+    echo 1>&2
     docker ps | awk '/nemo/ || /vsmd/ { print $1; }' | while read dockerid rest; do 
-      docker rm -f "$dockerid"
+      echo "# removing outer docker container '$dockerid'" 1>&2
+      docker rm -f "$dockerid" >/dev/null
     done
+    echo 1>&2
 
     #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker image prune -a -f')
     #(set -x; "${MYDOCKER_OUTER_EXEC[@]}" bash -c 'docker ps --filter=status=exited --filter=status=created -q | tee >(awk "{ print \"container \" \$0; }" > /dev/tty)  | xargs docker rm')
@@ -1578,13 +1588,16 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
   if [ -f docker-compose/freertr.cfg.orig -o -f frnet/freertr/run/conf/rtr-sw.txt.orig ] || [ "$USE_DOCKER_OUTER" = 0 -a \( "$USE_DOCKER_NFCAPD_NO_HOST_NETWORK" = 1 -o "$USE_DOCKER_VSMD1_NO_HOST_NETWORK" = 1 \) ]; then
     for file1 in "${files_to_adapt[@]}"; do
 	    
-      cp -fv "$file1" "$file1.prev" 1>&2 # copy previous state
+      #cp -fv "$file1" "$file1.prev" 1>&2 # copy previous state
+      cp -f "$file1" "$file1.prev" 1>&2 # copy previous state
 
       # create initial orig files OR if orig already exists reset file to orig file
       if [ ! -f "$file1.orig" ]; then
-        cp -fv "$file1" "$file1.orig" 1>&2
+        #cp -fv "$file1" "$file1.orig" 1>&2
+        cp -f "$file1" "$file1.orig" 1>&2
       else
-        cp -fv "$file1.orig" "$file1" 1>&2
+        #cp -fv "$file1.orig" "$file1" 1>&2
+        cp -f "$file1.orig" "$file1" 1>&2
       fi
 
     done
@@ -1629,11 +1642,14 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
   adaption_was_required=0
   if [ "$adaption_performed" = 1 ]; then
     for file1 in "${files_to_adapt[@]}"; do
-      if ! diff -q "$file1" "$file1.prev" 1>&2; then
+      #if ! diff -q "$file1" "$file1.prev" 1>&2; then
+      if ! diff "$file1" "$file1.prev" >/dev/null; then
         adaption_was_required=1
       fi
     done
   fi
+
+  echo
 
   [ "$adaption_was_required" = 0 ] # exit/return status, true if !adaption_was_required
 
