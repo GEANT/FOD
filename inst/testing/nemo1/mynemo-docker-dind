@@ -515,7 +515,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --all1x 1 1 "$@"
      echo 1>&2
 
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips || true # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --use_default_ips_for_outerdockermode || true # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
      echo 1>&2
      
@@ -541,7 +541,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --all1x 1 0 --build-only "$@"
      echo 1>&2
 
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips || true # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips --use_default_ips_for_outerdockermode || true # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
      "$0" --testnet_init 2 "$use_addon1" "$addon_init_early" 1
      echo 1>&2
      
@@ -1548,6 +1548,11 @@ elif [ "$1" = "--adapt-freertr-configuration-for-nemo-dynamic-ips" ]; then #arg 
       MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="10.197.36.1"
       MYNEMO_DOCKER_INNER_IP_vsmd_freertr="10.197.36.1"
     fi
+
+  elif [ "$1" = "--use_default_ips_for_outerdockermode" ]; then #arg opt
+
+    MYNEMO_DOCKER_INNER_IP_nfcapd_freertr="10.197.36.2"
+    MYNEMO_DOCKER_INNER_IP_vsmd_freertr="10.197.36.2"
 
   elif [ "$1" = "--use_default_ips_for_nodockermode" ]; then #arg opt
 
