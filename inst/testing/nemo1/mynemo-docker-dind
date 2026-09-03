@@ -507,7 +507,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --all1x 1 1 "$@"
      echo 1>&2
 
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips || true # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
      "$0" --testnet_init 3 "$use_addon1" "$addon_init_early" 1
      echo 1>&2
      
@@ -533,7 +533,7 @@ elif [ "$1" = "--allx" ]; then #arg # all-in-one mode for building+running outer
      "$0" --all1x 1 0 --build-only "$@"
      echo 1>&2
 
-     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
+     "$0" --adapt-freertr-configuration-for-nemo-dynamic-ips || true # potential cleanup/reset, in case a previous run of ourself used $USE_DOCKER_OUTER=0
      "$0" --testnet_init 2 "$use_addon1" "$addon_init_early" 1
      echo 1>&2
      
