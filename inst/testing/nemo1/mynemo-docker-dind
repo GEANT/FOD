@@ -78,7 +78,7 @@ fi
 DEP_SYS_COMMANDS__USE_OUTERCONTAINER=(docker docker-compose)
 
 # incomplete list:
-DEP_SYS_COMMANDS__USE_NO_OUTERCONTAINER=("${DEP_SYS_COMMANDS__USE_OUTERCONTAINER[@]}" grep gawk sed)
+DEP_SYS_COMMANDS__USE_NO_OUTERCONTAINER=("${DEP_SYS_COMMANDS__USE_OUTERCONTAINER[@]}" grep gawk sed diff curl jq pwgen gmake openssl hexdump find)
 
 ##
 
@@ -190,6 +190,9 @@ victim_ip="$victim_ip_frrnet"
 
 # correspondinf to and as defined in ./etc/dfn-info/dfn-info.json
 main_router_name="freertr1"
+  
+# has to match container name in other sub scripts: ./mynemo-mitigation-init-container.sh ./mynemo-mitigation-vsmd-run-in-container ./create_vsmd1.py as extension also: ./tools/myexabgp_cmd
+docker_nemo_mitigation__container_name="vsmd1"
 
 #
 
@@ -1161,10 +1164,10 @@ elif [ "$1" = "--bash-vsmd1" -o "$1" = "--vsmd-bash" ]; then #arg # generic bash
   
   [ $# = 0 ] && set -- bash -i #arg defaults
 
-  if docker ps | grep -q vsmd1; then 
-    exec docker exec -ti vsmd1 "$@"
+  if docker ps | grep -q "$docker_nemo_mitigation__container_name"; then 
+    exec docker exec -ti "$docker_nemo_mitigation__container_name" "$@"
   else
-    exec "$0" --exec docker exec -ti vsmd1 "$@"
+    exec "$0" --exec docker exec -ti "$docker_nemo_mitigation__container_name" "$@"
   fi
 
 #arg
@@ -1356,18 +1359,18 @@ elif [ "$1" = "--logsall2.tailf" ]; then #arg # run tail -f on all active log fi
 elif [ "$1" = "--logsall2vsmd" ]; then #arg # determine all active log files in nemo container
   shift 1
 
-  pid1_vsmd_inner="$("${MYDOCKER_OUTER_EXEC[@]}" docker inspect vsmd1 | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')"
+  pid1_vsmd_inner="$("${MYDOCKER_OUTER_EXEC[@]}" docker inspect "$docker_nemo_mitigation__container_name" | awk '/"Pid":/ { sub(/,$/, ""); print $2; }')"
   echo "$0: vsmd1 => inner pid $pid1_vsmd_inner" 1>&2
 
   [ -n "$pid1_vsmd_inner" ] && pid1_vsmd_outer="$(grep -E -h "^NSpid:\\s*[0-9]+\\s*$pid1_vsmd_inner" /proc/*/status | awk 'NR==1 { print $2; }')"
   echo "$0: vsmd1 => outer pid $pid1_vsmd_outer" 1>&2
 
-  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker exec vsmd1 sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid1_vsmd_outer/root")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker exec "$docker_nemo_mitigation__container_name" sh -c "lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print dirprefix \$(NF); }' dirprefix=\"\$1\" | sort -u" -- "/proc/$pid1_vsmd_outer/root")
 
 elif [ "$1" = "--logsall2vsmd.tailf" ]; then #arg # run tail -f on all active log files in nemo container
   shift 1
 
-  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker exec vsmd1 sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
+  (set -x; "${MYDOCKER_OUTER_EXEC[@]}" docker exec "$docker_nemo_mitigation__container_name" sh -c "tail -f \$(lsof -Pn -w | awk '\$(NF) ~ /\\.log$/ && /\\s[0-9]+w\\s+REG\\s/ { print \$(NF); }' | sort -u)")
 
 #
 
