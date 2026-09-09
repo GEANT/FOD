@@ -1,0 +1,130 @@
+
+0. Prerequisites:
+
+minimall required set of tools available on the host:
+
+grep is /usr/bin/grep
+gawk is /usr/bin/gawk
+sed is /usr/bin/sed
+diff is /usr/bin/diff
+curl is /usr/bin/curl
+jq is /usr/bin/jq
+pwgen is /usr/bin/pwgen
+gmake is /usr/bin/gmake
+openssl is /usr/bin/openssl
+hexdump is /usr/bin/hexdump
+find is /usr/bin/find
+ETHTOOL='/sbin/ethtool'
+
+
+nemo-repos required:
+
+nemo-analyse
+nemo-authd
+nemo-common
+nemo.conf.vsmd
+nemo-countermeasurectl
+nemo-docker
+nemo-env
+nemo-erkennung
+nemo-expire
+nemo-exportd
+nemo-local_openid_provider
+nemo-offrampctl
+nemo-vsmd
+
+especially: adaptions needed in nemo-repos for nfcapds network stiching:
+
+# nemo-docker/: 
+*   ab78fe3	brindfn	Wed Feb 4 18:57:44 2026 +0100	 (HEAD -> master, tag: nemo-docker-8.2.1, tag: 8.2, origin/master, origin/HEAD) Merge pull request 'trafficsim-psycopg-migration' (#213) from trafficsim-psycopg-migration into master
+diff --git a/docker-compose-catcher.yaml b/docker-compose-catcher.yaml
+index cfc2570..64bac6c 100644
+--- a/docker-compose-catcher.yaml
++++ b/docker-compose-catcher.yaml
+@@ -10,7 +10,7 @@ services:
+     environment:
+       NFCAPD_RESTART_ON_CFG_CHANGE: ${NFCAPD_RESTART_ON_CFG_CHANGE:-False}
+     restart: always
+-    network_mode: "host"
++    network_mode: "nemo1_xnemo-flow-input"
+     logging:
+       driver: "json-file"
+       options:
+
+-
+
+1. setup nemo network by 'docker network' explicit commands
+
+-
+
+2. test network:
+2a. build and run docker compose set for test network (2 hosts + freertr)
+2b. if required: fix order of interfaces in the containers of the test network (new issue since some months)
+2c. offloading disable in freertr container for interface for communicating with nemo detection and mitigation
+
+2d. test ping: host1 -> host2 and vice versa
+
+2e. run background ping host1->host2 and vice versa (to create netflow traffic from freertr)
+
+-
+
+3. nemo detection containers
+3a. run setup.sh (make sure adaption for nemo_nfcapd container are in place so it will be created with adapted network setting)
+
+...
+
+  #################################################################
+ ##[1m   _  _   ___   __  __    ___      (B[m                          ##
+ ##[1m  | \| | | __| |  \/  |  / _ \  (B[m                             ##
+ ##[1m  | .` | | _|  | |\/| | | (_) |  (B[m                            ##
+ ##[1m  |_|\_| |___| |_|  |_|  \___/   (B[m                            ##
+ ##                                                             ##
+ ##   [1mYour NeMo-Installation is complete (B[m                       ##
+ ##                                                             ##
+ ##   Services on [1mlocalhost(B[m:                                    ##
+ ##    NeMo Web UI (Fishtank)     http: 80                      ##
+ ##                              https: 443                     ##
+ ##    FTP for data delivery       ftp: 21                      ##
+ ##    NFCAPD                 netflows: 9995                    ##
+ ##    MailHog                    http: 8025                    ##
+ ##                                                             ##
+ ##   Running containers:                                       ##
+ ##    nemo_exportd_1                nemo_nfcapd_1              ##
+ ##    nemo_newfile_1                nemo_watsond_1             ##
+ ##    nemo_condensed_1              nemo_mitigated_1           ##
+ ##    nemo_analyzed_1               nemo_eventd_1              ##
+ ##    nemo_fishtank_1               nemo_dbclean_1             ##
+ ##    nemo_fishtank-expire_1        nemo_fishtank-nginx_1      ##
+ ##    nemo_pureftp_1                nemo_expire_1              ##
+ ##    nemo_mailhog_1                nemo_nemodb_1              ##
+ ##    host1                         host2                      ##
+ ##    freertr                                                  ##
+ ##                                                             ##
+ ##                                                             ##
+ #################################################################
+
+[this really only covers nemo detection, not nemo mitigation!]
+
+3b. test https access (e.g. with lynx) to nemo web container (using HTTPS client certificate having been created by setup.sh)
+3c. initial db entries in nemo detection: ./mynemo-mitigation-init-db-final.sh
+
+3d. verify that freertr is sending netflow traffic to nemo_nfcapd (tshark + verify that nfcapd is creating flow files) 
+
+-
+
+4. nemo-mitigation container the stitching to nemo detection and freertr:
+
+4a. ./mynemo-mitigation-init-container.sh : run ./mynemo-mitigation-fix-detection-containers.sh: adding default nemo authorization in nemo detection and do some further necessary config adaptions, restart specific nemo detection containers afterwards; add vsmd entry in nemo detection db;
+
+4b. ./mynemo-mitigation-init-container.sh: run ./mynemo-mitigation-init-vsmd-certs.sh in order to create the nemo inter detection/mitigation communication certs + adapt vsmd config accordingly
+
+4c. ./mynemo-mitigation-init-container.sh : build nemo mitigation container + run it + inside do all further necessary installations and starting of proccesses ... also run checks internally as appropriately [covers: vsmd, offrampctl, exabgp + exabgp plugin, ssh jump host + mitigation stats fetch script on jump host, everything with appropriately stichted config to interact internally (netween these compoennts) and externally to appropriate nemo detection container and freertr for BGP and ssh/telnet traffic]
+
+4d ./mynemo-mitigation-init-container.sh : ./mynemo-detection-restart-mitigated: fix connectivity (hosts file) in appropriate nemo detection container and restart the nemo detection container which connects to vsmd, verify that connection is actually established
+
+-
+
+5a. install HTTPS client cert having been created by setup.sh in your browser and access UI
+5b. make sure your browser can reach host
+5c. access nemo Web UI with your browser
+
